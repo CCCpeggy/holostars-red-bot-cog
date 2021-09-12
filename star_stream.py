@@ -1110,7 +1110,7 @@ class StarStream(commands.Cog):
                                                               color=0x00ff3d,
                                                               title=_(
                                                                   "✅會員頻道權限通過"),
-                                                              description="\n 請確認看得見會員頻道：" + member_channel.mention + "\n 處理人：" + mod.mention,
+                                                              description= "增加身分組：" + role.mention + "\n 請確認看得見會員頻道：" + member_channel.mention + "\n 處理人：" + mod.mention,
                                                           ))
 
                     if self.temp_role:
