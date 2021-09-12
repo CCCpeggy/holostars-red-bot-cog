@@ -44,6 +44,7 @@ next_message = r'{next_message}'
 youtube_url_format_2 = "https://www.youtube.com/watch?v={}"
 youtube_url_format_3 = "https://youtu.be/{}"
 
+
 @cog_i18n(_)
 class StarStream(commands.Cog):
     """Streaming bot for Holostars Chinese Fan Server.
@@ -77,7 +78,7 @@ class StarStream(commands.Cog):
         "membership_enable": False,
     }
 
-    def __init__(self, bot: Red, temp_role: TempRole=None):
+    def __init__(self, bot: Red, temp_role: TempRole = None):
         super().__init__()
         self.config: Config = Config.get_conf(self, 27272727)
         self.config.register_global(**self.global_defaults)
@@ -90,9 +91,11 @@ class StarStream(commands.Cog):
         self.task: Optional[asyncio.Task] = None
 
         self._ready_event: asyncio.Event = asyncio.Event()
-        self._init_task: asyncio.Task = self.bot.loop.create_task(self.initialize())
-        self._youtube_video_re = re.compile(r"https?://(www.youtube.com/watch\?v=|youtube.com/watch\?v=|m.youtube.com/watch\?v=|youtu.be/)([0-9A-Za-z_-]{10}[048AEIMQUYcgkosw])")
-    
+        self._init_task: asyncio.Task = self.bot.loop.create_task(
+            self.initialize())
+        self._youtube_video_re = re.compile(
+            r"https?://(www.youtube.com/watch\?v=|youtube.com/watch\?v=|m.youtube.com/watch\?v=|youtu.be/)([0-9A-Za-z_-]{10}[048AEIMQUYcgkosw])")
+
     async def red_delete_data_for_user(self, **kwargs):
         """ Nothing to delete """
         return
@@ -103,7 +106,7 @@ class StarStream(commands.Cog):
         if matched is None:
             return True
         return False
-    
+
     async def initialize(self) -> None:
         """Should be called straight after cog instantiation."""
         await self.bot.wait_until_ready()
@@ -129,7 +132,7 @@ class StarStream(commands.Cog):
             if "api_key" not in youtube:
                 await self.bot.set_shared_api_tokens("youtube", api_key=token)
         await self.config.tokens.clear()
-    
+
     @commands.group()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
@@ -145,9 +148,9 @@ class StarStream(commands.Cog):
         pass
 
     @_stars_channel.command(name="set")
-    async def _channel_set(self, ctx: commands.Context, channel_name_or_id: str, mention_channel: discord.TextChannel=None, chat_channel: discord.TextChannel=None, channel_emoji: str=None):
+    async def _channel_set(self, ctx: commands.Context, channel_name_or_id: str, mention_channel: discord.TextChannel = None, chat_channel: discord.TextChannel = None, channel_emoji: str = None):
         """Set tracking YouTube channel.
-        
+
         Use: [p]stars channel set [YT channel id | YT channel name] [mention channel] [default chat channel] [emoji]
         """
         # if str(_emoji) == emoji for _emoji in message.guild.emojis:
@@ -165,25 +168,17 @@ class StarStream(commands.Cog):
                 await ctx.send("Emoji is not corrent")
                 return
         stream = self.get_stream(channel_name_or_id)
-        chat_channel_id=chat_channel.id if chat_channel else None
-        mention_channel_id=mention_channel.id if mention_channel else None
+        chat_channel_id = chat_channel.id if chat_channel else None
+        mention_channel_id = mention_channel.id if mention_channel else None
         if not stream:
             token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
             if not self.check_name_or_id(channel_name_or_id):
                 stream = YouTubeStream(
-                    _bot=self.bot, id=channel_name_or_id, token=token
-                    , config=self.config
-                    , chat_channel_id=chat_channel_id
-                    , mention_channel_id=mention_channel_id
-                    , emoji=channel_emoji
+                    _bot=self.bot, id=channel_name_or_id, token=token, config=self.config, chat_channel_id=chat_channel_id, mention_channel_id=mention_channel_id, emoji=channel_emoji
                 )
             else:
                 stream = YouTubeStream(
-                    _bot=self.bot, name=channel_name_or_id, token=token
-                    , config=self.config
-                    , chat_channel_id=chat_channel_id
-                    , mention_channel_id=mention_channel_id
-                    , emoji=channel_emoji
+                    _bot=self.bot, name=channel_name_or_id, token=token, config=self.config, chat_channel_id=chat_channel_id, mention_channel_id=mention_channel_id, emoji=channel_emoji
                 )
             try:
                 exists = await stream.check_exists()
@@ -238,13 +233,13 @@ class StarStream(commands.Cog):
                     "I have already updated {stream.name} settings."
                 ).format(stream=stream)
             )
-            
+
         await self.save_streams()
 
     @_stars_channel.command(name="unset")
     async def _channel_unset(self, ctx: commands.Context, channel_name_or_id_or_all: str):
         """Unset tracking YouTube channel.
-        
+
         Use: [p]stars channel unset [YT channel id | YT channel name | all]
         """
         async def delete_stream(stream):
@@ -287,7 +282,8 @@ class StarStream(commands.Cog):
             if stream.chat_channel_id:
                 msg += f" - chat channel: `#{ctx.guild.get_channel(stream.chat_channel_id)}`\n"
             if len(stream.mention) > 0:
-                roles_str = ', '.join([f'`@{get(ctx.guild.roles, id=role_id).name}`' for role_id in stream.mention])
+                roles_str = ', '.join(
+                    [f'`@{get(ctx.guild.roles, id=role_id).name}`' for role_id in stream.mention])
                 msg += f" - mention roles: {roles_str}\n"
             if stream.emoji:
                 emoji = self.getEmoji(ctx, stream.emoji)
@@ -311,7 +307,8 @@ class StarStream(commands.Cog):
 
         await self.config.refresh_timer.set(refresh_time)
         await ctx.send(
-            _("Refresh timer set to {refresh_time} seconds".format(refresh_time=refresh_time))
+            _("Refresh timer set to {refresh_time} seconds".format(
+                refresh_time=refresh_time))
         )
 
     @starsset.command()
@@ -375,11 +372,11 @@ class StarStream(commands.Cog):
         """
 
     async def _clear_react(
-        self, message: discord.Message, emoji: MutableMapping = None) -> asyncio.Task:
+            self, message: discord.Message, emoji: MutableMapping = None) -> asyncio.Task:
         """Non blocking version of clear_react."""
         task = self.bot.loop.create_task(self.clear_react(message, emoji))
         return task
-    
+
     async def clear_react(self, message: discord.Message, emoji: MutableMapping = None) -> None:
         try:
             await message.clear_reactions()
@@ -391,11 +388,9 @@ class StarStream(commands.Cog):
                     await message.remove_reaction(key, self.bot.user)
         except discord.HTTPException:
             return
-    
+
     @_stars_stream.command(name="set")
-    async def _stream_set(self, ctx: commands.Context
-    , chat_channel: discord.TextChannel, stream_time: str
-    , description=None, change_channel_name: bool=True):
+    async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, description=None, change_channel_name: bool = True):
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         scheduled_stream = ScheduledStream(
             _bot=self.bot, token=token, config=self.config,
@@ -406,7 +401,7 @@ class StarStream(commands.Cog):
         )
         message = await ctx.send("test")
         emojis = {
-            "\N{WHITE HEAVY CHECK MARK}": "Done", 
+            "\N{WHITE HEAVY CHECK MARK}": "Done",
             "\N{NEGATIVE SQUARED CROSS MARK}": "Cancel"
         }
         selected = {}
@@ -426,7 +421,7 @@ class StarStream(commands.Cog):
             with contextlib.suppress(discord.NotFound):
                 for emoji in emojis.keys():
                     await message.add_reaction(emoji)
-                    
+
         task = asyncio.create_task(add_reaction())
         # # await add_reaction()
         try:
@@ -434,17 +429,18 @@ class StarStream(commands.Cog):
                 nonlocal selected
                 while True:
                     r, u = await self.bot.wait_for(
-                    event, check=ReactionPredicate.with_emojis(emojis_list, message, ctx.author)
+                        event, check=ReactionPredicate.with_emojis(
+                            emojis_list, message, ctx.author)
                     )
                     if emojis[r.emoji] == "Done":
-                        break 
+                        break
                     elif emojis[r.emoji] == "Cancel":
                         selected = {}
                         break
                     else:
                         selected[r.emoji] = not selected[r.emoji]
             tasks = [
-                asyncio.create_task(reaction_task('reaction_remove')), 
+                asyncio.create_task(reaction_task('reaction_remove')),
                 asyncio.create_task(reaction_task('reaction_add'))
             ]
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, timeout=30)
@@ -462,7 +458,7 @@ class StarStream(commands.Cog):
         for emoji in selected.keys():
             stream = emojis[emoji]
             scheduled_stream.add_collab(stream.id, stream.name)
-        
+
         if selected != {}:
             for old_scheduled_stream in {v for v in self.scheduled_streams if scheduled_stream.text_channel_id == chat_channel.id}:
                 log.info(old_scheduled_stream)
@@ -472,7 +468,7 @@ class StarStream(commands.Cog):
             await self.save_scheduled_streams()
 
     @_stars_stream.command(name="add")
-    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel=None):
+    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
         """ Add stream
         If not assign **chat channel**, it will set by yotube channel settings.
         Use: [p]stars stream add [YT video id] <[chat channel]>
@@ -492,7 +488,8 @@ class StarStream(commands.Cog):
             await ctx.send(f"沒有找到 `{video_id}`.")
 
         if chat_channel:
-            scheduled_stream = self.get_scheduled_stream(text_channel_id=chat_channel.id)
+            scheduled_stream = self.get_scheduled_stream(
+                text_channel_id=chat_channel.id)
             if scheduled_stream:
                 if stream.id in scheduled_stream.channel_ids:
                     idx = scheduled_stream.channel_ids.index(stream.id)
@@ -503,7 +500,7 @@ class StarStream(commands.Cog):
                 await ctx.send(f"{chat_channel}` 沒有設定的直播")
 
     @_stars_stream.command(name="resend")
-    async def _stream_resend (self, ctx: commands.Context, video_id: str):
+    async def _stream_resend(self, ctx: commands.Context, video_id: str):
         """ 重新發送通知
         不管之前是否發送過訊息，當下次偵測的時候，會重新發送通知
         """
@@ -526,7 +523,7 @@ class StarStream(commands.Cog):
             await ctx.send(f"沒有找到 `{video_id}`.")
 
     @stars.command(name="check")
-    #TODO: limit time
+    # TODO: limit time
     async def _stream_check(self, ctx: commands.Context):
         """ Force to check the status of all channels and videos
         """
@@ -538,45 +535,49 @@ class StarStream(commands.Cog):
         while True:
             await self.check_streams()
             await asyncio.sleep(await self.config.refresh_timer())
-    
+
     async def _send_stream_alert(
-        self,
-        channel: discord.TextChannel,
-        embed: discord.Embed,
-        content: str = None):
+            self,
+            channel: discord.TextChannel,
+            embed: discord.Embed,
+            content: str = None):
         if content == None:
             m = await channel.send(
                 None,
                 embed=embed,
-                allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                allowed_mentions=discord.AllowedMentions(
+                    roles=True, everyone=True),
             )
         else:
             content = content.split(next_message)
             m = await channel.send(
                 content[0],
                 embed=embed,
-                allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                allowed_mentions=discord.AllowedMentions(
+                    roles=True, everyone=True),
             )
             ms = [m]
             for i in range(1, len(content)):
                 time.sleep(2)
                 m = await channel.send(
                     content[i],
-                    allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                    allowed_mentions=discord.AllowedMentions(
+                        roles=True, everyone=True),
                 )
                 ms.append(m)
             return ms
-    
+
     async def _send_video_alert(
-        self,
-        channel: discord.TextChannel,
-        embed: discord.Embed,
-        content: str = None):
+            self,
+            channel: discord.TextChannel,
+            embed: discord.Embed,
+            content: str = None):
         if content == None:
             m = await channel.send(
                 None,
                 embed=embed,
-                allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                allowed_mentions=discord.AllowedMentions(
+                    roles=True, everyone=True),
             )
         else:
             content = content.split(new_line)
@@ -584,14 +585,16 @@ class StarStream(commands.Cog):
                 m = await channel.send(
                     content[0],
                     embed=embed,
-                    allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                    allowed_mentions=discord.AllowedMentions(
+                        roles=True, everyone=True),
                 )
             else:
                 for c in content:
                     m = await channel.send(
                         c,
                         # embed=embed,
-                        allowed_mentions=discord.AllowedMentions(roles=True, everyone=True),
+                        allowed_mentions=discord.AllowedMentions(
+                            roles=True, everyone=True),
                     )
                     time.sleep(3)
         # TODO: message_data = {"guild": m.guild.id, "channel": m.channel.id, "message": m.id}
@@ -681,19 +684,19 @@ class StarStream(commands.Cog):
                         video_id = info["video_id"]
                         channel = self.bot.get_channel(stream.chat_channel_id)
                         scheduled_stream = self.get_scheduled_stream(
-                            yt_channel_id=info["channel_id"], 
-                            time=info["time"], 
+                            yt_channel_id=info["channel_id"],
+                            time=info["time"],
                             video_ids=[info["video_id"], ""]
                         )
                         content = await self.config.guild(channel.guild).scheduled_message()
                         if video_id not in stream.scheduled_sent:
                             if scheduled_stream:
-                                idx = scheduled_stream.channel_ids.index(info["channel_id"])
+                                idx = scheduled_stream.channel_ids.index(
+                                    info["channel_id"])
                                 scheduled_stream.video_ids[idx] = video_id
                                 await self.send_scheduled(
-                                    scheduled_stream.text_channel_id, 
-                                    pin=True, content=content, info=info
-                                    , scheduled_stream=scheduled_stream
+                                    scheduled_stream.text_channel_id,
+                                    pin=True, content=content, info=info, scheduled_stream=scheduled_stream
                                 )
                                 stream.scheduled_sent.append(video_id)
                                 changed = True
@@ -703,25 +706,27 @@ class StarStream(commands.Cog):
                                 )
                                 stream.scheduled_sent.append(video_id)
                                 changed = True
-                    
+
                     if streaming_data:
                         info = YouTubeStream.get_info(streaming_data)
                         scheduled_stream = self.get_scheduled_stream(
-                            yt_channel_id=info["channel_id"], 
-                            time=info["time"], 
+                            yt_channel_id=info["channel_id"],
+                            time=info["time"],
                             video_ids=[info["video_id"], ""]
                         )
-                        video_id = YouTubeStream.get_info(streaming_data)["video_id"]
+                        video_id = YouTubeStream.get_info(
+                            streaming_data)["video_id"]
                         if video_id not in stream.streaming_sent:
-                            channel = self.bot.get_channel(stream.mention_channel_id)
+                            channel = self.bot.get_channel(
+                                stream.mention_channel_id)
                             content = await self.config.guild(channel.guild).mention_message()
                             # 連動直播第一次發開播通知
                             if scheduled_stream and not scheduled_stream.streaming_sent:
                                 collab_mention = await self.config.guild(channel.guild).collab_mention_message()
                                 await self.send_streaming(
-                                    streaming_data, stream.mention_channel_id, 
-                                    is_mention=True, embed=True, 
-                                    chat_channel_id=stream.chat_channel_id, 
+                                    streaming_data, stream.mention_channel_id,
+                                    is_mention=True, embed=True,
+                                    chat_channel_id=stream.chat_channel_id,
                                     content=content,
                                     collab_mention=collab_mention,
                                     scheduled_stream=scheduled_stream
@@ -729,20 +734,21 @@ class StarStream(commands.Cog):
                             # 一般開播通知
                             elif stream.mention_channel_id:
                                 await self.send_streaming(
-                                    streaming_data, stream.mention_channel_id, 
-                                    is_mention=True, embed=True, 
-                                    chat_channel_id=stream.chat_channel_id, 
+                                    streaming_data, stream.mention_channel_id,
+                                    is_mention=True, embed=True,
+                                    chat_channel_id=stream.chat_channel_id,
                                     content=content
                                 )
                             chat_channel_id = scheduled_stream.text_channel_id if scheduled_stream else stream.chat_channel_id
                             if scheduled_stream and scheduled_stream.streaming_sent:
                                 pass
                             elif chat_channel_id:
-                                channel = self.bot.get_channel(stream.chat_channel_id)
+                                channel = self.bot.get_channel(
+                                    stream.chat_channel_id)
                                 content = await self.config.guild(channel.guild).chat_message()
                                 await self.send_streaming(
                                     streaming_data, chat_channel_id,
-                                    is_mention=False, embed=False, 
+                                    is_mention=False, embed=False,
                                     content=content
                                 )
                             stream.streaming_sent.append(video_id)
@@ -754,7 +760,8 @@ class StarStream(commands.Cog):
                         await self.save_streams()
                         await self.save_scheduled_streams()
             except Exception as e:
-                log.error("An error has occured with Streams. Please report it.", exc_info=e)
+                log.error(
+                    "An error has occured with Streams. Please report it.", exc_info=e)
 
         if to_remove:
             for stream in to_remove:
@@ -762,24 +769,26 @@ class StarStream(commands.Cog):
             await self.save_streams()
 
     async def send_streaming(
-        self, data, channel_id, is_mention, content=None, collab_mention=None
-        , embed=False, description=None, pin=False, chat_channel_id=None, scheduled_stream=None
-        ):
+        self, data, channel_id, is_mention, content=None, collab_mention=None, embed=False, description=None, pin=False, chat_channel_id=None, scheduled_stream=None
+    ):
         embed = YouTubeStream.make_embed(data) if embed else None
         info = YouTubeStream.get_info(data)
-        
+
         url = youtube_url_format_2.format(info["video_id"])
         if not content:
             content = "{url}"
+
         def replace_content(content):
             content = content.replace("{channel_name}", info["channel_name"])
             content = content.replace("{url}", url)
-            content = content.replace("{description}", description if description else info["title"])
+            content = content.replace(
+                "{description}", description if description else info["title"])
             content = content.replace("{new_line}", "\n")
             if chat_channel_id:
                 chat_channel = self.bot.get_channel(chat_channel_id)
                 if chat_channel:
-                    content = content.replace("{chat_channel}", chat_channel.mention)
+                    content = content.replace(
+                        "{chat_channel}", chat_channel.mention)
             return content
         content = replace_content(content)
         if scheduled_stream:
@@ -821,7 +830,7 @@ class StarStream(commands.Cog):
                 await ms[0].pin()
 
     async def send_scheduled(self, channel_id, info=None, content=None, pin=False, scheduled_stream=None):
-        
+
         channel = self.bot.get_channel(channel_id)
         if not channel:
             return
@@ -836,20 +845,25 @@ class StarStream(commands.Cog):
 
         if scheduled_stream:
             content = content.replace(
-                "{description}", scheduled_stream.description if scheduled_stream.description else info["title"]
+                "{description}", scheduled_stream.description if scheduled_stream.description else info[
+                    "title"]
             )
-            content = content.replace("{channel_name}", ", ".join(scheduled_stream.channel_names))
-            content = content.replace("{time}", getDiscordTimeStamp(scheduled_stream.get_time()))
+            content = content.replace(
+                "{channel_name}", ", ".join(scheduled_stream.channel_names))
+            content = content.replace(
+                "{time}", getDiscordTimeStamp(scheduled_stream.get_time()))
             url = ""
             for i in range(len(scheduled_stream.channel_ids)):
                 if scheduled_stream.video_ids[i] != "":
-                    yt_url = youtube_url_format_2.format(scheduled_stream.video_ids[i])
+                    yt_url = youtube_url_format_2.format(
+                        scheduled_stream.video_ids[i])
                     url += f"{scheduled_stream.channel_names[i]}:\n{yt_url}\n"
             content = content.replace("{url}", url)
 
             # 改頻道名稱
             if scheduled_stream.change_channel_name:
-                emojis = [self.getEmoji(channel, stream.emoji) for stream in self.streams if stream.id in scheduled_stream.channel_ids]
+                emojis = [self.getEmoji(channel, stream.emoji)
+                          for stream in self.streams if stream.id in scheduled_stream.channel_ids]
                 emojis = [f'{e}' for e in emojis if e]
                 await channel.edit(name=f"連動頻道{''.join(emojis)}")
         else:
@@ -858,7 +872,8 @@ class StarStream(commands.Cog):
             url = youtube_url_format_2.format(info["video_id"])
             content = content.replace("{url}", url)
             if info["time"]:
-                content = content.replace("{time}", getDiscordTimeStamp(info["time"]))
+                content = content.replace(
+                    "{time}", getDiscordTimeStamp(info["time"]))
 
         if scheduled_stream and scheduled_stream.message_id:
             ms = await channel.fetch_message(scheduled_stream.message_id)
@@ -873,7 +888,7 @@ class StarStream(commands.Cog):
                 await ms[0].pin()
             if scheduled_stream:
                 scheduled_stream.message_id = ms[0].id
-    
+
     async def video_is_online(self, video):
         pass
 
@@ -890,8 +905,9 @@ class StarStream(commands.Cog):
             mentions.append("@everyone")
         if await settings.mention_here():
             mentions.append("@here")
-            
-        can_mention_everyone = channel.permissions_for(guild.me).mention_everyone
+
+        can_mention_everyone = channel.permissions_for(
+            guild.me).mention_everyone
         role_ids = []
         for ch_id in ch_ids:
             role_ids += self.get_stream(ch_id).mention
@@ -908,7 +924,7 @@ class StarStream(commands.Cog):
                     edited_roles.append(role)
             mentions.append(role.mention)
         return " ".join(mentions), edited_roles
-    
+
     async def scheduled_streams_start(self):
         pass
 
@@ -935,7 +951,7 @@ class StarStream(commands.Cog):
             scheduled_streams.append(ScheduledStream(**raw_stream))
 
         return scheduled_streams
-    
+
     async def save_streams(self):
         raw_streams = []
         for stream in self.streams:
@@ -978,11 +994,12 @@ class StarStream(commands.Cog):
                     return scheduled_stream
 
             if time:
-                shared_scheduled_time = getTimeStamp(scheduled_stream.get_time())
+                shared_scheduled_time = getTimeStamp(
+                    scheduled_stream.get_time())
                 search_scheduled_time = getTimeStamp(time)
                 diff = abs(shared_scheduled_time - search_scheduled_time)
                 if not (diff < 1800):
-                    continue 
+                    continue
             return scheduled_stream
         return None
 
@@ -1017,21 +1034,21 @@ class StarStream(commands.Cog):
         await ctx.send(_("已禁用會員審核"))
 
     @_stars_membership.command(name='input')
-    async def _stars_membership_input(self, ctx: commands.Context, text_channel: discord.TextChannel=None):
+    async def _stars_membership_input(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定使用者輸入會員資料的文字頻道"""
         guild = ctx.guild
         await self.config.guild(guild).membership_input_channel_id.set(text_channel.id)
         await ctx.send(_(f"已設定"))
 
     @_stars_membership.command(name='result')
-    async def _stars_membership_result(self, ctx: commands.Context, text_channel: discord.TextChannel=None):
+    async def _stars_membership_result(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定回覆使用者審核結果的文字頻道"""
         guild = ctx.guild
         await self.config.guild(guild).membership_result_channel_id.set(text_channel.id)
         await ctx.send(_(f"已設定"))
 
     @_stars_membership.command(name='command')
-    async def _stars_membership_command(self, ctx: commands.Context, text_channel: discord.TextChannel=None):
+    async def _stars_membership_command(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定下會員設定指令的文字頻道"""
         guild = ctx.guild
         await self.config.guild(guild).membership_command_channel_id.set(text_channel.id)
@@ -1057,7 +1074,7 @@ class StarStream(commands.Cog):
         names = await self.config.guild(guild).membership_membership_names()
         await self.config.guild(guild).membership_membership_roles.set(roles)
         await self.config.guild(guild).membership_membership_text_channel_ids.set(text_channel_ids)
-        
+
         await ctx.send(_(f"已設定"))
 
     @commands.Cog.listener()
@@ -1077,17 +1094,25 @@ class StarStream(commands.Cog):
         names = await self.config.guild(message.guild).membership_membership_names()
         roles = await self.config.guild(message.guild).membership_membership_roles()
         text_channel_ids = await self.config.guild(message.guild).membership_membership_text_channel_ids()
-        info = get_membership_info(message.content, names, roles, text_channel_ids)
+        info = get_membership_info(
+            message.content, names, roles, text_channel_ids)
         if info:
-            diff = getTimeStamp(info["date"]) - getTimeStamp(datetime.now(timezone.utc))
+            diff = getTimeStamp(info["date"]) - \
+                getTimeStamp(datetime.now(timezone.utc))
             if diff > 0 and diff <= 30*24*60*60:
                 reaction, mod = await self.send_reaction_check_cross(message)
                 member_channel = self.bot.get_channel(info["text_channel_id"])
                 if reaction == "Done":
                     command_channel_id = await self.config.guild(message.guild).membership_command_channel_id()
                     role = get(message.guild.roles, id=info["role"])
-                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}\n{member_channel.mention} 會員頻道權限通過，還請確認。\n處理人：{mod.mention}")
-                    
+                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
+                                                          embed=discord.Embed(
+                                                              color=0x00ff3d,
+                                                              title=_(
+                                                                  "✅會員頻道權限通過"),
+                                                              description="\n 請確認看得見會員頻道：" + member_channel.mention + "\n 處理人：" + mod.mention,
+                                                          ))
+
                     if self.temp_role:
                         ctx = await self.bot.get_context(message)
                         channel = self.bot.get_channel(command_channel_id)
@@ -1097,30 +1122,49 @@ class StarStream(commands.Cog):
                             return
                         await self.temp_role.add(ctx, channel, message.author, role, timedelta(seconds=diff))
                     else:
-                        await self.send_message_by_channel_id(command_channel_id, "沒有設置 temp_role bot")
-                        
+                        await self.send_message_by_channel_id(command_channel_id, "",
+                                                              embed=discord.Embed(
+                                                                  color=0xff0000,
+                                                                  title=_(
+                                                                      "沒有設置 temp_role bot"),
+                                                              ))
+
                     # await self.send_message_by_channel_id(command_channel_id, f"?temprole {message.author.id} {info['date']} {role}")
                     return
                 elif reaction == "Cancel":
-                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}\n{member_channel.mention} 會員頻道審核權限未通過，還請重新傳送審核資料。\n處理人：{mod.mention}")
-                    return
-        await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}\n會員頻道審核權限未通過，還請重新傳送審核資料。\n此為機器人自動偵測。")
 
-    async def send_message_by_channel_id(self, channel_id, msg):
+                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
+                                                          embed=discord.Embed(
+                                                              color=0xff0000,
+                                                              title=_(
+                                                                  "❌會員頻道審核未通過"),
+                                                              description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 處理人：" + mod.mention,
+                                                          ))
+                    print({mod.mention})
+                    return
+        await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
+                                              embed=discord.Embed(
+                                                  color=0xff0000,
+                                                  title=_("❌會員頻道審核未通過"),
+                                                  description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 此為機器人自動偵測。",
+                                              ))
+
+    async def send_message_by_channel_id(self, channel_id, msg, embed):
         channel = self.bot.get_channel(channel_id)
         if not channel:
             return
         if await self.bot.cog_disabled_in_guild(self, channel.guild):
             return
-        await channel.send(msg)
+        await channel.send(msg, embed=embed)
 
     async def send_reaction_check_cross(self, message):
         # mods = list(set([role.members for role in await self.bot.get_mod_roles(message.guild)]))
         emojis = {
-            "\N{WHITE HEAVY CHECK MARK}": "Done", 
+            "\N{WHITE HEAVY CHECK MARK}": "Done",
             "\N{NEGATIVE SQUARED CROSS MARK}": "Cancel"
         }
         emojis_list = list(emojis.keys())
+
         async def add_reaction():
             with contextlib.suppress(discord.NotFound):
                 for emoji in emojis_list:
@@ -1131,7 +1175,7 @@ class StarStream(commands.Cog):
                 (r, u) = await self.bot.wait_for(
                     "reaction_add",
                     check=ReactionPredicate.with_emojis(emojis_list, message),
-                    timeout=86400 # 1 天
+                    timeout=86400  # 1 天
                 )
                 if await is_mod_or_superior(self.bot, u):
                     break
@@ -1141,23 +1185,28 @@ class StarStream(commands.Cog):
             task.cancel()
         await self._clear_react(message, emojis_list)
         return emojis[r.emoji], u
-    
+
+
 def getTimeType(date_str):
     if date_str == "":
         return datetime.now(timezone.utc)
     return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
 
+
 def getTimeStamp(date):
     return int(time.mktime(date.timetuple()))
 
+
 def getDiscordTimeStamp(date):
     return "<t:{}:f>".format(getTimeStamp(date)-time.timezone)
+
 
 def datetime_plus_8_to_0_isoformat(date):
     date = parse_time(date)
     timestamp = getTimeStamp(date) + time.timezone
     date = datetime.fromtimestamp(timestamp)
     return date.isoformat()
+
 
 def get_membership_info(messsage, membership_names: List, roles: List, text_channel_ids: List):
     date = None
@@ -1186,4 +1235,3 @@ def get_membership_info(messsage, membership_names: List, roles: List, text_chan
             "text_channel_id": text_channel_ids[idx],
         }
     return None
-
