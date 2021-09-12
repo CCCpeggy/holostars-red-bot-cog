@@ -402,7 +402,7 @@ class StarStream(commands.Cog):
         message = await ctx.send("test")
         emojis = {
             "\N{WHITE HEAVY CHECK MARK}": "Done",
-            "\N{NEGATIVE SQUARED CROSS MARK}": "Cancel"
+            "\N{LATIN CAPITAL LETTER X}": "Cancel"
         }
         selected = {}
         for stream in self.streams:
@@ -1107,9 +1107,9 @@ class StarStream(commands.Cog):
                     role = get(message.guild.roles, id=info["role"])
                     await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
                                                           embed=discord.Embed(
-                                                              color=0x00ff3d,
+                                                              color=0x77b255,
                                                               title=_(
-                                                                  "✅會員頻道權限通過"),
+                                                                  "✅會員頻道權限審核通過"),
                                                               description= "增加身分組：" + role.mention + "\n 請確認看得見會員頻道：" + member_channel.mention + "\n 處理人：" + mod.mention,
                                                           ))
 
@@ -1137,7 +1137,7 @@ class StarStream(commands.Cog):
                                                           embed=discord.Embed(
                                                               color=0xff0000,
                                                               title=_(
-                                                                  "❌會員頻道審核未通過"),
+                                                                  "❌會員頻道權限審核未通過"),
                                                               description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 處理人：" + mod.mention,
                                                           ))
                     print({mod.mention})
@@ -1145,7 +1145,7 @@ class StarStream(commands.Cog):
         await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
                                               embed=discord.Embed(
                                                   color=0xff0000,
-                                                  title=_("❌會員頻道審核未通過"),
+                                                  title=_("❌會員頻道權限審核未通過"),
                                                   description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 此為機器人自動偵測。",
                                               ))
 
