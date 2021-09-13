@@ -1080,6 +1080,8 @@ class StarStream(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         await self.bot.wait_until_ready()
+        if message.content == "":
+            return
         await self.audit_membership(message)
 
     async def audit_membership(self, message):
@@ -1110,7 +1112,7 @@ class StarStream(commands.Cog):
                         embed=discord.Embed(
                             color=0x77b255,
                             title=_("✅會員頻道權限審核通過"),
-                            description=f"增加身分組：{role.mention}\n 請確認看得見會員頻道：{member_channel.mention}\n 處理人：{mod.mention},
+                            description=f"增加身分組：{role.mention}\n 請確認看得見會員頻道：{member_channel.mention}\n 處理人：{mod.mention}",
                         )
                     )
 
@@ -1122,7 +1124,7 @@ class StarStream(commands.Cog):
                         if await self.bot.cog_disabled_in_guild(self, channel.guild):
                             return
                         await self.temp_role.add(
-                            ctx, channel, message.author,
+                            ctx, mod, channel, message.author,
                             role, timedelta(seconds=diff)
                         )
                     else:
@@ -1138,21 +1140,24 @@ class StarStream(commands.Cog):
                     return
                 elif reaction == "Cancel":
 
-                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
-                                                          embed=discord.Embed(
-                                                              color=0xff0000,
-                                                              title=_(
-                                                                  "❌會員頻道權限審核未通過"),
-                                                              description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 處理人：" + mod.mention,
-                                                          ))
+                    await self.send_message_by_channel_id(
+                        result_channel_id, f"{message.author.mention}",
+                        embed=discord.Embed(
+                            color=0xff0000,
+                            title=_("❌會員頻道權限審核未通過"),
+                            description=f"請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 處理人：{mod.mention}",
+                        )
+                    )
                     print({mod.mention})
                     return
-        await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
-                                              embed=discord.Embed(
-                                                  color=0xff0000,
-                                                  title=_("❌會員頻道權限審核未通過"),
-                                                  description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 此為機器人自動偵測。",
-                                              ))
+        await self.send_message_by_channel_id(
+            result_channel_id, f"{message.author.mention}",
+            embed=discord.Embed(
+                color=0xff0000,
+                title=_("❌會員頻道權限審核未通過"),
+                description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 此為機器人自動偵測。",
+            )
+        )
 
     async def send_message_by_channel_id(self, channel_id, msg, embed):
         channel = self.bot.get_channel(channel_id)

@@ -72,7 +72,7 @@ class TempRole(commands.Cog):
     async def _temp_role(self, ctx: commands.Context):
         """TempRole Commands"""
 
-    async def add(self, ctx: commands.Context, cmd_channel: discord.TextChannel, user: discord.Member, role: discord.Role, time: TimeConverter):
+    async def add(self, ctx: commands.Context, mod: discord.Member, cmd_channel: discord.TextChannel, user: discord.Member, role: discord.Role, time: TimeConverter):
         """
         Assign a temporary role to expire after a time.
 
@@ -81,7 +81,7 @@ class TempRole(commands.Cog):
         # if role in user.roles:
         #     return await cmd_channel.send(f"That user already has {role.mention}!")
 
-        if role >= ctx.guild.me.top_role or (role >= ctx.author.top_role and ctx.author != ctx.guild.owner):
+        if role >= ctx.guild.me.top_role or (role >= mod.top_role and ctx.author != ctx.guild.owner):
             return await cmd_channel.send("That role cannot be assigned due to the Discord role hierarchy!")
 
         async with self.config.member(user).temp_roles() as user_tr:
