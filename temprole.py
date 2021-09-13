@@ -345,7 +345,9 @@ class TempRole(commands.Cog):
         if seconds_left > 0:
             await asyncio.sleep(seconds_left)
         user_tr = await self.config.member(member).temp_roles()
-        if role in member.roles and str(role.id) in user_tr:
+        # 更新會員資料
+        member = self.bot.get_guild(member.guild.id).get_member(member.id)
+        if member and role in member.roles and str(role.id) in user_tr:
             if (datetime.fromtimestamp(user_tr[str(role.id)]) - datetime.now()).total_seconds() <= 0:
                 await self._tr_end(member, role)
 
