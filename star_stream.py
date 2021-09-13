@@ -1105,13 +1105,14 @@ class StarStream(commands.Cog):
                 if reaction == "Done":
                     command_channel_id = await self.config.guild(message.guild).membership_command_channel_id()
                     role = get(message.guild.roles, id=info["role"])
-                    await self.send_message_by_channel_id(result_channel_id, f"{message.author.mention}",
-                                                          embed=discord.Embed(
-                                                              color=0x77b255,
-                                                              title=_(
-                                                                  "✅會員頻道權限審核通過"),
-                                                              description= "增加身分組：" + role.mention + "\n 請確認看得見會員頻道：" + member_channel.mention + "\n 處理人：" + mod.mention,
-                                                          ))
+                    await self.send_message_by_channel_id(
+                        result_channel_id, f"{message.author.mention}",
+                        embed=discord.Embed(
+                            color=0x77b255,
+                            title=_("✅會員頻道權限審核通過"),
+                            description=f"增加身分組：{role.mention}\n 請確認看得見會員頻道：{member_channel.mention}\n 處理人：{mod.mention},
+                        )
+                    )
 
                     if self.temp_role:
                         ctx = await self.bot.get_context(message)
@@ -1120,14 +1121,18 @@ class StarStream(commands.Cog):
                             return
                         if await self.bot.cog_disabled_in_guild(self, channel.guild):
                             return
-                        await self.temp_role.add(ctx, channel, message.author, role, timedelta(seconds=diff))
+                        await self.temp_role.add(
+                            ctx, channel, message.author,
+                            role, timedelta(seconds=diff)
+                        )
                     else:
-                        await self.send_message_by_channel_id(command_channel_id, "",
-                                                              embed=discord.Embed(
-                                                                  color=0xff0000,
-                                                                  title=_(
-                                                                      "沒有設置 temp_role bot"),
-                                                              ))
+                        await self.send_message_by_channel_id(
+                            command_channel_id, "",
+                            embed=discord.Embed(
+                                color=0xff0000,
+                                title=_("沒有設置 temp_role bot"),
+                            )
+                        )
 
                     # await self.send_message_by_channel_id(command_channel_id, f"?temprole {message.author.id} {info['date']} {role}")
                     return
@@ -1208,13 +1213,14 @@ def datetime_plus_8_to_0_isoformat(date):
     return date.isoformat()
 
 
-def get_membership_info(messsage, membership_names: List, roles: List, text_channel_ids: List):
+def get_membership_info(message, membership_names: List, roles: List, text_channel_ids: List):
     date = None
     idx = -1
-    for s in messsage.split('\n'):
-        tmp = s.split('：')
+    message = strQ2B(message)
+    for s in message.split('\n'):
+        tmp = s.split(':')
         if len(tmp) != 2:
-            return None
+            continue
         key, value = tmp
         if key == "頻道":
             value = value.lower()
@@ -1222,10 +1228,12 @@ def get_membership_info(messsage, membership_names: List, roles: List, text_chan
                 return None
             idx = membership_names.index(value)
         elif key == "日期":
-            try:
-                date = datetime.strptime(value, "%Y/%m/%d")
-            except:
-                return None
+            for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%Y.%m.%d'):
+                try:
+                    date = datetime.strptime(value, fmt)
+                    break
+                except:
+                    pass
             # date = date.strftime("%Y/%m/%d %H:%M")
     if date and idx >= 0:
         return {
@@ -1235,3 +1243,22 @@ def get_membership_info(messsage, membership_names: List, roles: List, text_chan
             "text_channel_id": text_channel_ids[idx],
         }
     return None
+
+def strQ2B(ustring):
+    """把字串全形轉半形"""
+    rstring = ""
+    for uchar in ustring:
+        inside_code=ord(uchar)
+        if inside_code==0x3000:
+            rstring += " "
+        elif inside_code > 65281 and inside_code < 65374 :
+            rstring += chr(inside_code - 0xfee0)
+        else:
+            rstring += uchar
+    return rstring
+
+
+strQ2B('ｔｅｓｔ')
+strQ2B('　')
+strQ2B('test')
+strQ2B('字串全')
