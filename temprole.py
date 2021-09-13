@@ -34,8 +34,8 @@ if typing.TYPE_CHECKING:
     TimeConverter = timedelta
 else:
     TimeConverter = commands.converter.TimedeltaConverter(
-        minimum=timedelta(hours=1),
-        allowed_units=["weeks", "days", "hours"],
+        minimum=timedelta(seconds=1),
+        allowed_units=["seconds", "minutes", "weeks", "days", "hours"],
         default_unit="days"
     )
 
@@ -344,7 +344,10 @@ class TempRole(commands.Cog):
         seconds_left = (datetime.fromtimestamp(end_timestamp) - datetime.now()).total_seconds()
         if seconds_left > 0:
             await asyncio.sleep(seconds_left)
-        await self._tr_end(member, role)
+        user_tr = await self.config.member(member).temp_roles()
+        if role in member.roles and str(role.id) in user_tr:
+            if (datetime.fromtimestamp(user_tr[str(role.id)]) - datetime.now()).total_seconds() <= 0:
+                await self._tr_end(member, role)
 
     async def _tr_end(self, member: discord.Member, role: discord.Role, admin=None):
         async with self.config.member(member).temp_roles() as tr_entries:
