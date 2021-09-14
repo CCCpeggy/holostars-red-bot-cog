@@ -1157,11 +1157,11 @@ class StarStream(commands.Cog):
         except NoDate:
             error_name = "沒有提供日期"
         except NoChannelName:
-            error_name = "沒有頻道名稱"
+            error_name = "沒有提供頻道名稱"
         except FutureDate:
-            error_name = "此日期超過一個月"
+            error_name = "提供的日期超過一個月，請提供圖片上的**下一個帳單日期**"
         except PassDate:
-            error_name = "此日期為過去的日期"
+            error_name = "此日期為過去日期，請提供圖片上的**下一個帳單日期**"
         except ModRefused:
             handler_msg = f"處理人：{mod.mention}"
             pass
