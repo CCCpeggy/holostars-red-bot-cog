@@ -22,6 +22,18 @@ from .errors import (
     YoutubeQuotaExceeded,
 )
 
+from .errors import (
+    WrongDateFormat,
+    WrongChannelName,
+    NoDate,
+    NoChannelName,
+    FutureDate,
+    PassDate,
+    ModRefused,
+    ReactionTimeout,
+    ServerError,
+)
+
 import re
 import json
 import time
@@ -644,6 +656,7 @@ class StarStream(commands.Cog):
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
+        return
         to_remove = []
         for stream in self.streams:
             try:
@@ -1089,76 +1102,106 @@ class StarStream(commands.Cog):
             return
         if not (await self.config.guild(message.guild).membership_enable()):
             return
+        # TODO: 在 initial 時設給 self
         input_channel_id = await self.config.guild(message.guild).membership_input_channel_id()
-        result_channel_id = await self.config.guild(message.guild).membership_result_channel_id()
         if message.channel.id != input_channel_id:
             return
+        command_channel_id = await self.config.guild(message.guild).membership_command_channel_id()
+        result_channel_id = await self.config.guild(message.guild).membership_result_channel_id()
         names = await self.config.guild(message.guild).membership_membership_names()
         roles = await self.config.guild(message.guild).membership_membership_roles()
         text_channel_ids = await self.config.guild(message.guild).membership_membership_text_channel_ids()
-        info = get_membership_info(
-            message.content, names, roles, text_channel_ids)
-        if info:
+        error_name = None
+        handler_msg = "此為機器人自動偵測。"
+        err_msg = """請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。
+ 有任何疑問請至 <#863343338933059594>。
+ {}"""
+
+        color=0xff0000,
+        title=_("❌會員頻道權限審核未通過")
+        try:
+            info = get_membership_info(
+                message.content, names, roles, text_channel_ids)
+       
             diff = getTimeStamp(info["date"]) - \
                 getTimeStamp(datetime.now(timezone.utc))
-            if diff > 0 and diff <= 30*24*60*60:
-                reaction, mod = await self.send_reaction_check_cross(message)
-                member_channel = self.bot.get_channel(info["text_channel_id"])
-                if reaction == "Done":
-                    command_channel_id = await self.config.guild(message.guild).membership_command_channel_id()
-                    role = get(message.guild.roles, id=info["role"])
-                    await self.send_message_by_channel_id(
-                        result_channel_id, f"{message.author.mention}",
-                        embed=discord.Embed(
-                            color=0x77b255,
-                            title=_("✅會員頻道權限審核通過"),
-                            description=f"增加身分組：{role.mention}\n 請確認看得見會員頻道：{member_channel.mention}\n 處理人：{mod.mention}",
-                        )
-                    )
+            if diff <= 0:
+                raise PassDate
+            if diff > 31*24*60*60:
+                raise FutureDate
+            reaction, mod = await self.send_reaction_check_cross(message)
+            member_channel = self.bot.get_channel(info["text_channel_id"])
+            if reaction == "Done":
+                role = get(message.guild.roles, id=info["role"])
 
-                    if self.temp_role:
-                        ctx = await self.bot.get_context(message)
-                        channel = self.bot.get_channel(command_channel_id)
-                        if not channel:
-                            return
-                        if await self.bot.cog_disabled_in_guild(self, channel.guild):
-                            return
-                        await self.temp_role.add(
-                            ctx, mod, channel, message.author,
-                            role, timedelta(seconds=diff)
-                        )
-                    else:
-                        await self.send_message_by_channel_id(
-                            command_channel_id, "",
-                            embed=discord.Embed(
-                                color=0xff0000,
-                                title=_("沒有設置 temp_role bot"),
-                            )
-                        )
+                # success_msg = success_msg.format(role.mention, member_channel.mention, mod.mention)
+                ctx = await self.bot.get_context(message)
+                channel = self.bot.get_channel(command_channel_id)
+                if not channel:
+                    raise ServerError
+                if await self.bot.cog_disabled_in_guild(self, channel.guild):
+                    raise ServerError
+                await self.temp_role.add(
+                    ctx, mod, channel, message.author,
+                    role, timedelta(seconds=diff)
+                )
+                # await self.send_message_by_channel_id(command_channel_id, f"?temprole {message.author.id} {info['date']} {role}")
+            elif reaction == "Cancel":
+                raise ModRefused
+            else:
+                raise ReactionTimeout
+        except WrongDateFormat:
+            error_name = "日期格式錯誤"
+        except WrongChannelName:
+            error_name = "頻道名稱錯誤"
+        except NoDate:
+            error_name = "沒有提供日期"
+        except NoChannelName:
+            error_name = "沒有頻道名稱"
+        except FutureDate:
+            error_name = "此日期超過一個月"
+        except PassDate:
+            error_name = "此日期為過去的日期"
+        except ModRefused:
+            handler_msg = f"處理人：{mod.mention}"
+            pass
+        except ReactionTimeout:
+            error_name = "管理員未在一天內審核"
+        except ServerError:
+            error_name = "伺服器錯誤"
+            await self.send_message_by_channel_id(
+                result_channel_id, f"{message.author.mention}",
+                embed=discord.Embed(
+                    color=0x77b255,
+                    title=_("伺服器錯誤"),
+                    description="""伺服器錯誤，請稍後一下""",
+                )
+            )
+        else:
+            await self.send_message_by_channel_id(
+                result_channel_id, f"{message.author.mention}",
+                embed=discord.Embed(
+                    color=0x77b255,
+                    title=_("✅會員頻道權限審核通過"),
+                    description=f"""增加身分組：{role.mention}
+ 請確認看得見會員頻道：{member_channel.mention}
+ 處理人：{mod.mention}""",
+                )
+            )
+            return 
 
-                    # await self.send_message_by_channel_id(command_channel_id, f"?temprole {message.author.id} {info['date']} {role}")
-                    return
-                elif reaction == "Cancel":
-
-                    await self.send_message_by_channel_id(
-                        result_channel_id, f"{message.author.mention}",
-                        embed=discord.Embed(
-                            color=0xff0000,
-                            title=_("❌會員頻道權限審核未通過"),
-                            description=f"請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 處理人：{mod.mention}",
-                        )
-                    )
-                    print({mod.mention})
-                    return
+        err_msg = err_msg.format(handler_msg)
+        if error_name:
+            err_msg = f"**{error_name}**，{err_msg}"
         await self.send_message_by_channel_id(
             result_channel_id, f"{message.author.mention}",
             embed=discord.Embed(
                 color=0xff0000,
                 title=_("❌會員頻道權限審核未通過"),
-                description="請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。\n 有任何疑問請至 <#863343338933059594>。\n 此為機器人自動偵測。",
+                description= err_msg,
             )
         )
-
+       
     async def send_message_by_channel_id(self, channel_id, msg, embed):
         channel = self.bot.get_channel(channel_id)
         if not channel:
@@ -1188,7 +1231,8 @@ class StarStream(commands.Cog):
                     timeout=86400  # 1 天
                 )
                 if await is_mod_or_superior(self.bot, u):
-                    break
+                    if u != message.author or await self.bot.is_owner(u):
+                        break
         except asyncio.TimeoutError:
             return None, None
         if task is not None:
@@ -1221,7 +1265,7 @@ def datetime_plus_8_to_0_isoformat(date):
 def get_membership_info(message, membership_names: List, roles: List, text_channel_ids: List):
     date = None
     idx = -1
-    message = strQ2B(message)
+    message = strQ2B(message.replace(" ", ""))
     for s in message.split('\n'):
         tmp = s.split(':')
         if len(tmp) != 2:
@@ -1230,7 +1274,7 @@ def get_membership_info(message, membership_names: List, roles: List, text_chann
         if key == "頻道":
             value = value.lower()
             if value not in membership_names:
-                return None
+                raise WrongChannelName
             idx = membership_names.index(value)
         elif key == "日期":
             for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%Y.%m.%d'):
@@ -1239,15 +1283,18 @@ def get_membership_info(message, membership_names: List, roles: List, text_chann
                     break
                 except:
                     pass
-            # date = date.strftime("%Y/%m/%d %H:%M")
-    if date and idx >= 0:
-        return {
-            "date": date,
-            "membership_name": membership_names[idx],
-            "role": roles[idx],
-            "text_channel_id": text_channel_ids[idx],
-        }
-    return None
+            if not date:
+                raise WrongDateFormat
+    if not date:
+        raise NoDate
+    if idx < 0:
+        raise NoChannelName
+    return {
+        "date": date,
+        "membership_name": membership_names[idx],
+        "role": roles[idx],
+        "text_channel_id": text_channel_ids[idx],
+    }
 
 def strQ2B(ustring):
     """把字串全形轉半形"""
@@ -1261,9 +1308,3 @@ def strQ2B(ustring):
         else:
             rstring += uchar
     return rstring
-
-
-strQ2B('ｔｅｓｔ')
-strQ2B('　')
-strQ2B('test')
-strQ2B('字串全')
