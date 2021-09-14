@@ -1133,7 +1133,16 @@ class StarStream(commands.Cog):
             member_channel = self.bot.get_channel(info["text_channel_id"])
             if reaction == "Done":
                 role = get(message.guild.roles, id=info["role"])
-
+                await self.send_message_by_channel_id(
+                    result_channel_id, f"{message.author.mention}",
+                    embed=discord.Embed(
+                        color=0x77b255,
+                        title=_("✅會員頻道權限審核通過"),
+                        description=f"""增加身分組：{role.mention}
+ 請確認看得見會員頻道：{member_channel.mention}
+ 處理人：{mod.mention}""",
+                    )
+                )
                 # success_msg = success_msg.format(role.mention, member_channel.mention, mod.mention)
                 ctx = await self.bot.get_context(message)
                 channel = self.bot.get_channel(command_channel_id)
@@ -1178,16 +1187,16 @@ class StarStream(commands.Cog):
                 )
             )
         else:
-            await self.send_message_by_channel_id(
-                result_channel_id, f"{message.author.mention}",
-                embed=discord.Embed(
-                    color=0x77b255,
-                    title=_("✅會員頻道權限審核通過"),
-                    description=f"""增加身分組：{role.mention}
- 請確認看得見會員頻道：{member_channel.mention}
- 處理人：{mod.mention}""",
-                )
-            )
+#             await self.send_message_by_channel_id(
+#                 result_channel_id, f"{message.author.mention}",
+#                 embed=discord.Embed(
+#                     color=0x77b255,
+#                     title=_("✅會員頻道權限審核通過"),
+#                     description=f"""增加身分組：{role.mention}
+#  請確認看得見會員頻道：{member_channel.mention}
+#  處理人：{mod.mention}""",
+#                 )
+#             )
             return 
 
         err_msg = err_msg.format(handler_msg)
