@@ -700,7 +700,7 @@ class StarStream(commands.Cog):
                                 )
                                 stream.scheduled_sent.append(video_id)
                                 changed = True
-                            elif not streaming_data and stream.chat_channel_id:
+                            elif (not streaming_data or streaming_data == scheduled_data) and stream.chat_channel_id:
                                 await self.send_scheduled(
                                     stream.chat_channel_id, info=info, pin=True, content=content
                                 )
