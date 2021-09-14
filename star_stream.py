@@ -1265,7 +1265,7 @@ def datetime_plus_8_to_0_isoformat(date):
 def get_membership_info(message, membership_names: List, roles: List, text_channel_ids: List):
     date = None
     idx = -1
-    message = strQ2B(message.replace(" ", ""))
+    message = strQ2B(message).replace(" ", "")
     for s in message.split('\n'):
         tmp = s.split(':')
         if len(tmp) != 2:
