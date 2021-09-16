@@ -656,7 +656,6 @@ class StarStream(commands.Cog):
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
-        return
         to_remove = []
         for stream in self.streams:
             try:
