@@ -647,15 +647,20 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.is_owner()
     async def settings(self, ctx: commands.Context):
-        file_name = "settings"
         data = json.dumps(await self.config.get_raw()).encode('utf-8')
         to_write = BytesIO()
         to_write.write(data)
         to_write.seek(0)
-        await ctx.send(file=discord.File(to_write, filename=f"{file_name}.txt"))
+        await ctx.send(file=discord.File(to_write, filename=f"global_settings.json"))
+        data = json.dumps(await self.config.guild(ctx.guild).get_raw()).encode('utf-8')
+        to_write = BytesIO()
+        to_write.write(data)
+        to_write.seek(0)
+        await ctx.send(file=discord.File(to_write, filename=f"guild_settings.json"))
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
+        return
         to_remove = []
         for stream in self.streams:
             try:
