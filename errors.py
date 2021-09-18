@@ -60,3 +60,9 @@ class ReactionTimeout(TempMembershipRole):
 
 class ServerError(TempMembershipRole):
     pass
+
+class StarsServer(Exception):
+    pass
+
+class NotFound(StarsServer):
+    pass
