@@ -1019,10 +1019,12 @@ class StarStream(commands.Cog):
     async def _stars_membership_role(self, ctx: commands.Context, membership_name: str, role: discord.Role, text_channel: discord.TextChannel):
         """設定下會員所屬的名字與在頻道內對應的身分組"""
         guild = ctx.guild
-        names = await self.config.guild(guild).membership_membership_names()
-        roles = await self.config.guild(guild).membership_membership_roles()
-        text_channel_ids = await self.config.guild(guild).membership_membership_text_channel_ids()
+        names = await self.config.guild(guild).membership_names()
+        roles = await self.config.guild(guild).membership_roles()
+        text_channel_ids = await self.config.guild(guild).membership_text_channel_ids()
         membership_name = membership_name.lower()
+        for key_word in [" ", "channel", "ch", "."]:
+            membership_name = membership_name.replace(key_word, "")
         if membership_name in names:
             idx = names.index(membership_name)
             roles[idx] = role.id
@@ -1031,10 +1033,10 @@ class StarStream(commands.Cog):
             names.append(membership_name)
             roles.append(role.id)
             text_channel_ids.append(text_channel.id)
-            await self.config.guild(guild).membership_membership_names.set(names)
-        names = await self.config.guild(guild).membership_membership_names()
-        await self.config.guild(guild).membership_membership_roles.set(roles)
-        await self.config.guild(guild).membership_membership_text_channel_ids.set(text_channel_ids)
+            await self.config.guild(guild).membership_names.set(names)
+        names = await self.config.guild(guild).membership_names()
+        await self.config.guild(guild).membership_roles.set(roles)
+        await self.config.guild(guild).membership_text_channel_ids.set(text_channel_ids)
 
         await ctx.send(_(f"已設定"))
 
@@ -1056,9 +1058,9 @@ class StarStream(commands.Cog):
             return
         command_channel_id = await self.config.guild(message.guild).membership_command_channel_id()
         result_channel_id = await self.config.guild(message.guild).membership_result_channel_id()
-        names = await self.config.guild(message.guild).membership_membership_names()
-        roles = await self.config.guild(message.guild).membership_membership_roles()
-        text_channel_ids = await self.config.guild(message.guild).membership_membership_text_channel_ids()
+        names = await self.config.guild(message.guild).membership_names()
+        roles = await self.config.guild(message.guild).membership_roles()
+        text_channel_ids = await self.config.guild(message.guild).membership_text_channel_ids()
         error_name = None
         handler_msg = "此為機器人自動偵測。"
         err_msg = """請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。
@@ -1230,6 +1232,8 @@ def get_membership_info(message, membership_names: List, roles: List, text_chann
         key, value = tmp
         if key == "頻道":
             value = value.lower()
+            for key_word in [" ", "channel", "ch", "."]:
+                value = value.replace(key_word, "")
             if value not in membership_names:
                 raise WrongChannelName
             idx = membership_names.index(value)
