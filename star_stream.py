@@ -36,6 +36,7 @@ from .errors import (
     NotFound,
 )
 
+import os
 import re
 import json
 import time
