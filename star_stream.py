@@ -168,7 +168,7 @@ class StarStream(commands.Cog):
         pass
 
     @_stars_channel.command(name="set")
-    async def _channel_set(self, ctx: commands.Context, channel_name_or_id: str, mention_channel: discord.TextChannel = None, chat_channel: discord.TextChannel = None, channel_emoji: str = None):
+    async def _channel_set(self, ctx: commands.Context, channel_name_or_id: str, channel_emoji: str = None, mention_channel: discord.TextChannel = None, chat_channel: discord.TextChannel = None):
         """Set tracking YouTube channel.
 
         Use: [p]stars channel set [YT channel id | YT channel name] [mention channel] [default chat channel] [emoji]
