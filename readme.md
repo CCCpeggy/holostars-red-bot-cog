@@ -6,15 +6,11 @@
   * stream 相關功能以 [Redbot](https://github.com/Cog-Creators/Red-DiscordBot) 為雛形撰寫
   * temprole 相關功能以 [OB13-Cogs](https://github.com/Obi-Wan3/OB13-Cogs) 為雛形撰寫
   
----
-
 ## 指令列
 
 尚未更新
 
----
-
-## Message 可以用的 Tag
+### Message 可以用的 Tag
 
 ||chat|mention|scheduled|用途|
 |:---|:---:|:---:|:---:|:---|
@@ -27,8 +23,6 @@
 |`{new_line}`	    |V|V|V|下一行(也可以直接在輸入的時候換行)|
 |`{chat_channel}`	| |V| |mention 討論頻道|
 |`{next_message}`	|V| | |發在下一則訊息|
-
----
 
 ## Holostars 成員
 
