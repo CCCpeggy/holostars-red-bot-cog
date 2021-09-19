@@ -36,6 +36,7 @@ from .errors import (
     NotFound,
 )
 
+import os
 import re
 import json
 import time
@@ -472,7 +473,6 @@ class StarStream(commands.Cog):
 
         if selected != {}:
             for old_scheduled_stream in {v for v in self.scheduled_streams if scheduled_stream.text_channel_id == chat_channel.id}:
-                log.info(old_scheduled_stream)
                 self.scheduled_streams.remove(old_scheduled_stream)
             self.scheduled_streams.append(scheduled_stream)
             await ctx.send(f"#{chat_channel.name} 已設置直播，直播者有：{', '.join(scheduled_stream.channel_names)}")
@@ -533,12 +533,32 @@ class StarStream(commands.Cog):
             await ctx.send(f"沒有找到 `{video_id}`.")
 
     @stars.command(name="check")
-    # TODO: limit time
-    async def _stream_check(self, ctx: commands.Context):
+    async def _stars_check(self, ctx: commands.Context):
         """ Force to check the status of all channels and videos
         """
         await self.check_streams()
         await ctx.send(f"I have checked the status of all channels and videos.")
+
+    @stars.command(name="update")
+    @checks.is_owner()
+    async def _stars_update(self, ctx: commands.Context):
+        """ 將程式碼更新
+        需求：電腦需要安裝 git bash，且這個 cog 是 git 的資料夾
+        更新完畢後，需要重新 reload 這個 cog
+        """
+        cmd = f"cd {os.path.abspath(os.getcwd())} & git pull origin master"
+        f = os.popen(cmd, "r")
+        message = f.read()
+        log.info(f"{cmd}: {message}")
+        if "'git'" in message:
+            await ctx.send(f"沒有更新成功，可能沒有安裝 `git`，詳情請確認 log 的錯誤訊息。")
+        elif "Updating" in message:
+            await ctx.send(f"已更新到 origin master 的最新版本，請使用 reload 重新載入程式。")
+        elif "Already up to date" in message:
+            await ctx.send(f"已經是最新版本了。")
+        else:
+            await ctx.send(f"沒有更新成功，可能 `git` 設定錯誤或其他原因，詳情請確認 log 的錯誤訊息。")
+        f.close()
 
     async def _stream_alerts(self):
         await self.bot.wait_until_ready()
@@ -639,7 +659,6 @@ class StarStream(commands.Cog):
                     stream.scheduled_sent.clear()
                     stream.streaming_sent.clear()
                     stream.livestreams.clear()
-                    stream.not_livestreams.clear()
                     continue
                 except APIError as e:
                     log.error(
