@@ -39,7 +39,7 @@ class YouTubeStream():
         self.id = kwargs.pop("id", None)
         self._token = kwargs.pop("token", None)
         self._config = kwargs.pop("config")
-        self.not_livestreams: List[str] = []
+        self.not_livestreams: List[str] = kwargs.pop("not_livestreams", [])
         self.livestreams: List[str] = kwargs.pop("livestreams", [])
         self.mention: List[int] = kwargs.pop("mention", [])
 
@@ -94,9 +94,9 @@ class YouTubeStream():
         if self.livestreams:
             self.livestreams = list(dict.fromkeys(self.livestreams))
 
-        this_not_livestreams = []
         streaming_data = None
         scheduled_datas = []
+        this_not_livestreams = []
         def insert_scheduled_data(scheduled_data):
             for i in range(len(scheduled_datas)):
                 time1 = self.get_info(scheduled_datas[i])["time"]
@@ -110,7 +110,7 @@ class YouTubeStream():
                 this_not_livestreams.append(video_id)
                 log.debug(f"video_id in not_livestreams: {video_id}")
                 continue
-            log.debug(f"video_id not in not_livestreams: {video_id}")
+            log.info(video_id)
             params = {
                 "key": self._token["api_key"],
                 "id": video_id,
@@ -156,6 +156,8 @@ class YouTubeStream():
                             insert_scheduled_data(data)
                     elif video_id in self.livestreams:
                         self.livestreams.remove(video_id)
+                        this_not_livestreams.append(video_id)
+                    else:
                         this_not_livestreams.append(video_id)
         self.not_livestreams = this_not_livestreams
         if len(scheduled_datas) > 0:
