@@ -552,7 +552,7 @@ class StarStream(commands.Cog):
         # message = f.read()
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         output, error = process.communicate()
-        # log.info(f"{cmd}: {message}")
+        log.info(f"run: {cmd}")
         output = output.decode("utf-8") 
         error = error.decode("utf-8") 
         log.info(f"{output}{error}")
