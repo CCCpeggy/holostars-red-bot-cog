@@ -1120,6 +1120,8 @@ class StarStream(commands.Cog):
             return
         if len(message.embeds) == 0:
             return
+        if "待機所" not in message.embeds[0].description:
+            return
         video_id = message.embeds[0].url.split('=')[-1]
         await self._stream_add(ctx, video_id)
 
