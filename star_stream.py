@@ -300,7 +300,7 @@ class StarStream(commands.Cog):
                 msg += f" - chat channel: `#{ctx.guild.get_channel(stream.chat_channel_id)}`\n"
             if len(stream.mention) > 0:
                 roles_str = ', '.join(
-                    [f'`@{get(ctx.guild.roles, id=role_id).name}`' for role_id in stream.mention])
+                    [f'`@{get(ctx.guild.roles, id=role_id).name}`' for role_id in stream.mention if get(ctx.guild.roles, id=role_id)])
                 msg += f" - mention roles: {roles_str}\n"
             if stream.emoji:
                 emoji = self.getEmoji(ctx, stream.emoji)
@@ -407,14 +407,16 @@ class StarStream(commands.Cog):
             return
 
     @_stars_stream.command(name="set")
-    async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, description=None, change_channel_name: bool = True):
+    async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, description=None, change_channel_name: str = "none"):
+        """設定直播，大多在連動、會員直播、再非個人頻道直播時使用
+        change_channel_name: 輸入指定的修改名稱，`default` 代表使用預設的`連動頻道+emojis`，不輸入或 `none` 代表不修改
+        """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         scheduled_stream = ScheduledStream(
             _bot=self.bot, token=token, config=self.config,
             text_channel_id=chat_channel.id,
             description=description,
-            time=datetime_plus_8_to_0_isoformat(stream_time),
-            change_channel_name=change_channel_name
+            time=datetime_plus_8_to_0_isoformat(stream_time)
         )
         message = await ctx.send("請選擇連動人員，選擇完畢後請按\N{WHITE HEAVY CHECK MARK}，取消請按\N{NEGATIVE SQUARED CROSS MARK}")
         emojis = {
@@ -481,6 +483,15 @@ class StarStream(commands.Cog):
                 self.scheduled_streams.remove(old_scheduled_stream)
             self.scheduled_streams.append(scheduled_stream)
             await ctx.send(f"#{chat_channel.name} 已設置直播，直播者有：{', '.join(scheduled_stream.channel_names)}")
+
+            # 設定頻道名稱
+            if change_channel_name == None or change_channel_name == "none":
+                scheduled_stream.change_channel_name = None
+            elif change_channel_name == "default":
+                scheduled_stream.change_channel_name = f"連動頻道{''.join(list(selected.keys()))}"
+            else:
+                scheduled_stream.change_channel_name = change_channel_name
+
             await self.save_scheduled_streams()
 
     @_stars_stream.command(name="add")
@@ -724,6 +735,8 @@ class StarStream(commands.Cog):
             send_channel_id = stream.chat_channel_id
 
         send_channel = self.bot.get_channel(send_channel_id)
+        if not send_channel_id:
+            return
         # 此文字頻道發送過通知則不再發送
         if send_channel_id in sent_channel_ids and not scheduled_stream:
             # 如果原本已經發送，則刪除原訊息
@@ -765,23 +778,24 @@ class StarStream(commands.Cog):
         )
         if info["video_id"] in stream.streaming_sent:
             return False
-        mention_channel = self.bot.get_channel(stream.mention_channel_id)
-        mention_message = await self.config.guild(mention_channel.guild).mention_message()
         chat_channel_id = scheduled_stream.text_channel_id if scheduled_stream else stream.chat_channel_id
-        # 一般開播通知
         if stream.mention_channel_id:
-            await self.send_streaming(
-                streaming_data, stream.mention_channel_id,
-                is_mention=True, embed=True,
-                chat_channel_id=chat_channel_id,
-                content=mention_message,
-                scheduled_stream=scheduled_stream,
-            )
+            mention_channel = self.bot.get_channel(stream.mention_channel_id)
+            mention_message = await self.config.guild(mention_channel.guild).mention_message()
+            # 一般開播通知
+            if stream.mention_channel_id:
+                await self.send_streaming(
+                    streaming_data, stream.mention_channel_id,
+                    is_mention=True, embed=True,
+                    chat_channel_id=chat_channel_id,
+                    content=mention_message,
+                    scheduled_stream=scheduled_stream,
+                )
         # 連動直播第一個開播發其他人的開播通知
         if scheduled_stream and not scheduled_stream.streaming_sent:
             collab_mention_message = await self.config.guild(mention_channel.guild).collab_mention_message()
             for yt_channel_id in scheduled_stream.channel_ids: 
-                if yt_channel_id == stream.id:
+                if not yt_channel_id or yt_channel_id == stream.id:
                     continue
                 await self.send_streaming(
                     streaming_data,
@@ -807,7 +821,9 @@ class StarStream(commands.Cog):
         if scheduled_stream:
             scheduled_stream.streaming_sent = True
         
-    async def send_scheduled(self, channel_id, info=None, pin=False, scheduled_stream=None, content="{time}\n{description}\n{url}"):
+    async def send_scheduled(self, channel_id, info=None, pin=False, scheduled_stream=None, content=None):
+        if not content:
+            content = "{time}\n{description}\n{url}"
         channel = self.bot.get_channel(channel_id)
         if not channel or await self.bot.cog_disabled_in_guild(self, channel.guild):
             return
@@ -832,10 +848,7 @@ class StarStream(commands.Cog):
 
             # 改頻道名稱
             if scheduled_stream.change_channel_name:
-                emojis = [self.getEmoji(channel, stream.emoji)
-                          for stream in self.streams if stream.id in scheduled_stream.channel_ids]
-                emojis = [f'{e}' for e in emojis if e]
-                await channel.edit(name=f"連動頻道{''.join(emojis)}")
+                await channel.edit(name=scheduled_stream.change_channel_name)
         else:
             content = content.replace("{channel_name}", info["channel_name"])
             content = content.replace("{description}", info["title"])
@@ -856,8 +869,10 @@ class StarStream(commands.Cog):
         return ms[0]
 
     async def send_streaming(
-        self, data, channel_id, is_mention, content="{url}", embed=False, pin=False, chat_channel_id=None, scheduled_stream=None, yt_channel_id=None
+        self, data, channel_id, is_mention, content=None, embed=False, pin=False, chat_channel_id=None, scheduled_stream=None, yt_channel_id=None
     ):
+        if not content:
+            content = "{url}"
         channel = self.bot.get_channel(channel_id)
         if not channel or await self.bot.cog_disabled_in_guild(self, channel.guild):
             return
