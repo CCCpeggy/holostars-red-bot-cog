@@ -36,7 +36,6 @@ from .errors import (
     NotFound,
 )
 
-import os
 import re
 import json
 import time
@@ -45,6 +44,7 @@ import logging
 import asyncio
 import aiohttp
 import contextlib
+import subprocess
 from io import BytesIO
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
@@ -547,18 +547,29 @@ class StarStream(commands.Cog):
         更新完畢後，需要重新 reload 這個 cog
         """
         cmd = f"cd {os.path.abspath(os.getcwd())} & git pull origin master"
-        f = os.popen(cmd, "r")
-        message = f.read()
-        log.info(f"{cmd}: {message}")
-        if "'git'" in message:
-            await ctx.send(f"沒有更新成功，可能沒有安裝 `git`，詳情請確認 log 的錯誤訊息。")
-        elif "Updating" in message:
-            await ctx.send(f"已更新到 origin master 的最新版本，請使用 reload 重新載入程式。")
-        elif "Already up to date" in message:
-            await ctx.send(f"已經是最新版本了。")
-        else:
+        # f = os.popen(cmd, "r")
+        # message = f.read()
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
+        # log.info(f"{cmd}: {message}")
+        output = output.decode("utf-8") 
+        error = error.decode("utf-8") 
+        log.info(f"{output}{error}")
+        await ctx.send(f"{output}{error}")
+        try:
+            if "Aborting" in error:
+                raise Exception
+            elif "fatal" in error:
+                raise Exception
+            elif "changed" in output:
+                await ctx.send(f"已更新到 origin master 的最新版本，請使用 reload 重新載入程式。")
+            elif "Already up to date" in output:
+                await ctx.send(f"已經是最新版本了。")
+            else:
+                raise Exception
+        except:
             await ctx.send(f"沒有更新成功，可能 `git` 設定錯誤或其他原因，詳情請確認 log 的錯誤訊息。")
-        f.close()
+        # f.close()
 
     async def _stream_alerts(self):
         await self.bot.wait_until_ready()
