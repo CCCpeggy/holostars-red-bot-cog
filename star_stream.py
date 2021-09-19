@@ -668,10 +668,12 @@ class StarStream(commands.Cog):
                     log.info("Stream with name %s no longer exists", stream.name)
                     continue
                 except OfflineStream:
+                    if len(stream.livestreams) == 0:
+                        # log.info(f"{stream.name} 下線，將他的部分資料清除")
                     stream.messages.clear()
                     stream.scheduled_sent.clear()
                     stream.streaming_sent.clear()
-                    stream.livestreams.clear()
+                        # stream.livestreams.clear()
                     continue
                 except APIError as e:
                     log.error(
@@ -685,7 +687,6 @@ class StarStream(commands.Cog):
 
                     sent_channel_ids = []
                     for scheduled_data in scheduled_datas:
-                        log.info(YouTubeStream.get_info(scheduled_data)["video_id"])
                         if scheduled_data:
                             sent_channel_id = await self.process_scheduled_data(stream, scheduled_data, sent_channel_ids)
                             if sent_channel_id:
@@ -693,6 +694,8 @@ class StarStream(commands.Cog):
 
                     if streaming_data:
                         await self.process_streaming_data(stream, streaming_data)
+                # await self.save_streams()
+                # await self.save_scheduled_streams()
 
             except Exception as e:
                 log.error(
