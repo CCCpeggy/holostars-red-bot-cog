@@ -472,7 +472,6 @@ class StarStream(commands.Cog):
 
         if selected != {}:
             for old_scheduled_stream in {v for v in self.scheduled_streams if scheduled_stream.text_channel_id == chat_channel.id}:
-                log.info(old_scheduled_stream)
                 self.scheduled_streams.remove(old_scheduled_stream)
             self.scheduled_streams.append(scheduled_stream)
             await ctx.send(f"#{chat_channel.name} 已設置直播，直播者有：{', '.join(scheduled_stream.channel_names)}")
@@ -639,7 +638,6 @@ class StarStream(commands.Cog):
                     stream.scheduled_sent.clear()
                     stream.streaming_sent.clear()
                     stream.livestreams.clear()
-                    stream.not_livestreams.clear()
                     continue
                 except APIError as e:
                     log.error(
