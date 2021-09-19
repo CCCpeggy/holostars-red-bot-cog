@@ -84,6 +84,10 @@ class StarStream(commands.Cog):
         "scheduled_message": None,
         "collab_mention_message": None,
 
+        # notice_server
+        "notice_server_channel_id": None,
+        "notice_server_bot_id": 889015029377138739,
+
         # 會員審核
         "membership_input_channel_id": None,
         "membership_result_channel_id": None,
@@ -493,7 +497,7 @@ class StarStream(commands.Cog):
                 if video_id not in stream.livestreams:
                     stream.livestreams.append(video_id)
                     await self.save_streams()
-                await ctx.send(f"新增 {video_id}` 到 {stream.name}` 追蹤的直播，開播將會通知")
+                await ctx.send(f"新增 `{video_id}` 到 {stream.name}` 追蹤的直播，開播將會通知")
             else:
                 await ctx.send(f"沒有設置 `{yt_channel_id}` 的頻道")
         else:
@@ -670,9 +674,9 @@ class StarStream(commands.Cog):
                 except OfflineStream:
                     if len(stream.livestreams) == 0:
                         # log.info(f"{stream.name} 下線，將他的部分資料清除")
-                    stream.messages.clear()
-                    stream.scheduled_sent.clear()
-                    stream.streaming_sent.clear()
+                        stream.messages.clear()
+                        stream.scheduled_sent.clear()
+                        stream.streaming_sent.clear()
                         # stream.livestreams.clear()
                     continue
                 except APIError as e:
@@ -1008,6 +1012,28 @@ class StarStream(commands.Cog):
         return None
 
     # 會員審核
+    @stars.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def notice_server(self, ctx: commands.Context):
+        """偵測 Notice Server 發送的連結"""
+        pass
+
+    @notice_server.command(name='input')
+    async def _notice_server_input(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
+        """設定 Bot 輸出通知的頻道"""
+        guild = ctx.guild
+        await self.config.guild(guild).notice_server_channel_id.set(text_channel.id)
+        await ctx.send(_(f"已設定"))
+
+    @notice_server.command(name='id')
+    async def _notice_server_id(self, ctx: commands.Context, id: int):
+        """設定 Bot ID"""
+        guild = ctx.guild
+        await self.config.guild(guild).notice_server_bot_id.set(id)
+        await ctx.send(_(f"已設定"))
+
+    # 會員審核
     @stars.group(name='membership')
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
@@ -1077,10 +1103,25 @@ class StarStream(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        await self.detect_message_and_auto_add_stream(message)
         await self.bot.wait_until_ready()
         if message.content == "":
             return
         await self.audit_membership(message)
+
+    async def detect_message_and_auto_add_stream(self, message):
+        ctx = await self.bot.get_context(message)
+        guild = ctx.guild
+        channel_id = await self.config.guild(guild).notice_server_channel_id()
+        if message.channel.id != channel_id:
+            return
+        bot_id = await self.config.guild(guild).notice_server_bot_id()
+        if message.author.id != bot_id:
+            return
+        if len(message.embeds) == 0:
+            return
+        video_id = message.embeds[0].url.split('=')[-1]
+        await self._stream_add(ctx, video_id)
 
     async def audit_membership(self, message):
         if not self.config or not message or not message.guild:
