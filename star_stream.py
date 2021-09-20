@@ -601,7 +601,8 @@ class StarStream(commands.Cog):
             self,
             channel: discord.TextChannel,
             embed: discord.Embed,
-            content: str = None):
+            content: str = None,
+            pin: bool = False):
         if content == None:
             m = await channel.send(
                 None,
@@ -617,18 +618,21 @@ class StarStream(commands.Cog):
                 allowed_mentions=discord.AllowedMentions(
                     roles=True, everyone=True),
             )
-            ms = [m]
-            for i in range(1, len(content)):
-                if content[i] == "":
-                    continue
-                time.sleep(2)
-                m = await channel.send(
-                    content[i],
-                    allowed_mentions=discord.AllowedMentions(
-                        roles=True, everyone=True),
-                )
-                ms.append(m)
-            return ms
+        ms = [m]
+        for i in range(1, len(content)):
+            if content[i] == "":
+                continue
+            time.sleep(2)
+            m = await channel.send(
+                content[i],
+                allowed_mentions=discord.AllowedMentions(
+                    roles=True, everyone=True),
+            )
+            ms.append(m)
+        if pin:
+            await ms[0].pin()
+        await self.cycle_pin(channel)
+        return ms
 
     @stars.group()
     @commands.guild_only()
@@ -761,7 +765,7 @@ class StarStream(commands.Cog):
             if await self.get_message(send_channel, stream.scheduled_sent[info["video_id"]]):
                 return send_channel_id
             else:
-                log.info("沒有在 {channel.name} 找到已發送過的 message")
+                log.info(f"{info['video_id']} 沒有在 {send_channel.name} 找到已發送過的 message")
             chat_channel = self.bot.get_channel(stream.chat_channel_id)
             if await self.get_message(chat_channel, stream.scheduled_sent[info["video_id"]]):
                 return send_channel_id
@@ -866,9 +870,7 @@ class StarStream(commands.Cog):
             if ms:
                 await ms.edit(content=content)
                 return ms
-        ms = await self._send_stream_alert(channel, None, content)
-        if pin:
-            await ms[0].pin()
+        ms = await self._send_stream_alert(channel, None, content, pin)
         if scheduled_stream:
             scheduled_stream.message_id = ms[0].id
         return ms[0]
@@ -904,9 +906,7 @@ class StarStream(commands.Cog):
         )) if is_mention else ("", [])
         content = content.replace("{mention}", mention_str)
     
-        ms = await self._send_stream_alert(channel, embed, content)
-        if pin:
-            await ms[0].pin()
+        ms = await self._send_stream_alert(channel, embed, content, pin)
 
     async def get_message(self, channel, message_id):
         try:
@@ -1299,6 +1299,22 @@ class StarStream(commands.Cog):
         await self._clear_react(message, emojis_list)
         return emojis[r.emoji], u
 
+    async def cycle_pin(self, channel):
+        pins = await channel.pins()
+        log.info(f"Total pin message: {len(pins)}")
+        bot_pin_count = 0
+        unpin_count = 0
+        remain_pin = 3
+
+        for i in range(len(pins)):
+            if pins[i].author.id == 875013341007999037:
+                if bot_pin_count > remain_pin:
+                    unpin_count += 1
+                    await pins[i].unpin()
+                    await asyncio.sleep(1)
+                    log.info(f"Unpinned {pins[i].content[-11:]}")
+                bot_pin_count += 1
+        log.info(f"Unpinned {unpin_count} messages from {channel.name}")
 
 def getTimeType(date_str):
     if date_str == "":
