@@ -1134,7 +1134,7 @@ class StarStream(commands.Cog):
         if message.channel.id != channel_id:
             return
         # bot_id = await self.config.guild(message.guild).notice_server_bot_id()
-        if message.author.id != 889189088517820436:
+        if message.author.id == 875013341007999037:
             return
         if len(message.embeds) == 0:
             return
