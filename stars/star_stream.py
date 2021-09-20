@@ -580,7 +580,7 @@ class StarStream(commands.Cog):
             elif "fatal" in error:
                 raise Exception
             elif "changed" in output:
-                await ctx.send(f"已更新到 origin master 的最新版本，請使用 reload 重新載入程式。")
+                await ctx.send(f"更新到 origin master 的最新版本，請使用 reload 重新載入程式。")
             elif "Already up to date" in output:
                 await ctx.send(f"你就已經最新了，不用更新好嗎？(月嵐 ver.)")
             else:
@@ -1126,8 +1126,8 @@ class StarStream(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        await self.detect_message_and_auto_add_stream(message)
         await self.bot.wait_until_ready()
+        await self.detect_message_and_auto_add_stream(message)
         if message.content == "":
             return
         await self.audit_membership(message)
