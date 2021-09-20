@@ -757,6 +757,8 @@ class StarStream(commands.Cog):
         if info["video_id"] in stream.scheduled_sent: # TODO
             if await self.get_message(send_channel, stream.scheduled_sent[info["video_id"]]):
                 return send_channel_id
+            else:
+                log.info("沒有在 {channel.name} 找到已發送過的 message")
             chat_channel = self.bot.get_channel(stream.chat_channel_id)
             if await self.get_message(chat_channel, stream.scheduled_sent[info["video_id"]]):
                 return send_channel_id
@@ -1125,20 +1127,18 @@ class StarStream(commands.Cog):
         await self.audit_membership(message)
 
     async def detect_message_and_auto_add_stream(self, message):
-        ctx = await self.bot.get_context(message)
-        guild = ctx.guild
-        channel_id = await self.config.guild(guild).notice_server_channel_id()
+        channel_id = await self.config.guild(message.guild).notice_server_channel_id()
         if message.channel.id != channel_id:
             return
-        bot_id = await self.config.guild(guild).notice_server_bot_id()
-        if message.author.id != bot_id:
+        # bot_id = await self.config.guild(message.guild).notice_server_bot_id()
+        if message.author.id != 889189088517820436:
             return
         if len(message.embeds) == 0:
             return
         if "待機所" not in message.embeds[0].description:
             return
         video_id = message.embeds[0].url.split('=')[-1]
-        await self._stream_add(ctx, video_id)
+        await self._stream_add(message.channel, video_id)
 
     async def audit_membership(self, message):
         if not self.config or not message or not message.guild:
@@ -1284,7 +1284,12 @@ class StarStream(commands.Cog):
                 )
                 if await is_mod_or_superior(self.bot, u):
                     if u != message.author or await self.bot.is_owner(u):
+                        log.info(f"{u.id} 有權限" )
                         break
+                    else:
+                        log.info(f"{u.id} 對 {message.author.id} 的審核做出回應，但權限不符合" )
+                else:
+                    log.info(f"{u.id} 不是 mode 或 superior" )
         except asyncio.TimeoutError:
             return None, None
         if task is not None:
