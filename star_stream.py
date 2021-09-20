@@ -63,9 +63,10 @@ youtube_url_format_3 = "https://youtu.be/{}"
 
 @cog_i18n(_)
 class StarStream(commands.Cog):
-    """Streaming bot for Holostars Chinese Fan Server.
-
-    It will check YouTube stream and send notification.
+    """這個 Cog 是為了 Holostars中文粉絲群 [link: https://discord.gg/h8ZVAJ4nAq].
+    它擁有以下的功能
+    * 偵測直播並發布三種通知：待機台、開播通知、開播設置指令
+    * 審核會員的機器人
     """
 
     global_defaults = {
@@ -157,21 +158,23 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def stars(self, ctx: commands.Context):
-        """Manage holostars discord server."""
+        """Holostars中文粉絲群 所訂製的"""
         pass
 
     @stars.group(name='channel')
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def _stars_channel(self, ctx: commands.Context):
-        """Manage members' channel settings."""
+        """需要偵測的 YouTube 頻道"""
         pass
 
     @_stars_channel.command(name="set")
     async def _channel_set(self, ctx: commands.Context, channel_name_or_id: str, channel_emoji: str = None, mention_channel: discord.TextChannel = None, chat_channel: discord.TextChannel = None):
-        """Set tracking YouTube channel.
-
-        Use: [p]stars channel set [YT channel id | YT channel name] [mention channel] [default chat channel] [emoji]
+        """設定需要偵測的 YouTube 頻道
+        channel_name_or_id: YT 頻道 URL 上的 `ID ` 或 `名字`， https://www.youtube.com/channel/xxxxxx 的 xxxxxx
+        channel_emoji: 頻道所代表的 emoji
+        mention_channel: 要發送開播通知的文字頻道 [選填]，沒有填則不會發送相關訊息
+        chat_channel: 直播討論的文字頻道 [選填]，沒有填則不會發送相關訊息
         """
         # if str(_emoji) == emoji for _emoji in message.guild.emojis:
         if channel_emoji:
@@ -185,7 +188,7 @@ class StarStream(commands.Cog):
                 return None
             channel_emoji = get_emoji_name(channel_emoji)
             if not channel_emoji:
-                await ctx.send("Emoji is not corrent")
+                await ctx.send("emoji 不正確，請確認參數是否填對順序，如正確請更換 emoji。")
                 return
         stream = self.get_stream(channel_name_or_id)
         chat_channel_id = chat_channel.id if chat_channel else None
@@ -233,11 +236,7 @@ class StarStream(commands.Cog):
                     return
                 # add stream
                 self.streams.append(stream)
-                await ctx.send(
-                    _(
-                        "I'll now send a notification in this channel when {stream.name} is live."
-                    ).format(stream=stream)
-                )
+                await ctx.send(f"當 `{stream.name}` 開播時，將會發送通知。")
 
         else:
             # update stream
@@ -250,7 +249,7 @@ class StarStream(commands.Cog):
             self.streams.append(stream)
             await ctx.send(
                 _(
-                    "I have already updated {stream.name} settings."
+                    "更新 `{stream.name}` 的設置了."
                 ).format(stream=stream)
             )
 
@@ -258,14 +257,11 @@ class StarStream(commands.Cog):
 
     @_stars_channel.command(name="unset")
     async def _channel_unset(self, ctx: commands.Context, channel_name_or_id_or_all: str):
-        """Unset tracking YouTube channel.
-
-        Use: [p]stars channel unset [YT channel id | YT channel name | all]
+        """取消原有設定需要偵測的 YouTube 頻道
+        channel_name_or_id: YT 頻道 URL 上的 `ID ` 或 `名字`， https://www.youtube.com/channel/xxxxxx 的 xxxxxx
         """
         async def send_remove_message(stream):
-            await ctx.send(
-                f"I won't send notifications about {stream.name} in this channel anymore."
-            )
+            await ctx.send(f"不會再發 `{stream.name}` 的通知。")
         try:   
             if channel_name_or_id_or_all == "all":
                 for stream in self.streams:
@@ -289,7 +285,7 @@ class StarStream(commands.Cog):
         msg = _("Active alerts:\n\n")
 
         if len(self.streams) == 0:
-            await ctx.send(_("There are no active alerts in this server."))
+            await ctx.send(_("沒有任何設定的 YT 頻道。"))
             return
 
         for stream in self.streams:
@@ -318,7 +314,7 @@ class StarStream(commands.Cog):
     @starsset.command(name="timer")
     @checks.is_owner()
     async def _starsset_refresh_timer(self, ctx: commands.Context, refresh_time: int):
-        """Set stream check refresh time."""
+        """設定偵測頻道狀態的間隔時間"""
         if refresh_time < 60:
             return await ctx.send(_("You cannot set the refresh timer to less than 60 seconds"))
 
@@ -355,8 +351,9 @@ class StarStream(commands.Cog):
 
     @_stars_channel.command(name="mention")
     async def _stars_mention(self, ctx: commands.Context, yt_channel_id_or_name: str, role: discord.Role):
-        """Set mention role in each channel
-        Use stars mention [channel id | channel name] [role]
+        """設置 YT 頻道開播時要提及的身分組
+        yt_channel_id_or_name: YT 頻道 URL 上的 `ID ` 或 `名字`， https://www.youtube.com/channel/xxxxxx 的 xxxxxx
+        role: 要提及的身分組
         """
         stream = self.get_stream(yt_channel_id_or_name)
         if not stream:
@@ -385,7 +382,7 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def _stars_stream(self, ctx: commands.Context):
-        """Mange stream
+        """直播相關的
         """
 
     async def _clear_react(
@@ -409,6 +406,8 @@ class StarStream(commands.Cog):
     @_stars_stream.command(name="set")
     async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, description=None, change_channel_name: str = "none"):
         """設定直播，大多在連動、會員直播、再非個人頻道直播時使用
+        chat_channel: 討論的頻道
+        stream_time: 直播的時間，輸入為 GMT+8 的時間
         change_channel_name: 輸入指定的修改名稱，`default` 代表使用預設的`連動頻道+emojis`，不輸入或 `none` 代表不修改
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
@@ -495,10 +494,9 @@ class StarStream(commands.Cog):
             await self.save_scheduled_streams()
 
     @_stars_stream.command(name="add")
-    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
-        """ Add stream
-        If not assign **chat channel**, it will set by yotube channel settings.
-        Use: [p]stars stream add [YT video id] <[chat channel]>
+    async def _stream_add(self, ctx: commands.Context, video_id: str):#, chat_channel: discord.TextChannel = None):
+        """ 手動加入未偵測到的影片
+        video_id: 要加入的連結
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         yt_channel_id = await get_video_belong_channel(token, video_id)
@@ -514,22 +512,22 @@ class StarStream(commands.Cog):
         else:
             await ctx.send(f"沒有找到 `{video_id}`.")
 
-        if chat_channel:
-            scheduled_stream = self.get_scheduled_stream(
-                text_channel_id=chat_channel.id)
-            if scheduled_stream:
-                if stream.id in scheduled_stream.channel_ids:
-                    idx = scheduled_stream.channel_ids.index(stream.id)
-                    scheduled_stream.video_ids[idx] = video_id
-                else:
-                    await ctx.send(f"{chat_channel}` 沒有設定這個頻道")
-            else:
-                await ctx.send(f"{chat_channel}` 沒有設定的直播")
+        # if chat_channel:
+        #     scheduled_stream = self.get_scheduled_stream(
+        #         text_channel_id=chat_channel.id)
+        #     if scheduled_stream:
+        #         if stream.id in scheduled_stream.channel_ids:
+        #             idx = scheduled_stream.channel_ids.index(stream.id)
+        #             scheduled_stream.video_ids[idx] = video_id
+        #         else:
+        #             await ctx.send(f"{chat_channel}` 沒有設定這個頻道")
+        #     else:
+        #         await ctx.send(f"{chat_channel}` 沒有設定的直播")
 
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
         """ 重新發送通知
-        不管之前是否發送過訊息，當下次偵測的時候，會重新發送通知
+        不管之前是否發送過訊息，當下次偵測的時候，會重新發送通知，但原通知不會刪除 ( 因為我懶，有需要請跟我說，又或是有一天這個功能就會蹦出來了
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         yt_channel_id = await get_video_belong_channel(token, video_id)
@@ -550,7 +548,7 @@ class StarStream(commands.Cog):
 
     @stars.command(name="check")
     async def _stars_check(self, ctx: commands.Context):
-        """ Force to check the status of all channels and videos
+        """ 強制偵測目前直播狀態
         """
         await self.check_streams()
         await ctx.send(f"I have checked the status of all channels and videos.")
@@ -638,29 +636,33 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def message(self, ctx: commands.Context):
-        """Manage custom messages for stream alerts."""
+        """設置各個通知的 message 格式，支援的 tag 請看：https://github.com/CCCpeggy/holostars-red-bot-cog#message-%E5%8F%AF%E4%BB%A5%E7%94%A8%E7%9A%84-tag"""
         pass
 
     @message.command(name='chat')
     async def _message_chat(self, ctx: commands.Context, *, message: str):
+        """設置開播時討論區要發送的訊息，原設計用於下開播相關指令，支援的 tag 請看：https://github.com/CCCpeggy/holostars-red-bot-cog#message-%E5%8F%AF%E4%BB%A5%E7%94%A8%E7%9A%84-tag"""
         guild = ctx.guild
         await self.config.guild(guild).chat_message.set(message)
         await ctx.send(_("Stream alert message set!"))
 
     @message.command(name='mention')
     async def _message_mention(self, ctx: commands.Context, *, message: str):
+        """設置開播時通知身分組的訊息，支援的 tag 請看：https://github.com/CCCpeggy/holostars-red-bot-cog#message-%E5%8F%AF%E4%BB%A5%E7%94%A8%E7%9A%84-tag"""
         guild = ctx.guild
         await self.config.guild(guild).mention_message.set(message)
         await ctx.send(_("Stream alert message set!"))
 
     @message.command(name='scheduled')
     async def _message_schduled(self, ctx: commands.Context, *, message: str):
+        """設置待機台發布時，在討論區發送連結的訊息格式，支援的 tag 請看：https://github.com/CCCpeggy/holostars-red-bot-cog#message-%E5%8F%AF%E4%BB%A5%E7%94%A8%E7%9A%84-tag"""
         guild = ctx.guild
         await self.config.guild(guild).scheduled_message.set(message)
         await ctx.send(_("Stream alert message set!"))
 
     @message.command(name='collab_mention')
     async def _message_collab_mention(self, ctx: commands.Context, *, message: str):
+        """設置多人直播時，其中一人開台，其餘的人收到的訊息格式，支援的 tag 請看：https://github.com/CCCpeggy/holostars-red-bot-cog#message-%E5%8F%AF%E4%BB%A5%E7%94%A8%E7%9A%84-tag"""
         guild = ctx.guild
         await self.config.guild(guild).collab_mention_message.set(message)
         await ctx.send(_("Stream alert message set!"))
@@ -669,6 +671,7 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.is_owner()
     async def settings(self, ctx: commands.Context):
+        """伺服器設定輸出"""
         data = json.dumps(await self.config.get_raw()).encode('utf-8')
         to_write = BytesIO()
         to_write.write(data)
