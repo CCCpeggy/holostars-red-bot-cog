@@ -712,8 +712,8 @@ class StarStream(commands.Cog):
 
                     if streaming_data:
                         await self.process_streaming_data(stream, streaming_data)
-                # await self.save_streams()
-                # await self.save_scheduled_streams()
+                await self.save_streams()
+                await self.save_scheduled_streams()
 
             except Exception as e:
                 log.error(
@@ -1287,12 +1287,11 @@ class StarStream(commands.Cog):
                 )
                 if await is_mod_or_superior(self.bot, u):
                     if u != message.author or await self.bot.is_owner(u):
-                        log.info(f"{u.id} 有權限" )
                         break
                     else:
                         log.info(f"{u.id} 對 {message.author.id} 的審核做出回應，但權限不符合" )
                 else:
-                    log.info(f"{u.id} 不是 mode 或 superior" )
+                    log.info(f"{u.id} 不是 mod 或 superior" )
         except asyncio.TimeoutError:
             return None, None
         if task is not None:
