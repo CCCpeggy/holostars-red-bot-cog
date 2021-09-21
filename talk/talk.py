@@ -43,7 +43,7 @@ class Talk(commands.Cog):
                     self.learned_talk_queue.remove(que)
                 self.learned_talk_queue.insert(0, que)
                 self.learned_talk[que] = ans
-                if len(self.learned_talk_queue) > 3:
+                if len(self.learned_talk_queue) > 50:
                     old_que = self.learned_talk_queue.pop()
                     del old_que
                 await self.config.learned_talk.set(self.learned_talk)
