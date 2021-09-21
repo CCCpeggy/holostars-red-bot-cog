@@ -32,7 +32,7 @@ class Talk(commands.Cog):
             return
         if not message.content.startswith("冷丸"):
             return
-        if not await is_mod_or_superior(self.bot, message.author):# and message.channel.id != 889525732122968074:
+        if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         import random
         message.content = message.content.lower()
