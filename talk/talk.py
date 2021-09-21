@@ -37,6 +37,9 @@ class Talk(commands.Cog):
         import random
         message.content = message.content.lower()
         if message.content.startswith("冷丸學"):
+            tmp = message.content[3:].split(" ")
+            que = tmp[0]
+            ans = " ".join(tmp[1:])
             que, ans = message.content[3:].split(" ")[:2]
             if que != "" and ans != "" and random.randint(0, 2) == 0:
                 if que in self.learned_talk_queue:
