@@ -118,6 +118,8 @@ for(;;) {
             await message.channel.send("!?")
         elif "本物" in message.content:
             await message.channel.send("Yesss")
+        elif "籤" in message.content:
+            await message.channel.send("平" * random.randint(1, 12))
         elif "吃雞" in message.content or "champion" in message.content or "冠軍" in message.content:
             await message.channel.send("蝦?????")
         elif "apex" in message.content:
