@@ -62,7 +62,10 @@ class Talk(commands.Cog):
         elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
         elif "可愛" in message.content:
-            await message.channel.send(f"比{random.choice(['咖咩醬', '虛無雀', '天真'])}更可愛！")
+            if "比" in message.content:
+                await message.channel.send("冷丸最可愛！")
+            else:
+                await message.channel.send(f"比{random.choice(['咖咩醬', '虛無雀', '天真'])}更可愛！")
         elif "在" in message.content:
             await message.channel.send(random.choice(["不在", "不在", "在"]))
         elif "娶" in message.content:
