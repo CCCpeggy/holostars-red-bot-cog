@@ -1335,7 +1335,7 @@ def getDiscordTimeStamp(date):
 
 def datetime_plus_8_to_0_isoformat(date):
     date = parse_time(date)
-    timestamp = getTimeStamp(date) - 8
+    timestamp = getTimeStamp(date) - 8 * 60 * 60
     date = datetime.fromtimestamp(timestamp)
     return date.isoformat()
 
