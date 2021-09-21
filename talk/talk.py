@@ -125,8 +125,7 @@ print(random.randint(1, 20)) # 輸出 1 - 20 之間的隨機數
 """```python
 # list
 i_am_list = ["i", "have", "an", "apple"]
-print(i_am_list[3]) # 輸出 apple，因為 list 的編號式從 0 開始的
-0: i, 1: have, 2: an, 3: apple
+print(i_am_list[3]) # 輸出 apple，因為 list 的編號式從 0 開始的，其中 0: i, 1: have, 2: an, 3: apple
 ```""",
 """```python
 # if
