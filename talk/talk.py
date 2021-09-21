@@ -32,13 +32,13 @@ class Talk(commands.Cog):
             return
         if not message.content.startswith("冷丸"):
             return
-        if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
+        if not await is_mod_or_superior(self.bot, message.author):# and message.channel.id != 889525732122968074:
             return
         import random
         message.content = message.content.lower()
         if message.content.startswith("冷丸學"):
             que, ans = message.content[3:].split(" ")[:2]
-            if que != "" and ans != "" and random.randint(0, 0) == 0:
+            if que != "" and ans != "" and random.randint(0, 2) == 0:
                 if que in self.learned_talk_queue:
                     self.learned_talk_queue.remove(que)
                 self.learned_talk_queue.insert(0, que)
