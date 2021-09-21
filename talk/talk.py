@@ -41,19 +41,22 @@ class Talk(commands.Cog):
             que = tmp[0]
             ans = " ".join(tmp[1:])
             que, ans = message.content[3:].split(" ")[:2]
-            if que != "" and ans != "" and random.randint(0, 2) == 0:
-                if que in self.learned_talk_queue:
-                    self.learned_talk_queue.remove(que)
-                self.learned_talk_queue.insert(0, que)
-                self.learned_talk[que] = ans
-                if len(self.learned_talk_queue) > 50:
-                    old_que = self.learned_talk_queue.pop()
-                    del old_que
-                await self.config.learned_talk.set(self.learned_talk)
-                await self.config.learned_talk_queue.set(self.learned_talk_queue)
-                await message.channel.send("大概有機會記住了")
+            if que != "" and ans != "":
+                if random.randint(0, 2) == 0:
+                    if que in self.learned_talk_queue:
+                        self.learned_talk_queue.remove(que)
+                    self.learned_talk_queue.insert(0, que)
+                    self.learned_talk[que] = ans
+                    if len(self.learned_talk_queue) > 50:
+                        old_que = self.learned_talk_queue.pop()
+                        del old_que
+                    await self.config.learned_talk.set(self.learned_talk)
+                    await self.config.learned_talk_queue.set(self.learned_talk_queue)
+                    await message.channel.send("大概有機會記住了")
+                else:
+                    await message.channel.send("不要")
             else:
-                await message.channel.send("不要")
+                await message.channel.send("嘖嘖")
         elif message.content[2:] in self.learned_talk_queue:
             await message.channel.send(self.learned_talk[message.content[2:]])
         elif "月嵐" in message.content:
