@@ -1,10 +1,24 @@
 from redbot.core.utils.mod import is_mod_or_superior
 from redbot.core import checks, commands, Config
 from redbot.core.bot import Red
+import asyncio
 
 class Talk(commands.Cog):
+
+    global_defaults = {
+        "learned_talk": {},
+        "learned_talk_queue": []
+    }
+
     def __init__(self, bot: Red):
         self.bot: Red = bot
+        self.config: Config = Config.get_conf(self, 21212121)
+        self.config.register_global(**self.global_defaults)
+        asyncio.wait(asyncio.create_task(self.load_var()))
+
+    async def load_var(self):
+        self.learned_talk = await self.config.learned_talk()
+        self.learned_talk_queue = await self.config.learned_talk_queue()
     
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -22,7 +36,24 @@ class Talk(commands.Cog):
             return
         import random
         message.content = message.content.lower()
-        if "月嵐" in message.content:
+        if message.content.startswith("冷丸學"):
+            que, ans = message.content[3:].split(" ")[:2]
+            if que != "" and ans != "" and random.randint(0, 0) == 0:
+                if que in self.learned_talk_queue:
+                    self.learned_talk_queue.remove(que)
+                self.learned_talk_queue.insert(0, que)
+                self.learned_talk[que] = ans
+                if len(self.learned_talk_queue) > 3:
+                    old_que = self.learned_talk_queue.pop()
+                    del old_que
+                await self.config.learned_talk.set(self.learned_talk)
+                await self.config.learned_talk_queue.set(self.learned_talk_queue)
+                await message.channel.send("大概有機會記住了")
+            else:
+                await message.channel.send("不要")
+        elif message.content[2:] in self.learned_talk_queue:
+            await message.channel.send(self.learned_talk[message.content[2:]])
+        elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
         elif "可愛" in message.content:
             await message.channel.send(f"比{random.choice(['咖咩醬', '虛無雀', '天真'])}更可愛！")
