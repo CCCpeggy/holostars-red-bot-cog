@@ -85,9 +85,6 @@ int main(){
 }
 ```""",
 """```C++
-print("Re: Hello world")
-```""",
-"""```C++
 if () {
 
 }
@@ -107,6 +104,63 @@ while() {
 for(;;) {
     
 }
+```"""]
+        elif "python" in message.content:
+            code = [
+"""```python
+# 輸入 + 輸出輸入的文字
+a = input("請輸入一段文字")
+print(a)
+```""",
+"""```python
+# 輸出 + 不同型態
+print("Re: Hello world") # 這是字串型態，並且輸出
+print(1 + 2) # 這是數字型態，並且輸出
+```""",
+"""```python
+# 引入其他函式庫(引入後就可以用它的功能)
+import random
+print(random.randint(1, 20)) # 輸出 1 - 20 之間的隨機數
+```""",
+"""```python
+# list
+i_am_list = ["i", "have", "an", "apple"]
+print(i_am_list[3]) # 輸出 apple，因為 list 的編號式從 0 開始的
+0: i, 1: have, 2: an, 3: apple
+```""",
+"""```python
+# if
+content = "冷丸在嗎"
+if "在" in content:
+    print("不在")
+```""",
+"""```python
+# if
+content = "冷丸可愛嗎"
+if "在" in content:
+    print("不在")
+elif "可愛" in content:
+    print("比咖咩醬可愛")
+```""",
+"""```python
+# if
+content = "冷丸你會化學嗎"
+if "在" in content:
+    print("不在")
+elif "可愛" in content:
+    print("比咖咩醬可愛")
+else:
+    print("chi chi~")
+```""",
+"""```python
+# 定義函式做到兩數傳入後回傳相加的結果
+def add(num1, num2):
+    return num1 + num2
+print(add(1, 2))
+```""",
+"""```python
+# 輸出字串
+print("Re: Hello world")
 ```"""]
             await message.channel.send(random.choice(code))
         elif "機器人" in message.content:
