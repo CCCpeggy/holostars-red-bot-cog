@@ -232,7 +232,7 @@ print("Re: Hello world")
         elif "棒" in message.content:
             await message.channel.send("<:As_bonk:887746980179247194>")
         elif "幫" in message.content:
-            await message.channel.send("<:Te_gg:887747027180597278>")
+            await message.channel.send("油加你幫！")
         elif "a-z" in message.content:
             await message.channel.send("kMGTPEZY")
         elif "嗎" not in message.content and ("摸" in message.content or "喜歡" in message.content or "fire" in message.content or "water" in message.content):
