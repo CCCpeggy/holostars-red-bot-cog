@@ -2,6 +2,7 @@ from redbot.core.utils.mod import is_mod_or_superior
 from redbot.core import checks, commands, Config
 from redbot.core.bot import Red
 import asyncio
+import random
 
 class Talk(commands.Cog):
 
@@ -32,9 +33,8 @@ class Talk(commands.Cog):
             return
         if not message.content.startswith("冷丸"):
             return
-        if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
+        if not await is_mod_or_superior(self.bot, message.author):# and message.channel.id != 889525732122968074:
             return
-        import random
         message.content = message.content.lower()
         if message.content.startswith("冷丸學"):
             tmp = message.content[3:].split(" ")
@@ -47,7 +47,30 @@ class Talk(commands.Cog):
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
                     self.learned_talk[que] = ans
-                    if len(self.learned_talk_queue) > 150:
+                    if len(self.learned_talk_queue) > 300:
+                        old_que = self.learned_talk_queue.pop()
+                        del old_que
+                    await self.config.learned_talk.set(self.learned_talk)
+                    await self.config.learned_talk_queue.set(self.learned_talk_queue)
+                    await message.channel.send("大概有機會記住了")
+                else:
+                    await message.channel.send("不要")
+            else:
+                await message.channel.send("嘖嘖")
+        elif message.content.startswith("冷丸選"):
+            tmp = message.content[3:].split(" ")
+            que = tmp[0]
+            ans = list(set(tmp[1:]))
+            if "" in ans:
+                ans.remove("")
+            # que, ans = message.content[3:].split(" ")[:2]
+            if que != "" and len(ans) > 0:
+                if random.randint(0, 2) == 0:
+                    if que in self.learned_talk_queue:
+                        self.learned_talk_queue.remove(que)
+                    self.learned_talk_queue.insert(0, que)
+                    self.learned_talk[que] = ans
+                    if len(self.learned_talk_queue) > 300:
                         old_que = self.learned_talk_queue.pop()
                         del old_que
                     await self.config.learned_talk.set(self.learned_talk)
@@ -58,7 +81,11 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send("嘖嘖")
         elif message.content[2:] in self.learned_talk_queue:
-            await message.channel.send(self.learned_talk[message.content[2:]])
+            ans = self.learned_talk[message.content[2:]]
+            if isinstance(ans, str):
+                await message.channel.send(ans)
+            else:
+                await message.channel.send(random.choice(ans))
         elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
         elif "可愛" in message.content:
