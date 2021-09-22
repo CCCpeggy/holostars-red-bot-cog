@@ -33,7 +33,7 @@ class Talk(commands.Cog):
             return
         if not message.content.startswith("冷丸"):
             return
-        if not await is_mod_or_superior(self.bot, message.author):# and message.channel.id != 889525732122968074:
+        if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
         if message.content.startswith("冷丸學"):
@@ -86,6 +86,10 @@ class Talk(commands.Cog):
                 await message.channel.send(ans)
             else:
                 await message.channel.send(random.choice(ans))
+        elif "天才" in message.content:
+            await message.channel.send("<:Te_tensai:887747027637792888>")
+        elif "天真" in message.content or "3D" in message.content:
+            await message.channel.send("天真天才！<:Te_tensai:887747027637792888>")
         elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
         elif "可愛" in message.content:
@@ -191,12 +195,8 @@ print("Re: Hello world")
             await message.channel.send(random.choice(code))
         elif "機器人" in message.content:
             await message.channel.send("<:Ri_2GB_1:887732339600404490><:Ri_2GB_2:887732340825141318><:Ri_2GB_3:887732339982094366>")
-        elif "天才" in message.content:
-            await message.channel.send("<:Te_tensai:887747027637792888>")
         elif "廁所" in message.content:
             await message.channel.send("<:Roberu_question:887748105234174014>")
-        elif "天真" in message.content or "3D" in message.content:
-            await message.channel.send("天真天才！<:Te_tensai:887747027637792888>")
         elif "外掛" in message.content:
             await message.channel.send("!?")
         elif "本物" in message.content:
