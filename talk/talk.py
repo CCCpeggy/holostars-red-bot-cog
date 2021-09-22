@@ -15,7 +15,7 @@ class Talk(commands.Cog):
         self.bot: Red = bot
         self.config: Config = Config.get_conf(self, 21212121)
         self.config.register_global(**self.global_defaults)
-        asyncio.wait(asyncio.create_task(self.load_var()))
+        self.bot.loop.create_task(self.load_var())
 
     async def load_var(self):
         self.learned_talk = await self.config.learned_talk()
@@ -33,7 +33,7 @@ class Talk(commands.Cog):
             return
         if not message.content.startswith("冷丸"):
             return
-        if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
+        if not await is_mod_or_superior(self.bot, message.author):# and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
         if message.content.startswith("冷丸學"):
@@ -87,8 +87,10 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(random.choice(ans))
         elif "天才" in message.content:
+            await message.add_reaction("<:Te_tensai:887747027637792888>")
             await message.channel.send("<:Te_tensai:887747027637792888>")
         elif "天真" in message.content or "3D" in message.content:
+            await message.add_reaction("<:Te_tensai:887747027637792888>")
             await message.channel.send("天真天才！<:Te_tensai:887747027637792888>")
         elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
