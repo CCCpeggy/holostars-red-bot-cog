@@ -243,6 +243,8 @@ print("Re: Hello world")
             await message.channel.send("不買")
         elif "想不想" in message.content:
             await message.channel.send("不想")
+        elif "有沒有" in message.content:
+            await message.channel.send("有沒有")
         elif "圓周率" in message.content:
             await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286203998")
         elif "貼貼" in message.content:
