@@ -36,6 +36,12 @@ class Talk(commands.Cog):
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
+        
+        if "天才" in message.content:
+            await message.add_reaction("<:Te_tensai:887747027637792888>")
+        elif "天真" in message.content or "3D" in message.content:
+            await message.add_reaction("<:Te_light:887747027658764300>")
+
         if message.content.startswith("冷丸學"):
             tmp = message.content[3:].split(" ")
             que = tmp[0]
@@ -54,7 +60,20 @@ class Talk(commands.Cog):
                     await self.config.learned_talk_queue.set(self.learned_talk_queue)
                     await message.channel.send("大概有機會記住了")
                 else:
-                    await message.channel.send("不要")
+                    await message.channel.send("拒絕學習")
+            else:
+                await message.channel.send("嘖嘖")
+        elif message.content.startswith("冷丸現在選"):
+            tmp = message.content[3:].split(" ")
+            que = tmp[0]
+            ans = list(set(tmp[1:]))
+            if "" in ans:
+                ans.remove("")
+            if que != "" and len(ans) >= 2:
+                if random.randint(0, 2) != 0:
+                    await message.channel.send(random.choice(ans))
+                else:
+                    await message.channel.send("拒絕選擇")
             else:
                 await message.channel.send("嘖嘖")
         elif message.content.startswith("冷丸選"):
@@ -63,8 +82,7 @@ class Talk(commands.Cog):
             ans = list(set(tmp[1:]))
             if "" in ans:
                 ans.remove("")
-            # que, ans = message.content[3:].split(" ")[:2]
-            if que != "" and len(ans) > 0:
+            if que != "" and len(ans) >= 2:
                 if random.randint(0, 2) == 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
@@ -77,7 +95,7 @@ class Talk(commands.Cog):
                     await self.config.learned_talk_queue.set(self.learned_talk_queue)
                     await message.channel.send("大概有機會記住了")
                 else:
-                    await message.channel.send("不要")
+                    await message.channel.send("拒絕記住選擇")
             else:
                 await message.channel.send("嘖嘖")
         elif message.content[2:] in self.learned_talk_queue:
@@ -87,11 +105,9 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(random.choice(ans))
         elif "天才" in message.content:
-            await message.add_reaction("<:Te_tensai:887747027637792888>")
             await message.channel.send("<:Te_tensai:887747027637792888>")
         elif "天真" in message.content or "3D" in message.content:
-            await message.add_reaction("<:Te_tensai:887747027637792888>")
-            await message.channel.send("天真天才！<:Te_tensai:887747027637792888>")
+            await message.channel.send("天真好棒！")
         elif "月嵐" in message.content:
             await message.channel.send("月嵐 3150")
         elif "可愛" in message.content:
@@ -217,6 +233,14 @@ print("Re: Hello world")
             await message.channel.send("不吃")
         elif "睡" in message.content:
             await message.channel.send("z" * random.randint(3, 20))
+        elif "要不要" in message.content:
+            await message.channel.send("不要")
+        elif "好不好" in message.content:
+            await message.channel.send("不好")
+        elif "行不行" in message.content:
+            await message.channel.send("不行")
+        elif "買不買" in message.content:
+            await message.channel.send("不買")
         elif "圓周率" in message.content:
             await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286203998")
         elif "貼貼" in message.content:
