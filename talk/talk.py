@@ -60,7 +60,7 @@ class Talk(commands.Cog):
                     await self.config.learned_talk_queue.set(self.learned_talk_queue)
                     await message.channel.send("大概有機會記住了")
                 else:
-                    await message.channel.send("拒絕學習")
+                    await message.channel.send(":person_gesturing_no:")
             else:
                 await message.channel.send("嘖嘖")
         elif message.content.startswith("冷丸現在選"):
@@ -73,7 +73,7 @@ class Talk(commands.Cog):
                 if random.randint(0, 2) != 0:
                     await message.channel.send(random.choice(ans))
                 else:
-                    await message.channel.send("拒絕選擇")
+                    await message.channel.send(":person_gesturing_no:")
             else:
                 await message.channel.send("嘖嘖")
         elif message.content.startswith("冷丸選"):
@@ -95,7 +95,7 @@ class Talk(commands.Cog):
                     await self.config.learned_talk_queue.set(self.learned_talk_queue)
                     await message.channel.send("大概有機會記住了")
                 else:
-                    await message.channel.send("拒絕記住選擇")
+                    await message.channel.send(":person_gesturing_no:")
             else:
                 await message.channel.send("嘖嘖")
         elif message.content[2:] in self.learned_talk_queue:
@@ -241,6 +241,8 @@ print("Re: Hello world")
             await message.channel.send("不行")
         elif "買不買" in message.content:
             await message.channel.send("不買")
+        elif "想不想" in message.content:
+            await message.channel.send("不想")
         elif "圓周率" in message.content:
             await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286203998")
         elif "貼貼" in message.content:
