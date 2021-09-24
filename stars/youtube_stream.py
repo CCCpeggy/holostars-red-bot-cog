@@ -81,12 +81,18 @@ class YouTubeStream():
         elif not self.name:
             self.name = await self.fetch_name()
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id)) as r:
-                if r.status == 404:
-                    log.warning(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id))
-                    raise StreamNotFound()
-                rssdata = await r.text()
+        videos = []
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id)) as r:
+                    if r.status == 404:
+                        log.warning(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id))
+                        raise StreamNotFound()
+                    rssdata = await r.text()
+                    videos += list(self.get_video_ids_from_feed(rssdata))
+        except StreamNotFound:
+            log.info(f"{self.id} StreamNotFound")
 
         if self.not_livestreams:
             self.not_livestreams = list(dict.fromkeys(self.not_livestreams))
@@ -105,7 +111,7 @@ class YouTubeStream():
                     scheduled_datas.insert(i, scheduled_data)
                     return
             scheduled_datas.append(scheduled_data)
-        for video_id in set(list(self.get_video_ids_from_feed(rssdata)) + self.livestreams):
+        for video_id in set(videos + self.livestreams):
             if video_id in self.not_livestreams:
                 this_not_livestreams.append(video_id)
                 log.debug(f"video_id in not_livestreams: {video_id}")
