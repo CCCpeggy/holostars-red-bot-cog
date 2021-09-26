@@ -64,12 +64,11 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send("嘖嘖")
         elif message.content.startswith("冷丸現在選"):
-            tmp = message.content[3:].split(" ")
-            que = tmp[0]
+            tmp = message.content[5:].split(" ")
             ans = list(set(tmp[1:]))
             if "" in ans:
                 ans.remove("")
-            if que != "" and len(ans) >= 2:
+            if len(ans) >= 2:
                 if random.randint(0, 2) != 0:
                     await message.channel.send(random.choice(ans))
                 else:
