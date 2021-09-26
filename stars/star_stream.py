@@ -530,6 +530,10 @@ class StarStream(commands.Cog):
         不管之前是否發送過訊息，當下次偵測的時候，會重新發送通知，但原通知不會刪除 ( 因為我懶，有需要請跟我說，又或是有一天這個功能就會蹦出來了
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
+        scheduled_stream = self.get_scheduled_stream(video_ids=[video_id])
+        if scheduled_stream:
+            scheduled_stream.message_id = None
+            await self.save_scheduled_streams()
         yt_channel_id = await get_video_belong_channel(token, video_id)
         if yt_channel_id:
             stream = self.get_stream(yt_channel_id)
@@ -538,12 +542,35 @@ class StarStream(commands.Cog):
                     stream.livestreams.append(video_id)
                 stream.scheduled_sent.pop(video_id, None)
                 if video_id in stream.streaming_sent:
+                    # TODO: get_message
+                    # await stream.streaming_sent[video_id].delete()
                     stream.streaming_sent.remove(video_id)
                 await self.save_streams()
                 await ctx.send(f"`{video_id}` 會再次發送通知")
             else:
                 await ctx.send(f"沒有設置 `{yt_channel_id}` 的頻道")
         else:
+            await ctx.send(f"沒有找到 `{video_id}`.")
+
+    @_stars_stream.command(name="noschedule")
+    async def _stream_noschedule(self, ctx: commands.Context, video_id: str):
+        """ 不會再發送待機連結
+        """
+        token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
+        scheduled_stream = self.get_scheduled_stream(video_ids=[video_id])
+        if scheduled_stream:
+            scheduled_stream.message_id = -1
+            await ctx.send(f"`{video_id}` 預定直播不會再發待機台")
+            await self.save_scheduled_streams()
+        yt_channel_id = await get_video_belong_channel(token, video_id)
+        if yt_channel_id:
+            stream = self.get_stream(yt_channel_id)
+            if stream:
+                if video_id in stream.streaming_sent:
+                    stream.scheduled_sent[video_id] = -1
+                await self.save_streams()
+                await ctx.send(f"`{video_id}` 個人不會再發待機台")
+        elif not scheduled_stream:
             await ctx.send(f"沒有找到 `{video_id}`.")
 
     @stars.command(name="check")
@@ -746,7 +773,7 @@ class StarStream(commands.Cog):
 
         send_channel = self.bot.get_channel(send_channel_id)
         if not send_channel_id:
-            return
+            return None
         # 此文字頻道發送過通知則不再發送
         if send_channel_id in sent_channel_ids and not scheduled_stream:
             # 如果原本已經發送，則刪除原訊息
@@ -763,9 +790,15 @@ class StarStream(commands.Cog):
         # if scheduled_stream and scheduled_stream.message_id:
         #     if await self.get_message(send_channel, scheduled_stream.message_id):
         #         return send_channel_id
-        # 自動偵測直播已經送過了
+
+        # 預定直播不發
+        if scheduled_stream and scheduled_stream.message_id == -1:
+            return None
+
+        # 自動偵測直播已經送過了，或選擇不發
         if info["video_id"] in stream.scheduled_sent: # TODO
-            if await self.get_message(send_channel, stream.scheduled_sent[info["video_id"]]):
+            msg_id = stream.scheduled_sent[info["video_id"]]
+            if msg_id == -1 or await self.get_message(send_channel, msg_id):
                 return send_channel_id
             else:
                 log.info(f"{info['video_id']} 沒有在 {send_channel.name} 找到已發送過的 message")
@@ -1008,13 +1041,18 @@ class StarStream(commands.Cog):
 
             if yt_channel_id and yt_channel_id not in scheduled_stream.channel_ids:
                 continue
-            elif video_ids:
+            elif yt_channel_id and video_ids:
                 idx = scheduled_stream.channel_ids.index(yt_channel_id)
                 video_id = scheduled_stream.video_ids[idx]
                 if video_id not in video_ids:
                     continue
                 if video_id != "":
                     return scheduled_stream
+            elif video_ids:
+                for video_id in video_ids:
+                    if video_id in scheduled_stream.video_ids:
+                        if video_id != "":
+                            return scheduled_stream
 
             if time:
                 shared_scheduled_time = getTimeStamp(
