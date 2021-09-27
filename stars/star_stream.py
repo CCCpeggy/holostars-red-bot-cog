@@ -478,9 +478,10 @@ class StarStream(commands.Cog):
             scheduled_stream.add_collab(stream.id, stream.name)
 
         if selected != {}:
-            for old_scheduled_stream in [v for v in self.scheduled_streams if scheduled_stream.text_channel_id == chat_channel.id]:
-                log.info(f"{old_scheduled_stream.text_channel_id} 設定發布待機台，因有新的預定因而刪除")
-                self.scheduled_streams.remove(old_scheduled_stream)
+            for old_scheduled_stream in self.scheduled_streams:
+                if old_scheduled_stream.text_channel_id == chat_channel.id:
+                    log.info(f"{old_scheduled_stream.text_channel_id} 設定發布待機台，因有新的預定因而刪除")
+                    self.scheduled_streams.remove(old_scheduled_stream)
             self.scheduled_streams.append(scheduled_stream)
             log.info(f"#{chat_channel.name} 已設置直播，直播者有：{', '.join(scheduled_stream.channel_names)}")
             await ctx.send(f"#{chat_channel.name} 已設置直播，直播者有：{', '.join(scheduled_stream.channel_names)}")
