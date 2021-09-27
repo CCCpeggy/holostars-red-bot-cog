@@ -837,8 +837,10 @@ class StarStream(commands.Cog):
                     scheduled_stream=scheduled_stream,
                 )
         # 連動直播第一個開播發其他人的開播通知
-        if scheduled_stream and not scheduled_stream.streaming_sent:
-            collab_mention_message = await self.config.guild(mention_channel.guild).collab_mention_message()
+        # 讓有 chat_channel_id 再發通知，透過 chat_channel_id 取得 guild
+        if scheduled_stream and not scheduled_stream.streaming_sent and chat_channel_id:
+            chat_channel = self.bot.get_channel(chat_channel_id)
+            collab_mention_message = await self.config.guild(chat_channel.guild).collab_mention_message()
             for yt_channel_id in scheduled_stream.channel_ids: 
                 if not yt_channel_id or yt_channel_id == stream.id:
                     continue
