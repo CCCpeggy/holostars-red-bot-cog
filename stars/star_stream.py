@@ -404,7 +404,7 @@ class StarStream(commands.Cog):
             return
 
     @_stars_stream.command(name="set")
-    async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, description=None, change_channel_name: str = "none"):
+    async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, change_channel_name: str = "none", description=None):
         """設定直播，大多在連動、會員直播、再非個人頻道直播時使用
         chat_channel: 討論的頻道
         stream_time: 直播的時間，輸入為 GMT+8 的時間
