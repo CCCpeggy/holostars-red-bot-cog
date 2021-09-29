@@ -860,7 +860,7 @@ class StarStream(commands.Cog):
         if scheduled_stream and scheduled_stream.streaming_sent:
             pass
         elif chat_channel_id:
-            chat_channel = self.bot.get_channel(stream.chat_channel_id)
+            chat_channel = self.bot.get_channel(chat_channel_id)
             chat_message = await self.config.guild(chat_channel.guild).chat_message()
             await self.send_streaming(
                 streaming_data, chat_channel_id,
