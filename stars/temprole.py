@@ -283,6 +283,14 @@ class TempRole(commands.Cog):
     async def _list(self, ctx: commands.Context, user: discord.Member = None):
         """List the active TempRoles for each user (or users with TempRoles in the server if user param is empty)."""
         desc = ""
+        color = await ctx.embed_color()
+        async def send(title, desc, color):
+            return await ctx.send(embed=discord.Embed(
+                title=title,
+                description=desc,
+                color=await ctx.embed_color()
+            ))
+
         if not user:
             title = f"{ctx.guild.name} TempRoles"
             for member_id, temp_roles in (await self.config.all_members(ctx.guild)).items():
@@ -292,6 +300,9 @@ class TempRole(commands.Cog):
                         desc += f"{member.mention}: {humanize_list([r.mention for r in roles])}\n"
                     else:
                         await self.config.member(member).clear()
+                if len(desc) > 3900:
+                    await send(title, desc, color)
+                    desc = ""
         else:
             title = f"{user.display_name} TempRoles"
             async with self.config.member(user).temp_roles() as member_temp_roles:
@@ -302,11 +313,10 @@ class TempRole(commands.Cog):
                         desc += f"{role.mention}: ends in {r_time.days}d {round(r_time.seconds/3600, 1)}h\n"
                     else:
                         del member_temp_roles[temp_role]
-        return await ctx.send(embed=discord.Embed(
-            title=title,
-            description=desc,
-            color=await ctx.embed_color()
-        ))
+                    if len(desc) > 3900:
+                        await send(title, desc, color)
+                        desc = ""
+        return await send(title, desc, color)
 
     @commands.admin_or_permissions(manage_roles=True)
     @_temp_role.command(name="logchannel")
