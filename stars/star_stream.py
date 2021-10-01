@@ -1188,12 +1188,20 @@ class StarStream(commands.Cog):
         # bot_id = await self.config.guild(message.guild).notice_server_bot_id()
         if message.author.id == 875013341007999037:
             return
+        # log.info(str(channel_id) + "_" + str(message.channel.id))
+        # log.info("456633518882160642_" + str(message.author.id))
+        log.info(message.content)
         video_id = None
-        if len(message.embeds) > 0 and "待機所" in message.embeds[0].description or "既" in message.embeds[0].description:
+        if len(message.embeds) > 0:
+            description = message.embeds[0].description
+            for k in ["待機所", "既"]:
+                if k in description:
             video_id = message.embeds[0].url.split('=')[-1]
-        elif message.content.startswith("待機台"):
+                    break
+        if message.content.startswith("待機台 http"):
             video_id = message.content[-11:]
         if video_id:
+            log.info("add: " + video_id)
             await self._stream_add(message.channel, video_id)
 
     async def audit_membership(self, message):
