@@ -48,7 +48,7 @@ class Talk(commands.Cog):
             ans = " ".join(tmp[1:])
             # que, ans = message.content[3:].split(" ")[:2]
             if que != "" and ans != "":
-                if random.randint(0, 2) == 0:
+                if random.randint(0, 1) == 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -69,7 +69,9 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if len(ans) >= 2:
-                if random.randint(0, 2) != 0:
+                if "睡覺" in ans:
+                    await message.channel.send("睡覺")
+                elif random.randint(0, 3) != 0:
                     await message.channel.send(random.choice(ans))
                 else:
                     await message.channel.send("這不好說")
@@ -82,7 +84,7 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if que != "" and len(ans) >= 2:
-                if random.randint(0, 2) == 0:
+                if random.randint(0, 1) == 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
