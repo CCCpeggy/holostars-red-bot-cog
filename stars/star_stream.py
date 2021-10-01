@@ -405,10 +405,10 @@ class StarStream(commands.Cog):
 
     @_stars_stream.command(name="set")
     async def _stream_set(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str, change_channel_name: str = "none", description=None):
-        """設定直播，大多在連動、會員直播、再非個人頻道直播時使用
+        """設定直播，大多在聯動、會員直播、再非個人頻道直播時使用
         chat_channel: 討論的頻道
         stream_time: 直播的時間，輸入為 GMT+8 的時間
-        change_channel_name: 輸入指定的修改名稱，`default` 代表使用預設的`連動頻道+emojis`，不輸入或 `none` 代表不修改
+        change_channel_name: 輸入指定的修改名稱，`default` 代表使用預設的`聯動頻道+emojis`，不輸入或 `none` 代表不修改
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         scheduled_stream = ScheduledStream(
@@ -417,7 +417,7 @@ class StarStream(commands.Cog):
             description=description,
             time=datetime_plus_8_to_0_isoformat(stream_time)
         )
-        message = await ctx.send("請選擇連動人員，選擇完畢後請按\N{WHITE HEAVY CHECK MARK}，取消請按\N{NEGATIVE SQUARED CROSS MARK}")
+        message = await ctx.send("請選擇聯動人員，選擇完畢後請按\N{WHITE HEAVY CHECK MARK}，取消請按\N{NEGATIVE SQUARED CROSS MARK}")
         emojis = {
             "\N{WHITE HEAVY CHECK MARK}": "Done",
             "\N{NEGATIVE SQUARED CROSS MARK}": "Cancel"
@@ -490,7 +490,7 @@ class StarStream(commands.Cog):
             if change_channel_name == None or change_channel_name == "none":
                 scheduled_stream.change_channel_name = None
             elif change_channel_name == "default":
-                scheduled_stream.change_channel_name = f"連動頻道{''.join(list(selected.keys()))}"
+                scheduled_stream.change_channel_name = f"聯動頻道{''.join(list(selected.keys()))}"
             else:
                 scheduled_stream.change_channel_name = change_channel_name
 
@@ -591,9 +591,9 @@ class StarStream(commands.Cog):
             if past and getTimeStamp(schedule_time) < getTimeStamp(datetime.now(timezone.utc)):
                 continue
             msg += f"**聊天頻道：{channel.mention}**"
-            msg += f"\n> 連動時間：{getDiscordTimeStamp(schedule_time)}"
-            msg += f"\n> 連動描述：{scheduled_stream.description}"
-            msg += f"\n> 連動人："
+            msg += f"\n> 聯動時間：{getDiscordTimeStamp(schedule_time)}"
+            msg += f"\n> 聯動描述：{scheduled_stream.description}"
+            msg += f"\n> 聯動人："
             for i in range(len(scheduled_stream.channel_ids)):
                 msg += f"\n> {i+1}. **{scheduled_stream.channel_names[i]}**"
                 if scheduled_stream.video_ids[i]:
@@ -865,7 +865,7 @@ class StarStream(commands.Cog):
                     content=mention_message,
                     scheduled_stream=scheduled_stream,
                 )
-        # 連動直播第一個開播發其他人的開播通知
+        # 聯動直播第一個開播發其他人的開播通知
         # 讓有 chat_channel_id 再發通知，透過 chat_channel_id 取得 guild
         if scheduled_stream and not scheduled_stream.streaming_sent and chat_channel_id:
             chat_channel = self.bot.get_channel(chat_channel_id)
