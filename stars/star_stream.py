@@ -571,7 +571,7 @@ class StarStream(commands.Cog):
         if yt_channel_id:
             stream = self.get_stream(yt_channel_id)
             if stream:
-                if video_id in stream.streaming_sent:
+                if video_id in stream.scheduled_sent:
                     stream.scheduled_sent[video_id] = -1
                 await self.save_streams()
                 await ctx.send(f"`{video_id}` 個人不會再發待機台")
