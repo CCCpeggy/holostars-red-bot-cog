@@ -601,6 +601,34 @@ class StarStream(commands.Cog):
             msg += "\n"
         await ctx.send(msg)
 
+    @_stars_stream.command(name="update")
+    async def _stream_update(self, ctx: commands.Context, video_id: str):
+        """編輯待機台資訊"""
+        stream = self.getStreamByVideoId(video_id)
+        if stream:
+            if not stream.update:
+                stream.update = True
+                await self.save_streams()
+            await ctx.send(f"{video_id} 將會更新資訊")
+        else:
+            await ctx.send(f"找不到 {video_id} 在已設定的 YT 頻道中")
+
+    @_stars_stream.command(name="time")
+    async def _stream_time(self, ctx: commands.Context, chat_channel: discord.TextChannel, stream_time: str):
+        """編輯預定直播時間"""
+        scheduled_stream = self.get_scheduled_stream(text_channel_id=chat_channel.id)
+        if scheduled_stream:
+            new_time = datetime_plus_8_to_0_isoformat(stream_time)
+            if new_time != scheduled_stream.time:
+                scheduled_stream.time = datetime_plus_8_to_0_isoformat(stream_time)
+                scheduled_stream.update = True
+                await self.save_scheduled_streams()
+                await ctx.send(f"{chat_channel.mention} 的時間已變更")
+            else:
+                await ctx.send(f"{stream_time} 與原設定相同")
+        else:
+            await ctx.send(f"在 {chat_channel.mention} 找不到預定頻道")
+
     @stars.command(name="check")
     async def _stars_check(self, ctx: commands.Context):
         """ 強制偵測目前直播狀態
@@ -740,6 +768,7 @@ class StarStream(commands.Cog):
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
+        sent_channel_ids = []
         for stream in self.streams:
             try:
                 try:
@@ -765,7 +794,6 @@ class StarStream(commands.Cog):
                 else:
                     # alert_msg = await self.config.guild(channel.guild).live_message_mention()
 
-                    sent_channel_ids = []
                     for scheduled_data in scheduled_datas:
                         if scheduled_data:
                             sent_channel_id = await self.process_scheduled_data(stream, scheduled_data, sent_channel_ids)
@@ -774,10 +802,13 @@ class StarStream(commands.Cog):
 
                     if streaming_data:
                         await self.process_streaming_data(stream, streaming_data)
+                    
+                    stream.update = False
                 await self.save_streams()
                 await self.save_scheduled_streams()
 
             except Exception as e:
+                stream.update = False
                 log.error(
                     "An error has occured with Streams. Please report it.", exc_info=e)
         await self.save_streams()
@@ -823,10 +854,15 @@ class StarStream(commands.Cog):
         if scheduled_stream and scheduled_stream.message_id == -1:
             return None
 
-        # 自動偵測直播已經送過了，或選擇不發
-        if info["video_id"] in stream.scheduled_sent: # TODO
+        # 自動偵測直播已經送過了且沒有要更新，或選擇不發
+        if info["video_id"] in stream.scheduled_sent \
+            and not stream.update and (not scheduled_stream or not scheduled_stream.update):
             msg_id = stream.scheduled_sent[info["video_id"]]
-            if msg_id == -1 or await self.get_message(send_channel, msg_id):
+            if msg_id == -1:
+                # log.info(f"{info['video_id']} 設定不發送")
+                return None
+            if await self.get_message(send_channel, msg_id):
+                # log.info(f"{info['video_id']} 設定發送")
                 return send_channel_id
             else:
                 log.info(f"{info['video_id']} 沒有在 {send_channel.name} 找到已發送過的 message")
@@ -835,9 +871,23 @@ class StarStream(commands.Cog):
                 return send_channel_id
 
         scheduled_message = await self.config.guild(send_channel.guild).scheduled_message()
+
+        # 取得舊的訊息
+        old_message = None
+        if scheduled_stream and scheduled_stream.message_id:
+            old_message = await self.get_message(send_channel, scheduled_stream.message_id)
+
+        if not old_message and info["video_id"] in stream.scheduled_sent:
+            msg_id = stream.scheduled_sent[info["video_id"]]
+            if msg_id != -1:
+                old_message = await self.get_message(send_channel, msg_id)
+
+        if scheduled_stream:
+            scheduled_stream.update = False
+
         message = await self.send_scheduled(
             send_channel_id, pin=True, content=scheduled_message,
-            info=info, scheduled_stream=scheduled_stream
+            info=info, scheduled_stream=scheduled_stream, old_message=old_message
         )
         stream.scheduled_sent[info["video_id"]] = message.id
         return send_channel_id
@@ -896,7 +946,7 @@ class StarStream(commands.Cog):
         if scheduled_stream:
             scheduled_stream.streaming_sent = True
         
-    async def send_scheduled(self, channel_id, info=None, pin=False, scheduled_stream=None, content=None):
+    async def send_scheduled(self, channel_id, info=None, pin=False, scheduled_stream=None, content=None, old_message=None):
         if not content:
             content = "{time}\n{description}\n{url}"
         channel = self.bot.get_channel(channel_id)
@@ -931,11 +981,10 @@ class StarStream(commands.Cog):
             if info["time"]:
                 content = content.replace("{time}", getDiscordTimeStamp(info["time"]))
 
-        if scheduled_stream and scheduled_stream.message_id:
-            ms = await self.get_message(channel, scheduled_stream.message_id)
-            if ms:
-                await ms.edit(content=content)
-                return ms
+        if old_message:
+            await old_message.edit(content=content)
+            return old_message
+                
         ms = await self._send_stream_alert(channel, None, content, pin)
         if scheduled_stream:
             scheduled_stream.message_id = ms[0].id
@@ -1105,6 +1154,11 @@ class StarStream(commands.Cog):
         if in_emoji in emoji.UNICODE_EMOJI['en']:
             return in_emoji
         return None
+
+    def getStreamByVideoId(self, video_id):
+        for stream in self.streams:
+            if video_id in stream.livestreams:
+                return stream
 
     # 會員審核
     @stars.group()
@@ -1385,7 +1439,6 @@ class StarStream(commands.Cog):
 
     async def cycle_pin(self, channel):
         pins = await channel.pins()
-        log.info(f"Total pin message: {len(pins)}")
         bot_pin_count = 0
         unpin_count = 0
         remain_pin = 3
@@ -1396,7 +1449,6 @@ class StarStream(commands.Cog):
                     unpin_count += 1
                     await pins[i].unpin()
                     await asyncio.sleep(1)
-                    log.info(f"Unpinned {pins[i].content[-11:]}")
                 bot_pin_count += 1
         log.info(f"Unpinned {unpin_count} messages from {channel.name}")
 

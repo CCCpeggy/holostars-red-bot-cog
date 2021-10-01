@@ -42,6 +42,7 @@ class YouTubeStream():
         self.not_livestreams: List[str] = kwargs.pop("not_livestreams", [])
         self.livestreams: List[str] = kwargs.pop("livestreams", [])
         self.mention: List[int] = kwargs.pop("mention", [])
+        self.update = kwargs.pop("update", False)
 
         self._bot = kwargs.pop("_bot")
         self.name = kwargs.pop("name", None)

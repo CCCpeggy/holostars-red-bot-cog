@@ -40,6 +40,7 @@ class ScheduledStream():
         self.channel_ids = kwargs.pop("channel_ids", [])
         self.channel_names = kwargs.pop("channel_names", [])
         self.video_ids = kwargs.pop("video_ids", [])
+        self.update = kwargs.pop("update", False)
         # if len(self.channel_names) > len(self.video_ids):
             # self.video_ids += [None] * (len(self.channel_names) - len(self.video_ids))
         self.time = kwargs.pop("time", None)
