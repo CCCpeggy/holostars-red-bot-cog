@@ -601,9 +601,6 @@ class StarStream(commands.Cog):
             msg += "\n"
         await ctx.send(msg)
 
-    @_stars_stream.command(name="list")
-    async def _stream_list(self, ctx: commands.Context, past: bool=True):
-
     @stars.command(name="check")
     async def _stars_check(self, ctx: commands.Context):
         """ 強制偵測目前直播狀態
