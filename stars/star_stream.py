@@ -601,6 +601,9 @@ class StarStream(commands.Cog):
             msg += "\n"
         await ctx.send(msg)
 
+    @_stars_stream.command(name="list")
+    async def _stream_list(self, ctx: commands.Context, past: bool=True):
+
     @stars.command(name="check")
     async def _stars_check(self, ctx: commands.Context):
         """ 強制偵測目前直播狀態
@@ -740,7 +743,6 @@ class StarStream(commands.Cog):
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
-        return
         for stream in self.streams:
             try:
                 try:
@@ -1203,7 +1205,7 @@ class StarStream(commands.Cog):
         await self.detect_message_and_auto_add_stream(message)
         if message.content == "":
             return
-        # await self.audit_membership(message)
+        await self.audit_membership(message)
 
     async def detect_message_and_auto_add_stream(self, message):
         channel_id = await self.config.guild(message.guild).notice_server_channel_id()
@@ -1214,7 +1216,7 @@ class StarStream(commands.Cog):
             return
         # log.info(str(channel_id) + "_" + str(message.channel.id))
         # log.info("456633518882160642_" + str(message.author.id))
-        log.info(message.content)
+        # log.info(message.content)
         video_id = None
         if len(message.embeds) > 0:
             description = message.embeds[0].description
