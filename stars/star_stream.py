@@ -579,7 +579,7 @@ class StarStream(commands.Cog):
             await ctx.send(f"沒有找到 `{video_id}`.")
 
     @_stars_stream.command(name="list")
-    async def _stream_list(self, ctx: commands.Context, past: bool=False):
+    async def _stream_list(self, ctx: commands.Context, past: bool=True):
         """ 列出目前所有預定地待機台
         """
         msg = "預定直播列表：\n"
@@ -740,6 +740,7 @@ class StarStream(commands.Cog):
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
+        return
         for stream in self.streams:
             try:
                 try:
@@ -1202,7 +1203,7 @@ class StarStream(commands.Cog):
         await self.detect_message_and_auto_add_stream(message)
         if message.content == "":
             return
-        await self.audit_membership(message)
+        # await self.audit_membership(message)
 
     async def detect_message_and_auto_add_stream(self, message):
         channel_id = await self.config.guild(message.guild).notice_server_channel_id()
