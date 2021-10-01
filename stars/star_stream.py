@@ -578,6 +578,29 @@ class StarStream(commands.Cog):
         elif not scheduled_stream:
             await ctx.send(f"沒有找到 `{video_id}`.")
 
+    @_stars_stream.command(name="list")
+    async def _stream_list(self, ctx: commands.Context, past: bool=False):
+        """ 列出目前所有預定地待機台
+        """
+        msg = "預定直播列表：\n"
+        for scheduled_stream in self.scheduled_streams:
+            schedule_time = parse_time(scheduled_stream.time)
+            channel = ctx.guild.get_channel(scheduled_stream.text_channel_id)
+            if not channel:
+                continue
+            if past and getTimeStamp(schedule_time) < getTimeStamp(datetime.now(timezone.utc)):
+                continue
+            msg += f"**聊天頻道：{channel.mention}**"
+            msg += f"\n> 連動時間：{getDiscordTimeStamp(schedule_time)}"
+            msg += f"\n> 連動描述：{scheduled_stream.description}"
+            msg += f"\n> 連動人："
+            for i in range(len(scheduled_stream.channel_ids)):
+                msg += f"\n> {i+1}. **{scheduled_stream.channel_names[i]}**"
+                if scheduled_stream.video_ids[i]:
+                    msg += f"\n> \t影片連結：<https://youtu.be/{scheduled_stream.video_ids[i]}>"
+            msg += "\n"
+        await ctx.send(msg)
+
     @stars.command(name="check")
     async def _stars_check(self, ctx: commands.Context):
         """ 強制偵測目前直播狀態
