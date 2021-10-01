@@ -1188,10 +1188,8 @@ class StarStream(commands.Cog):
         # bot_id = await self.config.guild(message.guild).notice_server_bot_id()
         if message.author.id == 875013341007999037:
             return
-        if len(message.embeds) == 0:
-            return
         video_id = None
-        if "待機所" in message.embeds[0].description or "既" in message.embeds[0].description:
+        if len(message.embeds) > 0 and "待機所" in message.embeds[0].description or "既" in message.embeds[0].description:
             video_id = message.embeds[0].url.split('=')[-1]
         elif message.author.id == 456633518882160642 and message.content.startswith("待機台"):
             video_id = message.content[-11:]
