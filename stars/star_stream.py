@@ -1407,7 +1407,7 @@ def get_membership_info(message, membership_names: List, roles: List, text_chann
                 raise WrongChannelName
             idx = membership_names.index(value)
         elif key == "日期":
-            for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%Y.%m.%d'):
+            for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%Y.%m.%d', '%Y年%m月%d日'):
                 try:
                     date = datetime.strptime(value, fmt)
                     break
