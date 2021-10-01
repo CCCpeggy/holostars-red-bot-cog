@@ -497,9 +497,10 @@ class StarStream(commands.Cog):
             await self.save_scheduled_streams()
 
     @_stars_stream.command(name="add")
-    async def _stream_add(self, ctx: commands.Context, video_id: str):#, chat_channel: discord.TextChannel = None):
+    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
         """ 手動加入未偵測到的影片
         video_id: 要加入的連結
+        chat_channel: 指定預定直播的頻道
         """
         token = await self.bot.get_shared_api_tokens(YouTubeStream.token_name)
         yt_channel_id = await get_video_belong_channel(token, video_id)
@@ -509,23 +510,24 @@ class StarStream(commands.Cog):
                 if video_id not in stream.livestreams:
                     stream.livestreams.append(video_id)
                     await self.save_streams()
-                await ctx.send(f"新增 `{video_id}` 到 {stream.name}` 追蹤的直播，開播將會通知")
+                log.info(f"新增 `{video_id}` 到 `{stream.name}` 追蹤的直播，開播將會通知")
+                await ctx.send(f"新增 `{video_id}` 到 `{stream.name}` 追蹤的直播，開播將會通知")
             else:
                 await ctx.send(f"沒有設置 `{yt_channel_id}` 的頻道")
         else:
             await ctx.send(f"沒有找到 `{video_id}`.")
 
-        # if chat_channel:
-        #     scheduled_stream = self.get_scheduled_stream(
-        #         text_channel_id=chat_channel.id)
-        #     if scheduled_stream:
-        #         if stream.id in scheduled_stream.channel_ids:
-        #             idx = scheduled_stream.channel_ids.index(stream.id)
-        #             scheduled_stream.video_ids[idx] = video_id
-        #         else:
-        #             await ctx.send(f"{chat_channel}` 沒有設定這個頻道")
-        #     else:
-        #         await ctx.send(f"{chat_channel}` 沒有設定的直播")
+        if chat_channel:
+            scheduled_stream = self.get_scheduled_stream(
+                text_channel_id=chat_channel.id)
+            if scheduled_stream:
+                if stream.id in scheduled_stream.channel_ids:
+                    idx = scheduled_stream.channel_ids.index(stream.id)
+                    scheduled_stream.video_ids[idx] = video_id
+                else:
+                    await ctx.send(f"{chat_channel}` 沒有設定這個頻道")
+            else:
+                await ctx.send(f"{chat_channel}` 沒有設定的直播")
 
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
@@ -1188,10 +1190,13 @@ class StarStream(commands.Cog):
             return
         if len(message.embeds) == 0:
             return
-        if "待機所" not in message.embeds[0].description and "既" not in message.embeds[0].description:
-            return
-        video_id = message.embeds[0].url.split('=')[-1]
-        await self._stream_add(message.channel, video_id)
+        video_id = None
+        if "待機所" in message.embeds[0].description or "既" in message.embeds[0].description:
+            video_id = message.embeds[0].url.split('=')[-1]
+        elif message.author.id == 456633518882160642 and message.content.startswith("待機台"):
+            video_id = message.content[-11:]
+        if video_id:
+            await self._stream_add(message.channel, video_id)
 
     async def audit_membership(self, message):
         if not self.config or not message or not message.guild:
