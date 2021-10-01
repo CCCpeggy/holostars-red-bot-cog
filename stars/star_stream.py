@@ -867,7 +867,10 @@ class StarStream(commands.Cog):
             else:
                 log.info(f"{info['video_id']} 沒有在 {send_channel.name} 找到已發送過的 message")
             chat_channel = self.bot.get_channel(stream.chat_channel_id)
-            if await self.get_message(chat_channel, stream.scheduled_sent[info["video_id"]]):
+            # 新的 chat_channel 沒有，但個人的有
+            old_message = await self.get_message(chat_channel, stream.scheduled_sent[info["video_id"]])
+            if old_message:
+                # await old_message.delete()
                 return send_channel_id
 
         scheduled_message = await self.config.guild(send_channel.guild).scheduled_message()
@@ -1251,8 +1254,11 @@ class StarStream(commands.Cog):
         await ctx.send(_(f"已設定"))
 
     @commands.Cog.listener()
+    @commands.guild_only()
     async def on_message(self, message):
         await self.bot.wait_until_ready()
+        if not message.guild:
+            return
         await self.detect_message_and_auto_add_stream(message)
         if message.content == "":
             return
