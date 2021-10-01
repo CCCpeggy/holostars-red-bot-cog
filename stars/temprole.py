@@ -260,9 +260,10 @@ class TempRole(commands.Cog):
             if role := ctx.guild.get_role(r):
                 roles.append(role.name)
         if roles:
-            await ctx.send(f"Self-TempRoles for this server\n{humanize_list(roles[:50])}")
-            for i in range(50, len(roles), 50):
-                await ctx.send(f"{humanize_list(roles[i:i+50])}")
+            max_role = 20
+            await ctx.send(f"Self-TempRoles for this server\n{humanize_list(roles[:max_role])}")
+            for i in range(max_role, len(roles), max_role):
+                await ctx.send(f"{humanize_list(roles[i:i+max_role])}")
             return
         else:
             return await ctx.send("No self-TempRoles have been set up in this server yet.")
