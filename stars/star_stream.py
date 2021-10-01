@@ -513,9 +513,11 @@ class StarStream(commands.Cog):
                 log.info(f"新增 `{video_id}` 到 `{stream.name}` 追蹤的直播，開播將會通知")
                 await ctx.send(f"新增 `{video_id}` 到 `{stream.name}` 追蹤的直播，開播將會通知")
             else:
-                await ctx.send(f"沒有設置 `{yt_channel_id}` 的頻道")
+                await ctx.send(f"沒有設置 `{yt_channel_id}` 頻道")
+                return
         else:
             await ctx.send(f"沒有找到 `{video_id}`.")
+            return
 
         if chat_channel:
             scheduled_stream = self.get_scheduled_stream(
@@ -525,9 +527,11 @@ class StarStream(commands.Cog):
                     idx = scheduled_stream.channel_ids.index(stream.id)
                     scheduled_stream.video_ids[idx] = video_id
                 else:
-                    await ctx.send(f"{chat_channel}` 沒有設定這個頻道")
+                    await ctx.send(f"在 {chat_channel.mention} 設定中沒有包含這個 YT 頻道")
+                    return
             else:
-                await ctx.send(f"{chat_channel}` 沒有設定的直播")
+                await ctx.send(f"{chat_channel.mention} 沒有設定的直播")
+                return
 
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
