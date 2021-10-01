@@ -1196,7 +1196,7 @@ class StarStream(commands.Cog):
             description = message.embeds[0].description
             for k in ["待機所", "既"]:
                 if k in description:
-            video_id = message.embeds[0].url.split('=')[-1]
+                    video_id = message.embeds[0].url.split('=')[-1]
                     break
         if message.content.startswith("待機台 http"):
             video_id = message.content[-11:]
