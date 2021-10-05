@@ -1369,7 +1369,9 @@ class StarStream(commands.Cog):
             handler_msg = f"處理人：{mod.mention}"
             pass
         except ReactionTimeout:
-            error_name = "管理員未在一天內審核"
+            # error_name = "管理員未在一天內審核"
+            log.info(f"未審核：{message.id}, {message.content}")
+            return
         except ServerError:
             error_name = "伺服器錯誤"
             await self.send_message_by_channel_id(
