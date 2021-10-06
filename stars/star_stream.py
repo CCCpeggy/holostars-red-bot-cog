@@ -842,7 +842,7 @@ class StarStream(commands.Cog):
             # 如果原本已經發送，則刪除原訊息
             if info["video_id"] in stream.scheduled_sent:
                 message_id = stream.scheduled_sent[info["video_id"]]
-                if message_id:
+                if message_id and message_id != -1:
                     message = await self.get_message(send_channel, message_id)
                     if message:
                         await message.delete()
