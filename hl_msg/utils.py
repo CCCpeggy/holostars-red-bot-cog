@@ -36,7 +36,7 @@ def is_need_highlight(message: discord.Message, threshold: int):
     for r in message.reactions:
         if r.count >= threshold:
             return True
-    return True
+    return False
 
 def is_need_delete_highlight(message: discord.Message, threshold: int):
     for r in message.reactions:

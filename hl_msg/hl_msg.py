@@ -162,8 +162,11 @@ async def on_raw_reaction_add(payload):
         msg, embed = create_highlight_msg()
         hl_msg_id = guild_config.track[message.id].hl_msg_id
         hl_msg = await send_channel.fetch_message(hl_msg_id)
-        log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
-        await hl_msg.edit(msg, embed=embed)
+        if hl_msg:
+            log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
+            await hl_msg.edit(msg, embed=embed)
+        else:
+            log.info(f"{message.id} 的精華 {hl_msg.id} 已經刪除")
 
     elif utils.is_need_highlight(message, threshold):
         msg, embed = create_highlight_msg()
