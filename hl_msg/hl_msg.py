@@ -96,7 +96,7 @@ async def on_raw_reaction_remove(payload):
             log.info(f"刪除 {message.id} 的精華 {hl_msg.id}")
             await hl_msg.delete()
         else:
-            log.info(f"{message.id} 的精華 {hl_msg.id} 已經刪除")
+            log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
 
 @bot.event
 @commands.guild_only()
@@ -169,7 +169,7 @@ async def on_raw_reaction_add(payload):
             log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
             await hl_msg.edit(msg, embed=embed)
         else:
-            log.info(f"{message.id} 的精華 {hl_msg.id} 已經刪除")
+            log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
 
     elif utils.is_need_highlight(message, threshold):
         msg, embed = create_highlight_msg()
