@@ -23,7 +23,7 @@ async def on_ready():
 
 @bot.group(name='l')
 @commands.guild_only()
-@commands.has_role('mod')
+@commands.check_any(commands.has_role('mod'), commands.has_role('Mod（有問題就@）'))
 async def _highlight(ctx):
     """ highlight
     """
