@@ -8,7 +8,7 @@ import os
 
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix='-t', intents=intents)
+bot = commands.Bot(command_prefix='-h', intents=intents)
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
