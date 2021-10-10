@@ -35,7 +35,7 @@ async def _help(ctx):
 當表符達到某個數值時，就會被認作精華留言
 指令清單：
 `-hl help` 說明
-`-hl channel [discord.TextChannel] [達成數量]` 設定特定頻道成為精華留言的達成數量
+`-hl channel [discord.TextChannel] [達成數量]` 設定特定頻道成為精華留言的達成數量，取消則設 0
 `-hl send [discord.TextChannel]` 設定精華留言的發送頻道
     """
     await ctx.channel.send(info)
@@ -43,8 +43,12 @@ async def _help(ctx):
 @_highlight.command(name='channel')
 async def _highlight_channel(ctx, channel: discord.TextChannel, count: int):
     guild_config = config.get(ctx.guild.id)
-    guild_config.detect[channel.id] = count
-    config.save()
+    if count > 0:
+        guild_config.detect[channel.id] = count
+        config.save()
+    elif channel.id in guild_config.detect:
+        del guild_config.detect[channel.id]
+        config.save()
     await ctx.channel.send(f"理論上設定完成")
 
 @_highlight.command(name='send')
