@@ -1,7 +1,6 @@
 import os
 import re
 import json
-import errors
 import discord
 import logging 
 import asyncio
