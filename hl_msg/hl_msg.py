@@ -15,12 +15,11 @@ logging.basicConfig(level=logging.INFO,
                     filename='highlight.log',
                     filemode='a')
 log = logging.getLogger("HighLightMessage")
-config = None
+config = utils.load_config(bot)
 
 @bot.event
 async def on_ready():
-    global config
-    config = utils.load_config(bot)
+    config.bot_ready()
 
 @bot.group(name='l')
 @commands.guild_only()
@@ -176,4 +175,7 @@ async def on_raw_reaction_add(payload):
         
 
 if __name__ == "__main__":
-    bot.run('ODc1MDEzMzQxMDA3OTk5MDM3.YRPVrQ.klG7Byg9bJLY-8sQ_F2ffBD3zJ4')
+    if not config.token:
+        config.token = input("請輸入 token: ")
+        config.save()
+    bot.run(config.token)

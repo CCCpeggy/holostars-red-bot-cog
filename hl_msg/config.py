@@ -30,10 +30,8 @@ class GuildConfig():
 
         self.track = {}
         track = kwargs.pop("track", {})
-        if len(track) > 0:
-            for k, v in track.items():
-                self.track[int(k)] = MessageTrack(**v)
-            bot.loop.create_task(self.handle_track())
+        for k, v in track.items():
+            self.track[int(k)] = MessageTrack(**v)
 
     def append_track(self, ori_msg: discord.Message, hl_msg: discord.Message):
         self.track[ori_msg.id] = MessageTrack(
@@ -42,7 +40,7 @@ class GuildConfig():
         )
         self._parent.save()
 
-    async def handle_track(self):
+    async def create_track_tasks(self):
         tasks = []
         delete_key = []
         for k, v in self.track.items():
@@ -56,7 +54,7 @@ class GuildConfig():
             for k in delete_key:
                 del self.track[k]
             self._parent.save()
-        await asyncio.gather(*tasks)
+        return tasks
     
     def export(self):
         data = {}
@@ -75,6 +73,7 @@ class Config():
     def __init__(self, bot: commands.Bot, **kwargs):
         self._bot = bot
         self._filename = kwargs.pop("filename", "settings.json")
+        self.token = kwargs.pop("token", None)
         self.config = {}
         for guild_id_str, guild_config_str in kwargs.pop("config", {}).items():
             self.config[int(guild_id_str)] = GuildConfig(bot, self, **guild_config_str)
@@ -104,3 +103,12 @@ class Config():
         if guild_id not in self.config:
             self.config[guild_id] = GuildConfig(self._bot, self)
         return self.config[guild_id]
+    
+    def bot_ready(self):
+        self._bot.loop.create_task(self.handle_guild_track())
+
+    async def handle_guild_track(self):
+        tasks = []
+        for k, v in self.config.items():
+            tasks += await v.create_track_tasks()
+        await asyncio.gather(*tasks)

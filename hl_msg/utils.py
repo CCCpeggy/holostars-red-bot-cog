@@ -11,6 +11,7 @@ from config import Config, GuildConfig
 from discord.ext import commands
 log = logging.getLogger("HighLightMessage")
 track_time = timedelta(hours=12)
+# track_time = timedelta(seconds=30)
 # config
 
 def load_config(bot: commands.Bot, filename="settings.json"):
