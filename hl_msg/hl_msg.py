@@ -92,8 +92,11 @@ async def on_raw_reaction_remove(payload):
     if utils.is_need_delete_highlight(message, threshold):
         hl_msg_id = guild_config.track[message.id].hl_msg_id
         hl_msg = await send_channel.fetch_message(hl_msg_id)
-        log.info(f"刪除 {message.id} 的精華 {hl_msg.id}")
-        await hl_msg.delete()
+        if hl_msg:
+            log.info(f"刪除 {message.id} 的精華 {hl_msg.id}")
+            await hl_msg.delete()
+        else:
+            log.info(f"{message.id} 的精華 {hl_msg.id} 已經刪除")
 
 @bot.event
 @commands.guild_only()
