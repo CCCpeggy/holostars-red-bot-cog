@@ -26,6 +26,12 @@ def load_config(bot: commands.Bot, filename="settings.json"):
 
 # message
 
+async def get_message(channel: discord.TextChannel, message_id: int):
+    try:
+        return await channel.fetch_message(message_id)
+    except:
+        return None
+
 def get_diff_datetime(d1: datetime, d2: datetime=datetime.now(timezone.utc)):
     return d1 - d2
 
@@ -86,6 +92,31 @@ def add_attachment(embed, message):
             embed.set_image(url=attachment.url)
     return embed
 
+def create_highlight_msg(payload, message, threshold):
+    link = f'https://discordapp.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}'
+    user = message.author
+    name = user.nick if user.nick else user.name
+
+    emoji_count = get_valid_emojis(message, threshold)
+    emoji_msg = " | ".join([f"{e}  × **{c}**" for e, c in emoji_count.items()])
+    # urls = utils.extract_url(message)
+    if False and is_only_url(message):
+        embed = discord.Embed(
+            description=f'[傳送門]({link})',
+            color=0xff9831
+        )
+        msg = f"{message.channel.mention} | {emoji_msg}\n{message.content}"
+    else:
+        embed = discord.Embed(
+            description=f'{message.content}\n\n[傳送門]({link})',
+            color=0xff9831
+        )
+        msg = f"{message.channel.mention} | {emoji_msg}"
+    embed.set_author(name=name, icon_url=user.avatar)
+    embed = add_attachment(embed, message)
+    created_at_str = message.created_at.strftime("%Y/%m/%d, %H:%M:%S")
+    embed.set_footer(text=created_at_str)
+    return msg, embed
 
 async def hl_timer(guild_config: GuildConfig, message: discord.Message):
     seconds_left = track_time.total_seconds() + get_diff_datetime(message.created_at).total_seconds()

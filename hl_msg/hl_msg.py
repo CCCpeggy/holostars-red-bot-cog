@@ -89,12 +89,20 @@ async def on_raw_reaction_remove(payload):
     msg_channel = bot.get_channel(payload.channel_id)
     message = await msg_channel.fetch_message(payload.message_id)
     send_channel = bot.get_channel(guild_config.send_channel_id)
+    hl_msg_id = guild_config.track[message.id].hl_msg_id
+    hl_msg = await utils.get_message(send_channel, hl_msg_id)
+
     if utils.is_need_delete_highlight(message, threshold):
-        hl_msg_id = guild_config.track[message.id].hl_msg_id
-        hl_msg = await send_channel.fetch_message(hl_msg_id)
         if hl_msg:
             log.info(f"刪除 {message.id} 的精華 {hl_msg.id}")
             await hl_msg.delete()
+        else:
+            log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
+    else:
+        msg, embed = utils.create_highlight_msg(payload, message, threshold)
+        if hl_msg:
+            log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
+            await hl_msg.edit(msg, embed=embed)
         else:
             log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
 
@@ -133,38 +141,11 @@ async def on_raw_reaction_add(payload):
     #         msg = f"{msg_channel.mention} | {emoji_msg}"
     #         return msg, embed
 
-    def create_highlight_msg():
-        link = f'https://discordapp.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}'
-        user = message.author
-        name = user.nick if user.nick else user.name
-
-        emoji_count = utils.get_valid_emojis(message, threshold)
-        emoji_msg = " | ".join([f"{e}  × **{c}**" for e, c in emoji_count.items()])
-        # urls = utils.extract_url(message)
-        if False and utils.is_only_url(message):
-            embed = discord.Embed(
-                description=f'[傳送門]({link})',
-                color=0xff9831
-            )
-            msg = f"{msg_channel.mention} | {emoji_msg}\n{message.content}"
-        else:
-            embed = discord.Embed(
-                description=f'{message.content}\n\n[傳送門]({link})',
-                color=0xff9831
-            )
-            msg = f"{msg_channel.mention} | {emoji_msg}"
-        embed.set_author(name=name, icon_url=user.avatar)
-        embed = utils.add_attachment(embed, message)
-        created_at_str = message.created_at.strftime("%Y/%m/%d, %H:%M:%S")
-        embed.set_footer(text=created_at_str)
-        return msg, embed
-
-
     # 判斷是否已發送，已發送則更新
     if message.id in guild_config.track:
-        msg, embed = create_highlight_msg()
+        msg, embed = utils.create_highlight_msg(payload, message, threshold)
         hl_msg_id = guild_config.track[message.id].hl_msg_id
-        hl_msg = await send_channel.fetch_message(hl_msg_id)
+        hl_msg = await utils.get_message(send_channel, hl_msg_id)
         if hl_msg:
             log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
             await hl_msg.edit(msg, embed=embed)
@@ -172,7 +153,7 @@ async def on_raw_reaction_add(payload):
             log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
 
     elif utils.is_need_highlight(message, threshold):
-        msg, embed = create_highlight_msg()
+        msg, embed = utils.create_highlight_msg(payload, message, threshold)
         hl_msg = await send_channel.send(msg, embed=embed)
         guild_config.append_track(message, hl_msg)
         log.info(f"新增 {message.id} 的精華 {hl_msg.id}")
