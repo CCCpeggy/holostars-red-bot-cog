@@ -9,11 +9,11 @@ import os
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='-t', intents=intents)
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename='log.txt',
-                    filemode='w')
+                    filename='highlight.log',
+                    filemode='a')
 log = logging.getLogger("HighLightMessage")
 config = None
 
@@ -80,8 +80,21 @@ async def _highlight_channel(ctx):
 
 @bot.event
 @commands.guild_only()
-async def on_raw_reaction_delete(payload):
-    print(payload)
+async def on_raw_reaction_remove(payload):
+    if not config:
+        return
+    guild_config = config.get(payload.guild_id)
+    if payload.message_id not in guild_config.track:
+        return
+    threshold = guild_config.detect[payload.channel_id]
+    msg_channel = bot.get_channel(payload.channel_id)
+    message = await msg_channel.fetch_message(payload.message_id)
+    send_channel = bot.get_channel(guild_config.send_channel_id)
+    if utils.is_need_delete_highlight(message, threshold):
+        hl_msg_id = guild_config.track[message.id].hl_msg_id
+        hl_msg = await send_channel.fetch_message(hl_msg_id)
+        log.info(f"刪除 {message.id} 的精華 {hl_msg.id}")
+        await hl_msg.delete()
 
 @bot.event
 @commands.guild_only()
@@ -150,12 +163,14 @@ async def on_raw_reaction_add(payload):
         msg, embed = create_highlight_msg()
         hl_msg_id = guild_config.track[message.id].hl_msg_id
         hl_msg = await send_channel.fetch_message(hl_msg_id)
+        log.info(f"修改 {message.id} 的精華 {hl_msg.id}")
         await hl_msg.edit(msg, embed=embed)
 
     elif utils.is_need_highlight(message, threshold):
         msg, embed = create_highlight_msg()
         hl_msg = await send_channel.send(msg, embed=embed)
         guild_config.append_track(message, hl_msg)
+        log.info(f"新增 {message.id} 的精華 {hl_msg.id}")
         await utils.hl_timer(guild_config, message)
         
         

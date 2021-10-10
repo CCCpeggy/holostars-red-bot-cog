@@ -10,7 +10,7 @@ from typing import Union
 from config import Config, GuildConfig
 from discord.ext import commands
 log = logging.getLogger("HighLightMessage")
-
+track_time = timedelta(hours=12)
 # config
 
 def load_config(bot: commands.Bot, filename="settings.json"):
@@ -31,7 +31,7 @@ def get_diff_datetime(d1: datetime, d2: datetime=datetime.now(timezone.utc)):
 
 def is_need_highlight(message: discord.Message, threshold: int):
     diff = -get_diff_datetime(message.created_at)
-    if diff > timedelta(hours=12):
+    if diff > track_time:
         return False
     for r in message.reactions:
         if r.count >= threshold:
@@ -61,7 +61,6 @@ def is_only_url(message):
     tmp = message.content
     for url in urls:
         tmp = tmp.replace(url, "")
-    print(tmp)
     return not empty_re.match(tmp)
 
 def get_valid_emojis(message, threshold):
@@ -89,12 +88,14 @@ def add_attachment(embed, message):
 
 
 async def hl_timer(guild_config: GuildConfig, message: discord.Message):
-    seconds_left = timedelta(hours=12).total_seconds() + get_diff_datetime(message.created_at).total_seconds()
+    seconds_left = track_time.total_seconds() + get_diff_datetime(message.created_at).total_seconds()
+    # seconds_left = timedelta(seconds=30).total_seconds() + get_diff_datetime(message.created_at).total_seconds()
     if seconds_left > 0:
         await asyncio.sleep(seconds_left)
     if message.id in guild_config.track:
         del guild_config.track[message.id]
         guild_config._parent.save()
+        log.info(f"取消追蹤 {message.id}")
 
 # async def sleep_12_hours(self):
 #     await self.bot.wait_until_red_ready()
