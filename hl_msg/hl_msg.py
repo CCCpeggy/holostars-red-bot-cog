@@ -110,9 +110,15 @@ async def on_raw_reaction_remove(payload):
         else:
             log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
 
+handle_message_ids = []
 @bot.event
 @commands.guild_only()
 async def on_raw_reaction_add(payload):
+    if payload.message_id in handle_message_ids:
+        return
+    handle_message_ids.append(payload.message_id)
+    if len(handle_message_ids) > 50:
+        handle_message_ids.pop(0)
     if not config:
         return
     guild_config = config.get(payload.guild_id)
@@ -155,13 +161,16 @@ async def on_raw_reaction_add(payload):
             await hl_msg.edit(msg, embed=embed)
         else:
             log.info(f"{message.id} 的精華 {hl_msg_id} 已經刪除")
-
     elif utils.is_need_highlight(message, threshold):
         msg, embed = utils.create_highlight_msg(payload, message, threshold)
         hl_msg = await send_channel.send(msg, embed=embed)
         guild_config.append_track(message, hl_msg)
         log.info(f"新增 {message.id} 的精華 {hl_msg.id}")
+        if payload.message_id in handle_message_ids:
+            handle_message_ids.remove(payload.message_id)
         await utils.hl_timer(guild_config, message)
+    if payload.message_id in handle_message_ids:
+        handle_message_ids.remove(payload.message_id)
         
         
 
