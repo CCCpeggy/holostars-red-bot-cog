@@ -255,7 +255,10 @@ print("Re: Hello world")
         elif "對不起" in message.content:
             await message.channel.send(":pleading_face:")
         elif "不乖" in message.content or"叛逆" in message.content:
-            await message.channel.send(":pleading_face:")
+            if await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
+                await message.channel.send("<@405327571903971333>")
+            else:
+                await message.channel.send(":pleading_face:")
         elif "定理" in message.content or"定律" in message.content or "數學" in message.content or "物理" in message.content or "化學" in message.content or "生物" in message.content or "公式" in message.content or "喜歡誰" in message.content or "比" in message.content or "社會" in message.content or "歷史" in message.content:
             await message.channel.send("<:Sh_hmmm:887761992352407552> ")
         elif "乖" in message.content:
