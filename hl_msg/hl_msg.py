@@ -70,7 +70,8 @@ async def _highlight_channel(ctx):
     # 個別頻道達成表符數量
     for k, v in guild_config.detect.items():
         channel = bot.get_channel(k)
-        channel_data.append(f"> #{channel.name}: {v}")
+        if channel:
+            channel_data.append(f"> #{channel.name}: {v}")
     channel_data = "\n".join(channel_data)
 
     data = f"""伺服器設定
