@@ -32,7 +32,9 @@ async def get_message(channel: discord.TextChannel, message_id: int):
     except:
         return None
 
-def get_diff_datetime(d1: datetime, d2: datetime=datetime.now(timezone.utc)):
+def get_diff_datetime(d1: datetime, d2: datetime=None):
+    if not d2:
+        d2 = datetime.now(timezone.utc)
     return d1 - d2
 
 def is_need_highlight(message: discord.Message, threshold: int):
@@ -41,6 +43,7 @@ def is_need_highlight(message: discord.Message, threshold: int):
         return False
     for r in message.reactions:
         if r.count >= threshold:
+            print(diff)
             return True
     return False
 
