@@ -1321,7 +1321,7 @@ class StarStream(commands.Cog):
                 getTimeStamp(datetime.now(timezone.utc))
             if diff <= 0:
                 raise PassDate
-            if diff > 31*24*60*60:
+            if diff > (31*24+8)*60*60:
                 raise FutureDate
             reaction, mod = await self.send_reaction_check_cross(message)
             member_channel = self.bot.get_channel(info["text_channel_id"])
