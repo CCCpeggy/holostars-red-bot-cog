@@ -175,6 +175,10 @@ class TempRole(commands.Cog):
         non_temp_list = []
         for member in role.members:
             user_tr = await self.config.member(member).temp_roles()
+            if len(non_temp_list) >= 100:
+                await ctx.send(f"名單：{', '.join(non_temp_list)}",
+                allowed_mentions=discord.AllowedMentions.none())
+                non_temp_list = []
             if str(role.id) not in user_tr:
                 non_temp_list.append(member.mention)
 
