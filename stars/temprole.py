@@ -179,7 +179,8 @@ class TempRole(commands.Cog):
                 non_temp_list.append(member.mention)
 
         if len(non_temp_list) > 0:
-            await ctx.send(f"名單：{', '.join(non_temp_list)}")
+            await ctx.send(f"名單：{', '.join(non_temp_list)}",
+            allowed_mentions=discord.AllowedMentions.none())
         else:
             await ctx.send("所有人都有 temprole")
 
