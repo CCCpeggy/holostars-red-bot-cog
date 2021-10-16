@@ -117,7 +117,7 @@ def create_highlight_msg(payload, message, threshold):
         msg = f"{message.channel.mention} | {emoji_msg}"
     embed.set_author(name=name, icon_url=user.avatar)
     embed = add_attachment(embed, message)
-    created_at_str = message.created_at.strftime("%Y/%m/%d, %H:%M:%S")
+    created_at_str = (message.created_at + timedelta(hours=8)).strftime("%Y/%m/%d, %H:%M:%S")
     embed.set_footer(text=created_at_str)
     return msg, embed
 
