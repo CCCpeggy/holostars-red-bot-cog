@@ -24,11 +24,15 @@ SOFTWARE.
 
 import typing
 import asyncio
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime, timedelta, timezone
+from dateutil.parser import parse as parse_time
 
 import discord
-from redbot.core import commands, Config
+from redbot.core import checks, commands, Config
 from redbot.core.utils.chat_formatting import humanize_list
+
+log = logging.getLogger("red.core.cogs.TempRole")
 
 if typing.TYPE_CHECKING:
     TimeConverter = timedelta
@@ -115,41 +119,43 @@ class TempRole(commands.Cog):
         await self._tr_timer(user, role, end_time.timestamp())
 
 
+    @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    @commands.admin_or_permissions(manage_roles=True)
+    @checks.mod_or_permissions(manage_channels=True)
     @_temp_role.command(name="add")
-    async def _add(self, ctx: commands.Context, user: discord.Member, role: discord.Role, *, time: TimeConverter):
+    async def _add(self, ctx: commands.Context, user: discord.Member, role: discord.Role, *, iso_time: str):
         """
         Assign a temporary role to expire after a time.
 
-        For the time, enter in terms of weeks (w), days (d), and/or hours (h).
+        For the time, time nees iso format
         """
         # if role in user.roles:
         #     return await ctx.send(f"That user already has {role.mention}!")
+        iso_time = parse_time(iso_time).replace(tzinfo=timezone.utc)
+        time = iso_time - datetime.now(timezone.utc)
 
-        if role >= ctx.guild.me.top_role or (role >= ctx.author.top_role and ctx.author != ctx.guild.owner):
+        if time.total_seconds() <= 0:
+            return await ctx.send("過去時間")
+
+        if role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
+            if role >= ctx.author.top_role:
+                log.info(2)
+            if ctx.author != ctx.guild.owner:
+                log.info(3)
             return await ctx.send("That role cannot be assigned due to the Discord role hierarchy!")
 
         async with self.config.member(user).temp_roles() as user_tr:
-            # if user_tr.get(str(role.id)):
-            #     return await ctx.send(
-            #         f"That is already an active TempRole for {user.mention}!",
-            #         allowed_mentions=discord.AllowedMentions.none()
-            #     )
             try:
-                end_time = datetime.now() + time
+                end_time = datetime.now(timezone.utc) + time
             except OverflowError:
                 return await ctx.send(OVERFLOW_ERROR)
             user_tr[str(role.id)] = end_time.timestamp()
 
-        if role < ctx.guild.me.top_role:
-            if role not in user.roles:
-                await user.add_roles(
-                    role,
-                    reason=f"TempRole: added by {ctx.author}, expires in {time.days}d {time.seconds//3600}h"
-                )
-        else:
-            return await ctx.send("I cannot assign this role!")
+        if role not in user.roles:
+            await user.add_roles(
+                role,
+                reason=f"TempRole: added by {ctx.author}, expires in {time.days}d {time.seconds//3600}h"
+            )
 
         message = f"TempRole {role.mention} for {user.mention} has been added. Expires in {time.days} days {time.seconds//3600} hours."
         await ctx.send(
@@ -158,7 +164,26 @@ class TempRole(commands.Cog):
         )
 
         await self._maybe_send_log(ctx.guild, message)
-        asyncio.create_task(self._tr_timer(user, role, end_time.timestamp()))
+        await self._tr_timer(user, role, end_time.timestamp())
+
+    @commands.guild_only()
+    @commands.bot_has_permissions(manage_roles=True)
+    @checks.mod_or_permissions(manage_channels=True)
+    @_temp_role.command(name="check")
+    async def _check(self, ctx: commands.Context, role: discord.Role):
+        """列出指令身分組但沒有暫時身分限制的名單."""
+        non_temp_list = []
+        for member in role.members:
+            user_tr = await self.config.member(member).temp_roles()
+            if str(role.id) not in user_tr:
+                non_temp_list.append(member.mention)
+
+        if len(non_temp_list) > 0:
+            await ctx.send(f"名單：{', '.join(non_temp_list)}")
+        else:
+            await ctx.send("所有人都有 temprole")
+
+        
 
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)
