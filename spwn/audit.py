@@ -51,7 +51,7 @@ class Audit(commands.Cog):
         input_channel_ids = 902566141786988575
         if message.channel.id != input_channel_ids:
             return
-        result_channel_id = 902566974364725348
+        result_channel_id = 902566271902707732
         new_channel_id = 901845395326525450
         role_id = 901847104996126790
         error_name = None
