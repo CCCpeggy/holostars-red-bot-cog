@@ -53,7 +53,7 @@ class Audit(commands.Cog):
             return
         result_channel_id = 902566271902707732
         new_channel_id = 901845395326525450
-        role_id = 901847104996126790
+        role_id = 901845427865919508
         error_name = None
         handler_msg = "此為機器人自動偵測。"
         err_msg = """請重新檢查資料後重新傳送審核資料。
@@ -110,6 +110,7 @@ class Audit(commands.Cog):
                     description="""伺服器錯誤，請稍後一下""",
                 )
             )
+            return
         else:
             await result_channel.send(
                 f"{message.author.mention}",
