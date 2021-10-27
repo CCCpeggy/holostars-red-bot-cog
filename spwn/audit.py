@@ -49,14 +49,14 @@ class Audit(commands.Cog):
         """SPWN 審核"""
         pass
 
-    @commands.command(name="see")
+    @spwn.command(name="see")
     async def _see(self, ctx: commands.Context, member: discord.Member):
         close_channel = self.bot.get_channel(902566905192284212)
-        await close_channel.set_permissions(member, read_messages=False)
+        await close_channel.set_permissions(member, read_messages=True)
         close_channel = self.bot.get_channel(902566141786988575)
-        await close_channel.set_permissions(member, read_messages=False)
+        await close_channel.set_permissions(member, read_messages=True)
         close_channel = self.bot.get_channel(902566671171092550)
-        await close_channel.set_permissions(member, read_messages=False)
+        await close_channel.set_permissions(member, read_messages=True)
 
     
     @commands.Cog.listener()
