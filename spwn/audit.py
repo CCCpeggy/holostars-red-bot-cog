@@ -37,8 +37,27 @@ class Audit(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.bot.loop.create_task(self.load_var())
 
+        
+
     async def load_var(self):
         self.spwn_id = await self.config.spwn_id()
+
+    @commands.group()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def spwn(self, ctx: commands.Context):
+        """SPWN 審核"""
+        pass
+
+    @commands.command(name="see")
+    async def _see(self, ctx: commands.Context, member: discord.Member):
+        close_channel = self.bot.get_channel(902566905192284212)
+        await close_channel.set_permissions(member, read_messages=False)
+        close_channel = self.bot.get_channel(902566141786988575)
+        await close_channel.set_permissions(member, read_messages=False)
+        close_channel = self.bot.get_channel(902566671171092550)
+        await close_channel.set_permissions(member, read_messages=False)
+
     
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -81,13 +100,13 @@ class Audit(commands.Cog):
                     role,
                     reason=f"SPWN 權限審核通過"
                 )
-                can_read_msg = is_mod_or_superior(self.bot, message.author)
-                close_channel = self.bot.get_channel(902566905192284212)
-                await close_channel.set_permissions(message.author, read_messages=can_read_msg)
-                close_channel = self.bot.get_channel(input_channel_ids)
-                await close_channel.set_permissions(message.author, read_messages=can_read_msg)
-                close_channel = self.bot.get_channel(902566671171092550)
-                await close_channel.set_permissions(message.author, read_messages=can_read_msg)
+                if is_mod_or_superior(self.bot, message.author):
+                    close_channel = self.bot.get_channel(902566905192284212)
+                    await close_channel.set_permissions(message.author, read_messages=False)
+                    close_channel = self.bot.get_channel(input_channel_ids)
+                    await close_channel.set_permissions(message.author, read_messages=False)
+                    close_channel = self.bot.get_channel(902566671171092550)
+                    await close_channel.set_permissions(message.author, read_messages=False)
             elif reaction == "Cancel":
                 raise ModRefused
             else:
