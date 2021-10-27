@@ -57,7 +57,7 @@ class Audit(commands.Cog):
         error_name = None
         handler_msg = "此為機器人自動偵測。"
         err_msg = """請重新檢查資料後重新傳送審核資料。
- 有任何疑問請至 <#902566974364725348>。
+ 有任何疑問請至 <#902566671171092550>。
  {}"""
 
         color=0xff0000,
@@ -81,6 +81,12 @@ class Audit(commands.Cog):
                     role,
                     reason=f"SPWN 權限審核通過"
                 )
+                close_channel = self.bot.get_channel(902566905192284212)
+                await close_channel.set_permissions(message.author, read_messages=False)
+                close_channel = self.bot.get_channel(input_channel_ids)
+                await close_channel.set_permissions(message.author, read_messages=False)
+                close_channel = self.bot.get_channel(902566671171092550)
+                await close_channel.set_permissions(message.author, read_messages=False)
             elif reaction == "Cancel":
                 raise ModRefused
             else:
