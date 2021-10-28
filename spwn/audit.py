@@ -57,6 +57,10 @@ class Audit(commands.Cog):
         await close_channel.set_permissions(member, read_messages=isopen)
         close_channel = self.bot.get_channel(902566671171092550)
         await close_channel.set_permissions(member, read_messages=isopen)
+        if isopen:
+            await ctx.send(f"已設置 {member.mention} 為看的到頻道")
+        else:
+            await ctx.send(f"已設置 {member.mention} 為看不到頻道")
 
     
     @commands.Cog.listener()
