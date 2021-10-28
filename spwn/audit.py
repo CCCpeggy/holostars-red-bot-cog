@@ -120,6 +120,7 @@ class Audit(commands.Cog):
         except RepeatSPWNID:
             error_name = "重複的 SPWN UID"
         except ModRefused:
+            error_name = ""
             handler_msg = f"處理人：{mod.mention}"
             pass
         except ReactionTimeout:
