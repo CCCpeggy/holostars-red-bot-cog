@@ -100,7 +100,7 @@ class Audit(commands.Cog):
                     role,
                     reason=f"SPWN 權限審核通過"
                 )
-                if is_mod_or_superior(self.bot, message.author):
+                if not is_mod_or_superior(self.bot, message.author):
                     close_channel = self.bot.get_channel(902566905192284212)
                     await close_channel.set_permissions(message.author, read_messages=False)
                     close_channel = self.bot.get_channel(input_channel_ids)
