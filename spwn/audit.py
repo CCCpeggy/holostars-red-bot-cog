@@ -67,6 +67,8 @@ class Audit(commands.Cog):
         await self.audit_data(message)
 
     async def audit_data(self, message):
+        if message.content == "":
+            return
         input_channel_ids = 902566141786988575
         if message.channel.id != input_channel_ids:
             return
