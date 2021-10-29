@@ -73,7 +73,7 @@ async def _auto_pin(ctx):
             print("沒有權限")
             return
     if not ctx.message.reference:
-        ctx.channel.send("沒有回覆釘選訊息")
+        await ctx.channel.send("沒有回覆釘選訊息")
         return
     message_id = ctx.message.reference.message_id
     ref_msg = await get_message(ctx.channel, message_id)
