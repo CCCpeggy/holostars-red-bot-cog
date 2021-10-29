@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO,
                     filemode='a')
 log = logging.getLogger("AutoPin")
 emojis = {
-    "\U0001F4CC	": "Done",
+    "\U0001F4CC": "Done",
     "\U0000274C": "Cancel"
 }
 
