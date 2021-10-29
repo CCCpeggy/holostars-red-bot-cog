@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.INFO,
                     filemode='a')
 log = logging.getLogger("AutoPin")
 emojis = {
-    "⭐": "Done",
-    "❌": "Cancel"
+    "\N{WHITE MEDIUM STAR}": "Done",
+    "\U0000274C": "Cancel"
 }
 
 def load_config(bot: commands.Bot, filename="settings.json"):
