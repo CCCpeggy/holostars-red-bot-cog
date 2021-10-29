@@ -69,7 +69,7 @@ async def get_message(channel, message_id):
 @commands.guild_only()
 async def _auto_pin(ctx):
     if ctx.channel.id not in config.channel_ids:
-        if ctx.channel.parent_id not in config.channel_ids:
+        if not isinstance(ctx.channel, discord.Thread) or ctx.channel.parent_id not in config.channel_ids:
             print("沒有權限")
             return
     if not ctx.message.reference:
