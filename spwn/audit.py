@@ -50,13 +50,17 @@ class Audit(commands.Cog):
         pass
 
     @spwn.command(name="see")
-    async def _see(self, ctx: commands.Context, member: discord.Member):
+    async def _see(self, ctx: commands.Context, member: discord.Member, isopen: bool=True):
         close_channel = self.bot.get_channel(902566905192284212)
-        await close_channel.set_permissions(member, read_messages=True)
+        await close_channel.set_permissions(member, read_messages=isopen)
         close_channel = self.bot.get_channel(902566141786988575)
-        await close_channel.set_permissions(member, read_messages=True)
+        await close_channel.set_permissions(member, read_messages=isopen)
         close_channel = self.bot.get_channel(902566671171092550)
-        await close_channel.set_permissions(member, read_messages=True)
+        await close_channel.set_permissions(member, read_messages=isopen)
+        if isopen:
+            await ctx.send(f"已設置 {member.mention} 為看的到頻道")
+        else:
+            await ctx.send(f"已設置 {member.mention} 為看不到頻道")
 
     
     @commands.Cog.listener()
@@ -67,6 +71,8 @@ class Audit(commands.Cog):
         await self.audit_data(message)
 
     async def audit_data(self, message):
+        if message.content == "":
+            return
         input_channel_ids = 902566141786988575
         if message.channel.id != input_channel_ids:
             return
@@ -100,7 +106,7 @@ class Audit(commands.Cog):
                     role,
                     reason=f"SPWN 權限審核通過"
                 )
-                if is_mod_or_superior(self.bot, message.author):
+                if not await is_mod_or_superior(self.bot, message.author):
                     close_channel = self.bot.get_channel(902566905192284212)
                     await close_channel.set_permissions(message.author, read_messages=False)
                     close_channel = self.bot.get_channel(input_channel_ids)
@@ -120,6 +126,7 @@ class Audit(commands.Cog):
         except RepeatSPWNID:
             error_name = "重複的 SPWN UID"
         except ModRefused:
+            error_name = ""
             handler_msg = f"處理人：{mod.mention}"
             pass
         except ReactionTimeout:
