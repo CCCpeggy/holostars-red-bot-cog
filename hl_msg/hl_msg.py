@@ -124,11 +124,10 @@ async def on_raw_reaction_add(payload):
         return
     msg_channel = bot.get_channel(payload.channel_id)
     guild_config = config.get(payload.guild_id)
-    if payload.channel_id not in guild_config.detect:
-        if not isinstance(msg_channel, discord.Thread) or msg_channel.parent_id not in guild_config.detect:
-            print("沒有權限")
-            return
-    threshold = guild_config.detect[payload.channel_id]
+    channel_id = msg_channel.parent_id if isinstance(msg_channel, discord.Thread) else payload.channel_id
+    if channel_id not in guild_config.detect:
+        return
+    threshold = guild_config.detect[channel_id]
     message = await msg_channel.fetch_message(payload.message_id)
     send_channel = bot.get_channel(guild_config.send_channel_id)
     # member = message.guild.get_member(message.author.id)
