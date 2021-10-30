@@ -99,6 +99,13 @@ class Talk(commands.Cog):
                     await message.channel.send("這不好說")
             else:
                 await message.channel.send("嘖嘖")
+        elif message.content.startswith("冷丸說"):
+            if message.reference:
+                ref_msg_id = message.reference.message_id
+                ref_msg = await self.get_message(message.channel, ref_msg_id)
+                await ref_msg.reply(message.content[3:], mention_author=False)
+            else:
+                await message.channel.send(message.content[3:])
         elif message.content[2:] in self.learned_talk_queue:
             ans = self.learned_talk[message.content[2:]]
             if isinstance(ans, str):
@@ -292,3 +299,10 @@ print("Re: Hello world")
         else:
             await message.channel.send(random.choice(["chi~", "chi chi~", "chi chi chi~"]))
     
+    async def get_message(self, channel, message_id):
+        try:
+            message = await channel.fetch_message(message_id)
+        except:
+            return False
+        else:
+            return message
