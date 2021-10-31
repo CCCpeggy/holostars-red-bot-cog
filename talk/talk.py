@@ -31,17 +31,20 @@ class Talk(commands.Cog):
     async def talk_bot(self, message):
         if message.author.id == 875013341007999037:
             return
-        if not message.content.startswith("冷丸"):
+        if message.content.startswith("!t"):
             return
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
-        
         if "天才" in message.content:
             await message.add_reaction("<:Te_tensai:887747027637792888>")
         elif "天真" in message.content or "3D" in message.content:
             await message.add_reaction("<:Te_light:887747027658764300>")
 
+        if not message.content.startswith("冷丸t"):
+            await message.add_reaction("\U00002B50")
+            await message.add_reaction("\U0000274C")
+            return
         if message.content.startswith("冷丸學"):
             tmp = message.content[3:].split(" ")
             que = tmp[0]
