@@ -31,7 +31,7 @@ class Talk(commands.Cog):
     async def talk_bot(self, message):
         if message.author.id == 875013341007999037:
             return
-        if message.content.startswith("!t ") and message.channel.id in [889525732122968074]: # 861601484735381514
+        if message.content.startswith("!t ") and message.channel.id in [889525732122968074, 861601484735381514]:
             await message.add_reaction("\U00002B50")
             await message.add_reaction("\U0000274C")
             return
