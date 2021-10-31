@@ -41,7 +41,7 @@ class Talk(commands.Cog):
         elif "天真" in message.content or "3D" in message.content:
             await message.add_reaction("<:Te_light:887747027658764300>")
 
-        if not message.content.startswith("冷丸t"):
+        if message.content.startswith("冷丸t"):
             await message.add_reaction("\U00002B50")
             await message.add_reaction("\U0000274C")
             return
