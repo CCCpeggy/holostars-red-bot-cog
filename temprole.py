@@ -158,7 +158,7 @@ class TempRole(commands.Cog):
         )
 
         await self._maybe_send_log(ctx.guild, message)
-        await self._tr_timer(user, role, end_time.timestamp())
+        asyncio.create_task(self._tr_timer(user, role, end_time.timestamp()))
 
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)

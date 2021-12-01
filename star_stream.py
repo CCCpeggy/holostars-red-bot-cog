@@ -9,6 +9,7 @@ from redbot.core.utils.chat_formatting import escape, pagify
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.mod import is_mod_or_superior
+from redbot.core.utils import AsyncIter
 from .youtube_stream import YouTubeStream, get_video_belong_channel
 from .scheduled_stream import ScheduledStream
 from .temprole import TempRole
@@ -32,6 +33,7 @@ from .errors import (
     ModRefused,
     ReactionTimeout,
     ServerError,
+    NotFound,
 )
 
 import re
@@ -84,9 +86,9 @@ class StarStream(commands.Cog):
         "membership_input_channel_id": None,
         "membership_result_channel_id": None,
         "membership_command_channel_id": None,
-        "membership_membership_names": [],
-        "membership_membership_roles": [],
-        "membership_membership_text_channel_ids": [],
+        "membership_names": [],
+        "membership_roles": [],
+        "membership_text_channel_ids": [],
         "membership_enable": False,
     }
 
@@ -254,27 +256,24 @@ class StarStream(commands.Cog):
 
         Use: [p]stars channel unset [YT channel id | YT channel name | all]
         """
-        async def delete_stream(stream):
-            self.streams.remove(stream)
+        async def send_remove_message(stream):
             await ctx.send(
-                _(
-                    "I won't send notifications about {stream.name} in this channel anymore."
-                ).format(stream=stream)
+                f"I won't send notifications about {stream.name} in this channel anymore."
             )
-        if channel_name_or_id_or_all == "all":
-            while len(self.streams) > 0:
-                await delete_stream(self.streams[0])
-        else:
-            stream = self.get_stream(channel_name_or_id_or_all)
-            if not stream:
-                await ctx.send(
-                    _(
-                        "It's not exist."
-                    ).format(stream=stream)
-                )
+        try:   
+            if channel_name_or_id_or_all == "all":
+                for stream in self.streams:
+                    await send_remove_message(stream)
+                self.streams = []
             else:
-                await delete_stream(stream)
-        await self.save_streams()
+                stream = self.get_stream(channel_name_or_id_or_all)
+                if not stream:
+                    raise NotFound
+                self.streams.remove(stream)
+                await send_remove_message(stream)
+            await self.save_streams()
+        except NotFound:
+            await ctx.send(f"在設定中找不到 `{channel_name_or_id_or_all}` 對應的頻道")
 
     @_stars_channel.command(name="list")
     async def _stars_channel_list(self, ctx: commands.Context):
@@ -411,10 +410,10 @@ class StarStream(commands.Cog):
             time=datetime_plus_8_to_0_isoformat(stream_time),
             change_channel_name=change_channel_name
         )
-        message = await ctx.send("test")
+        message = await ctx.send("請選擇連動人員，選擇完畢後請按\N{WHITE HEAVY CHECK MARK}，取消請按\N{NEGATIVE SQUARED CROSS MARK}")
         emojis = {
             "\N{WHITE HEAVY CHECK MARK}": "Done",
-            "\N{LATIN CAPITAL LETTER X}": "Cancel"
+            "\N{NEGATIVE SQUARED CROSS MARK}": "Cancel"
         }
         selected = {}
         for stream in self.streams:
@@ -523,8 +522,7 @@ class StarStream(commands.Cog):
             if stream:
                 if video_id not in stream.livestreams:
                     stream.livestreams.append(video_id)
-                if video_id in stream.scheduled_sent:
-                    stream.scheduled_sent.remove(video_id)
+                stream.scheduled_sent.pop(video_id, None)
                 if video_id in stream.streaming_sent:
                     stream.streaming_sent.remove(video_id)
                 await self.save_streams()
@@ -570,6 +568,8 @@ class StarStream(commands.Cog):
             )
             ms = [m]
             for i in range(1, len(content)):
+                if content[i] == "":
+                    continue
                 time.sleep(2)
                 m = await channel.send(
                     content[i],
@@ -578,39 +578,6 @@ class StarStream(commands.Cog):
                 )
                 ms.append(m)
             return ms
-
-    async def _send_video_alert(
-            self,
-            channel: discord.TextChannel,
-            embed: discord.Embed,
-            content: str = None):
-        if content == None:
-            m = await channel.send(
-                None,
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions(
-                    roles=True, everyone=True),
-            )
-        else:
-            content = content.split(new_line)
-            if len(content) == 1:
-                m = await channel.send(
-                    content[0],
-                    embed=embed,
-                    allowed_mentions=discord.AllowedMentions(
-                        roles=True, everyone=True),
-                )
-            else:
-                for c in content:
-                    m = await channel.send(
-                        c,
-                        # embed=embed,
-                        allowed_mentions=discord.AllowedMentions(
-                            roles=True, everyone=True),
-                    )
-                    time.sleep(3)
-        # TODO: message_data = {"guild": m.guild.id, "channel": m.channel.id, "message": m.id}
-        # stream.messages.append(message_data)
 
     @stars.group()
     @commands.guild_only()
@@ -647,34 +614,33 @@ class StarStream(commands.Cog):
     @commands.guild_only()
     @checks.is_owner()
     async def settings(self, ctx: commands.Context):
-        file_name = "settings"
         data = json.dumps(await self.config.get_raw()).encode('utf-8')
         to_write = BytesIO()
         to_write.write(data)
         to_write.seek(0)
-        await ctx.send(file=discord.File(to_write, filename=f"{file_name}.txt"))
+        await ctx.send(file=discord.File(to_write, filename=f"global_settings.json"))
+        data = json.dumps(await self.config.guild(ctx.guild).get_raw()).encode('utf-8')
+        to_write = BytesIO()
+        to_write.write(data)
+        to_write.seek(0)
+        await ctx.send(file=discord.File(to_write, filename=f"guild_settings.json"))
         # log.info(await self.config.get_raw())
 
     async def check_streams(self):
-        return
-        to_remove = []
         for stream in self.streams:
             try:
                 try:
-                    scheduled_data, streaming_data = await stream.is_online()
+                    scheduled_datas, streaming_data = await stream.is_online()
                 except StreamNotFound:
                     log.info("Stream with name %s no longer exists", stream.name)
                     continue
                 except OfflineStream:
-                    if not stream.messages:
-                        continue
                     stream.messages.clear()
                     stream.scheduled_sent.clear()
                     stream.streaming_sent.clear()
-                    stream.chat_channel_id.clear()
                     stream.livestreams.clear()
                     stream.not_livestreams.clear()
-                    await self.save_streams()
+                    continue
                 except APIError as e:
                     log.error(
                         "Something went wrong whilst trying to contact the stream service's API.\n"
@@ -684,187 +650,139 @@ class StarStream(commands.Cog):
                     continue
                 else:
                     # alert_msg = await self.config.guild(channel.guild).live_message_mention()
-                    changed = False
 
-                    # 沒有預定也沒自動發過預定，先自動正在直播的預定通知
-                    if streaming_data:
-                        info = YouTubeStream.get_info(streaming_data)
-                        if stream.chat_channel_id and info["video_id"] not in stream.scheduled_sent:
-                            scheduled_data = streaming_data
-
-                    if scheduled_data:
-                        info = YouTubeStream.get_info(scheduled_data)
-                        video_id = info["video_id"]
-                        channel = self.bot.get_channel(stream.chat_channel_id)
-                        scheduled_stream = self.get_scheduled_stream(
-                            yt_channel_id=info["channel_id"],
-                            time=info["time"],
-                            video_ids=[info["video_id"], ""]
-                        )
-                        content = await self.config.guild(channel.guild).scheduled_message()
-                        if video_id not in stream.scheduled_sent:
-                            if scheduled_stream:
-                                idx = scheduled_stream.channel_ids.index(
-                                    info["channel_id"])
-                                scheduled_stream.video_ids[idx] = video_id
-                                await self.send_scheduled(
-                                    scheduled_stream.text_channel_id,
-                                    pin=True, content=content, info=info, scheduled_stream=scheduled_stream
-                                )
-                                stream.scheduled_sent.append(video_id)
-                                changed = True
-                            elif (not streaming_data or streaming_data == scheduled_data) and stream.chat_channel_id:
-                                await self.send_scheduled(
-                                    stream.chat_channel_id, info=info, pin=True, content=content
-                                )
-                                stream.scheduled_sent.append(video_id)
-                                changed = True
+                    sent_channel_ids = []
+                    for scheduled_data in scheduled_datas:
+                        log.info(YouTubeStream.get_info(scheduled_data)["video_id"])
+                        if scheduled_data:
+                            sent_channel_id = await self.process_scheduled_data(stream, scheduled_data, sent_channel_ids)
+                            if sent_channel_id:
+                                sent_channel_ids.append(sent_channel_id)
 
                     if streaming_data:
-                        info = YouTubeStream.get_info(streaming_data)
-                        scheduled_stream = self.get_scheduled_stream(
-                            yt_channel_id=info["channel_id"],
-                            time=info["time"],
-                            video_ids=[info["video_id"], ""]
-                        )
-                        video_id = YouTubeStream.get_info(
-                            streaming_data)["video_id"]
-                        if video_id not in stream.streaming_sent:
-                            channel = self.bot.get_channel(
-                                stream.mention_channel_id)
-                            content = await self.config.guild(channel.guild).mention_message()
-                            # 連動直播第一次發開播通知
-                            if scheduled_stream and not scheduled_stream.streaming_sent:
-                                collab_mention = await self.config.guild(channel.guild).collab_mention_message()
-                                await self.send_streaming(
-                                    streaming_data, stream.mention_channel_id,
-                                    is_mention=True, embed=True,
-                                    chat_channel_id=stream.chat_channel_id,
-                                    content=content,
-                                    collab_mention=collab_mention,
-                                    scheduled_stream=scheduled_stream
-                                )
-                            # 一般開播通知
-                            elif stream.mention_channel_id:
-                                await self.send_streaming(
-                                    streaming_data, stream.mention_channel_id,
-                                    is_mention=True, embed=True,
-                                    chat_channel_id=stream.chat_channel_id,
-                                    content=content
-                                )
-                            chat_channel_id = scheduled_stream.text_channel_id if scheduled_stream else stream.chat_channel_id
-                            if scheduled_stream and scheduled_stream.streaming_sent:
-                                pass
-                            elif chat_channel_id:
-                                channel = self.bot.get_channel(
-                                    stream.chat_channel_id)
-                                content = await self.config.guild(channel.guild).chat_message()
-                                await self.send_streaming(
-                                    streaming_data, chat_channel_id,
-                                    is_mention=False, embed=False,
-                                    content=content
-                                )
-                            stream.streaming_sent.append(video_id)
-                            changed = True
-                            if scheduled_stream:
-                                pass
-                                scheduled_stream.streaming_sent = True
-                    if changed:
-                        await self.save_streams()
-                        await self.save_scheduled_streams()
+                        await self.process_streaming_data(stream, streaming_data)
+
             except Exception as e:
                 log.error(
                     "An error has occured with Streams. Please report it.", exc_info=e)
+        await self.save_streams()
+        await self.save_scheduled_streams()
 
-        if to_remove:
-            for stream in to_remove:
-                self.streams.remove(stream)
-            await self.save_streams()
-
-    async def send_streaming(
-        self, data, channel_id, is_mention, content=None, collab_mention=None, embed=False, description=None, pin=False, chat_channel_id=None, scheduled_stream=None
-    ):
-        embed = YouTubeStream.make_embed(data) if embed else None
-        info = YouTubeStream.get_info(data)
-
-        url = youtube_url_format_2.format(info["video_id"])
-        if not content:
-            content = "{url}"
-
-        def replace_content(content):
-            content = content.replace("{channel_name}", info["channel_name"])
-            content = content.replace("{url}", url)
-            content = content.replace(
-                "{description}", description if description else info["title"])
-            content = content.replace("{new_line}", "\n")
-            if chat_channel_id:
-                chat_channel = self.bot.get_channel(chat_channel_id)
-                if chat_channel:
-                    content = content.replace(
-                        "{chat_channel}", chat_channel.mention)
-            return content
-        content = replace_content(content)
+    async def process_scheduled_data(self, stream, scheduled_data, sent_channel_ids):
+        info = YouTubeStream.get_info(scheduled_data)
+        scheduled_stream = self.get_scheduled_stream(
+            yt_channel_id=info["channel_id"],
+            time=info["time"],
+            video_ids=[info["video_id"], ""]
+        )
+        # 有設定直播
         if scheduled_stream:
-            chat_channel_id = scheduled_stream.text_channel_id
-            if not collab_mention:
-                collab_mention = content
-            for channel_id in scheduled_stream.channel_ids:
-                stream = self.get_stream(channel_id)
-                if not stream:
-                    continue
-                channel = self.bot.get_channel(stream.mention_channel_id)
-                if not channel:
-                    continue
-                if await self.bot.cog_disabled_in_guild(self, channel.guild):
-                    continue
-                await set_contextual_locales_from_guild(self.bot, channel.guild)
-                mention_str, edited_roles = (await self._get_mention_str(
-                    channel.guild, channel, [channel_id]
-                )) if is_mention else ("", [])
-                content_tmp = collab_mention if channel_id != info["channel_id"] else content
-                content_tmp = replace_content(content_tmp)
-                content_tmp = content_tmp.replace("{mention}", mention_str)
-                ms = await self._send_stream_alert(channel, embed, content_tmp)
-                if pin:
-                    await ms[0].pin()
+            send_channel_id = scheduled_stream.text_channel_id
+            idx = scheduled_stream.channel_ids.index(info["channel_id"])
+            scheduled_stream.video_ids[idx] = info["video_id"]
+        # 沒有設定直播
         else:
-            channel = self.bot.get_channel(channel_id)
-            if not channel:
-                return
-            if await self.bot.cog_disabled_in_guild(self, channel.guild):
-                return
-            await set_contextual_locales_from_guild(self.bot, channel.guild)
-            mention_str, edited_roles = (await self._get_mention_str(
-                channel.guild, channel, [info["channel_id"]]
-            )) if is_mention else ("", [])
-            content = content.replace("{mention}", mention_str)
-            ms = await self._send_stream_alert(channel, embed, content)
-            if pin:
-                await ms[0].pin()
+            send_channel_id = stream.chat_channel_id
 
-    async def send_scheduled(self, channel_id, info=None, content=None, pin=False, scheduled_stream=None):
+        send_channel = self.bot.get_channel(send_channel_id)
+        # 此文字頻道發送過通知則不再發送
+        if send_channel_id in sent_channel_ids and not scheduled_stream:
+            # 如果原本已經發送，則刪除原訊息
+            if info["video_id"] in stream.scheduled_sent:
+                message_id = stream.scheduled_sent[info["video_id"]]
+                if message_id:
+                    message = await self.get_message(send_channel, message_id)
+                    if message:
+                        await message.delete()
+                    stream.scheduled_sent.pop(info["video_id"])
+            return None
 
+        # 預定直播已經送過了
+        # if scheduled_stream and scheduled_stream.message_id:
+        #     if await self.get_message(send_channel, scheduled_stream.message_id):
+        #         return send_channel_id
+        # 自動偵測直播已經送過了
+        if info["video_id"] in stream.scheduled_sent: # TODO
+            if await self.get_message(send_channel, stream.scheduled_sent[info["video_id"]]):
+                return send_channel_id
+            chat_channel = self.bot.get_channel(stream.chat_channel_id)
+            if await self.get_message(chat_channel, stream.scheduled_sent[info["video_id"]]):
+                return send_channel_id
+
+        scheduled_message = await self.config.guild(send_channel.guild).scheduled_message()
+        message = await self.send_scheduled(
+            send_channel_id, pin=True, content=scheduled_message,
+            info=info, scheduled_stream=scheduled_stream
+        )
+        stream.scheduled_sent[info["video_id"]] = message.id
+        return send_channel_id
+
+    async def process_streaming_data(self, stream, streaming_data):
+        info = YouTubeStream.get_info(streaming_data)
+        scheduled_stream = self.get_scheduled_stream(
+            yt_channel_id=info["channel_id"],
+            time=info["time"],
+            video_ids=[info["video_id"], ""]
+        )
+        if info["video_id"] in stream.streaming_sent:
+            return False
+        mention_channel = self.bot.get_channel(stream.mention_channel_id)
+        mention_message = await self.config.guild(mention_channel.guild).mention_message()
+        chat_channel_id = scheduled_stream.text_channel_id if scheduled_stream else stream.chat_channel_id
+        # 一般開播通知
+        if stream.mention_channel_id:
+            await self.send_streaming(
+                streaming_data, stream.mention_channel_id,
+                is_mention=True, embed=True,
+                chat_channel_id=chat_channel_id,
+                content=mention_message,
+                scheduled_stream=scheduled_stream,
+            )
+        # 連動直播第一個開播發其他人的開播通知
+        if scheduled_stream and not scheduled_stream.streaming_sent:
+            collab_mention_message = await self.config.guild(mention_channel.guild).collab_mention_message()
+            for yt_channel_id in scheduled_stream.channel_ids: 
+                if yt_channel_id == stream.id:
+                    continue
+                await self.send_streaming(
+                    streaming_data,
+                    self.get_stream(yt_channel_id).mention_channel_id,
+                    is_mention=True, embed=True,
+                    chat_channel_id=chat_channel_id,
+                    content=collab_mention_message,
+                    scheduled_stream=scheduled_stream,
+                    yt_channel_id=yt_channel_id
+                )
+        # 聊天室開播訊息
+        if scheduled_stream and scheduled_stream.streaming_sent:
+            pass
+        elif chat_channel_id:
+            chat_channel = self.bot.get_channel(stream.chat_channel_id)
+            chat_message = await self.config.guild(chat_channel.guild).chat_message()
+            await self.send_streaming(
+                streaming_data, chat_channel_id,
+                is_mention=False, embed=False,
+                content=chat_message
+            )
+        stream.streaming_sent.append(info["video_id"])
+        if scheduled_stream:
+            scheduled_stream.streaming_sent = True
+        
+    async def send_scheduled(self, channel_id, info=None, pin=False, scheduled_stream=None, content="{time}\n{description}\n{url}"):
         channel = self.bot.get_channel(channel_id)
-        if not channel:
+        if not channel or await self.bot.cog_disabled_in_guild(self, channel.guild):
             return
-        if await self.bot.cog_disabled_in_guild(self, channel.guild):
-            return
-        await set_contextual_locales_from_guild(self.bot, channel.guild)
 
-        if not content:
-            content = "{time}\n{description}\n{url}"
         content = content.replace("{new_line}", "\n")
         content = content.replace("{title}", info["title"])
 
         if scheduled_stream:
-            content = content.replace(
-                "{description}", scheduled_stream.description if scheduled_stream.description else info[
-                    "title"]
+            content = content.replace("{description}",
+                scheduled_stream.description if scheduled_stream.description else info["title"]
             )
-            content = content.replace(
-                "{channel_name}", ", ".join(scheduled_stream.channel_names))
-            content = content.replace(
-                "{time}", getDiscordTimeStamp(scheduled_stream.get_time()))
+            scheduled_stream.description = info["title"]
+            content = content.replace("{channel_name}", ", ".join(scheduled_stream.channel_names))
+            content = content.replace("{time}", getDiscordTimeStamp(scheduled_stream.get_time()))
             url = ""
             for i in range(len(scheduled_stream.channel_ids)):
                 if scheduled_stream.video_ids[i] != "":
@@ -882,28 +800,62 @@ class StarStream(commands.Cog):
         else:
             content = content.replace("{channel_name}", info["channel_name"])
             content = content.replace("{description}", info["title"])
-            url = youtube_url_format_2.format(info["video_id"])
-            content = content.replace("{url}", url)
+            content = content.replace("{url}", youtube_url_format_2.format(info["video_id"]))
             if info["time"]:
-                content = content.replace(
-                    "{time}", getDiscordTimeStamp(info["time"]))
+                content = content.replace("{time}", getDiscordTimeStamp(info["time"]))
 
         if scheduled_stream and scheduled_stream.message_id:
-            ms = await channel.fetch_message(scheduled_stream.message_id)
+            ms = await self.get_message(channel, scheduled_stream.message_id)
             if ms:
                 await ms.edit(content=content)
-            else:
-                # TODO
-                log.info("empty")
-        else:
-            ms = await self._send_stream_alert(channel, None, content)
-            if pin:
-                await ms[0].pin()
-            if scheduled_stream:
-                scheduled_stream.message_id = ms[0].id
+                return ms
+        ms = await self._send_stream_alert(channel, None, content)
+        if pin:
+            await ms[0].pin()
+        if scheduled_stream:
+            scheduled_stream.message_id = ms[0].id
+        return ms[0]
 
-    async def video_is_online(self, video):
-        pass
+    async def send_streaming(
+        self, data, channel_id, is_mention, content="{url}", embed=False, pin=False, chat_channel_id=None, scheduled_stream=None, yt_channel_id=None
+    ):
+        channel = self.bot.get_channel(channel_id)
+        if not channel or await self.bot.cog_disabled_in_guild(self, channel.guild):
+            return
+        embed = YouTubeStream.make_embed(data) if embed else None
+        info = YouTubeStream.get_info(data)
+
+        # 取代字串
+        content = content.replace("{channel_name}", info["channel_name"])
+        content = content.replace("{url}", youtube_url_format_2.format(info["video_id"]))
+        if scheduled_stream:# and scheduled_stream.description:
+            content = content.replace("{description}", scheduled_stream.description)
+        else:
+            content = content.replace("{description}", info["title"])
+        content = content.replace("{title}", info["title"])
+        content = content.replace("{new_line}", "\n")
+        if chat_channel_id:
+            chat_channel = self.bot.get_channel(chat_channel_id)
+            if chat_channel:
+                content = content.replace("{chat_channel}", chat_channel.mention)
+        if not yt_channel_id:
+            yt_channel_id = info["channel_id"]
+        mention_str, edited_roles = (await self._get_mention_str(
+            channel.guild, channel, [yt_channel_id]
+        )) if is_mention else ("", [])
+        content = content.replace("{mention}", mention_str)
+    
+        ms = await self._send_stream_alert(channel, embed, content)
+        if pin:
+            await ms[0].pin()
+
+    async def get_message(self, channel, message_id):
+        try:
+            message = await channel.fetch_message(message_id)
+        except:
+            return False
+        else:
+            return message
 
     async def _get_mention_str(
         self, guild: discord.Guild, channel: discord.TextChannel, ch_ids: list
@@ -927,7 +879,7 @@ class StarStream(commands.Cog):
         role_ids = list(set(role_ids))
         for role_id in role_ids:
             role = get(guild.roles, id=role_id)
-            if not can_mention_everyone and can_manage_roles and not role.mentionable:
+            if not can_mention_everyone and not role.mentionable:
                 try:
                     await role.edit(mentionable=True)
                 except discord.Forbidden:
@@ -937,9 +889,6 @@ class StarStream(commands.Cog):
                     edited_roles.append(role)
             mentions.append(role.mention)
         return " ".join(mentions), edited_roles
-
-    async def scheduled_streams_start(self):
-        pass
 
     async def load_streams(self):
         streams = []
@@ -969,7 +918,6 @@ class StarStream(commands.Cog):
         raw_streams = []
         for stream in self.streams:
             raw_streams.append(stream.export())
-
         await self.config.streams.set(raw_streams)
 
     async def save_scheduled_streams(self):
@@ -1133,7 +1081,16 @@ class StarStream(commands.Cog):
             member_channel = self.bot.get_channel(info["text_channel_id"])
             if reaction == "Done":
                 role = get(message.guild.roles, id=info["role"])
-
+                await self.send_message_by_channel_id(
+                    result_channel_id, f"{message.author.mention}",
+                    embed=discord.Embed(
+                        color=0x77b255,
+                        title=_("✅會員頻道權限審核通過"),
+                        description=f"""增加身分組：{role.mention}
+ 請確認看得見會員頻道：{member_channel.mention}
+ 處理人：{mod.mention}""",
+                    )
+                )
                 # success_msg = success_msg.format(role.mention, member_channel.mention, mod.mention)
                 ctx = await self.bot.get_context(message)
                 channel = self.bot.get_channel(command_channel_id)
@@ -1178,16 +1135,16 @@ class StarStream(commands.Cog):
                 )
             )
         else:
-            await self.send_message_by_channel_id(
-                result_channel_id, f"{message.author.mention}",
-                embed=discord.Embed(
-                    color=0x77b255,
-                    title=_("✅會員頻道權限審核通過"),
-                    description=f"""增加身分組：{role.mention}
- 請確認看得見會員頻道：{member_channel.mention}
- 處理人：{mod.mention}""",
-                )
-            )
+#             await self.send_message_by_channel_id(
+#                 result_channel_id, f"{message.author.mention}",
+#                 embed=discord.Embed(
+#                     color=0x77b255,
+#                     title=_("✅會員頻道權限審核通過"),
+#                     description=f"""增加身分組：{role.mention}
+#  請確認看得見會員頻道：{member_channel.mention}
+#  處理人：{mod.mention}""",
+#                 )
+#             )
             return 
 
         err_msg = err_msg.format(handler_msg)
@@ -1265,7 +1222,7 @@ def datetime_plus_8_to_0_isoformat(date):
 def get_membership_info(message, membership_names: List, roles: List, text_channel_ids: List):
     date = None
     idx = -1
-    message = strQ2B(message.replace(" ", ""))
+    message = strQ2B(message).replace(" ", "")
     for s in message.split('\n'):
         tmp = s.split(':')
         if len(tmp) != 2:

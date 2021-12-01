@@ -47,7 +47,7 @@ class YouTubeStream():
         self.name = kwargs.pop("name", None)
         # self.already_online = kwargs.pop("already_online", False)
         self.messages = kwargs.pop("messages", [])
-        self.scheduled_sent = kwargs.pop("scheduled_sent", [])
+        self.scheduled_sent = kwargs.pop("scheduled_sent", {})
         self.streaming_sent = kwargs.pop("streaming_sent", [])
         self.chat_channel_id = kwargs.pop("chat_channel_id", None)
         self.mention_channel_id = kwargs.pop("mention_channel_id", None)
@@ -94,10 +94,20 @@ class YouTubeStream():
         if self.livestreams:
             self.livestreams = list(dict.fromkeys(self.livestreams))
 
+        this_not_livestreams = []
         streaming_data = None
-        scheduled_data = None
+        scheduled_datas = []
+        def insert_scheduled_data(scheduled_data):
+            for i in range(len(scheduled_datas)):
+                time1 = self.get_info(scheduled_datas[i])["time"]
+                time2 = self.get_info(scheduled_data)["time"]
+                if time2 < time1:
+                    scheduled_datas.insert(i, scheduled_data)
+                    return
+            scheduled_datas.append(scheduled_data)
         for video_id in set(list(self.get_video_ids_from_feed(rssdata)) + self.livestreams):
             if video_id in self.not_livestreams:
+                this_not_livestreams.append(video_id)
                 log.debug(f"video_id in not_livestreams: {video_id}")
                 continue
             log.debug(f"video_id not in not_livestreams: {video_id}")
@@ -140,20 +150,21 @@ class YouTubeStream():
                             if video_id not in self.livestreams:
                                 self.livestreams.append(video_id)
                             streaming_data = data
-                        elif (parse_time(scheduled) - datetime.now(timezone.utc)).total_seconds() < 36000:
-                            if not scheduled_data or parse_time(scheduled) < self.get_info(scheduled_data)["time"]:
-                                scheduled_data = data
-                    else:
-                        self.not_livestreams.append(video_id)
-                        if video_id in self.livestreams:
-                            self.livestreams.remove(video_id)
-        if scheduled_data or streaming_data:
-            return scheduled_data, streaming_data
+                            insert_scheduled_data(data)
+                        elif (parse_time(scheduled) - datetime.now(timezone.utc)).total_seconds() < 86400 * 7:
+                            # if not scheduled_data or parse_time(scheduled) < self.get_info(scheduled_data)["time"]:
+                            insert_scheduled_data(data)
+                    elif video_id in self.livestreams:
+                        self.livestreams.remove(video_id)
+                        this_not_livestreams.append(video_id)
+        self.not_livestreams = this_not_livestreams
+        if len(scheduled_datas) > 0:
+            return scheduled_datas, streaming_data
             # return await self.make_embed(embed_data)
         raise OfflineStream()
 
     @classmethod
-    def make_embed(self, data):
+    def make_embed(cls, data):
         vid_data = data["items"][0]
         video_url = youtube_url_format_1.format(vid_data["id"])
         title = vid_data["snippet"]["title"]
@@ -169,9 +180,11 @@ class YouTubeStream():
         return embed
 
     @classmethod
-    def get_info(self, data):
+    def get_info(cls, data):
         vid_data = data["items"][0]
         time = vid_data.get("liveStreamingDetails", {}).get("scheduledStartTime", None)
+        if not time:
+            time = vid_data.get("liveStreamingDetails", {}).get("actualStartTime", None)
         return {
             "video_id": vid_data["id"],
             "channel_name": vid_data["snippet"]["channelTitle"],
