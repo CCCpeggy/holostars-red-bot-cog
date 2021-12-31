@@ -121,6 +121,7 @@ class StarStream(commands.Cog):
         """ Nothing to delete """
         return
 
+    # 是頻道 id -> False, name -> True
     def check_name_or_id(self, data: str) -> bool:
         channel_id_re = re.compile("^UC[-_A-Za-z0-9]{21}[AQgw]$")
         matched = channel_id_re.fullmatch(data)
