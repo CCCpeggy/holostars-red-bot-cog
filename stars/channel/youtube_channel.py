@@ -2,6 +2,8 @@
 from stars.utils import *
 from .channel import Channel
 
+_, log = get_logger()
+
 class YoutubeChannel(Channel):
     
     toke_name = "youtube"

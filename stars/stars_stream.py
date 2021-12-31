@@ -12,7 +12,7 @@ import logging
 
 # local
 from .utils import *
-from .members import MembersManager
+from .manager import Manager
 
 _, log = get_logger()
 
@@ -21,8 +21,7 @@ class StarsStream(commands.Cog):
     def __init__(self, bot: Red):
         super().__init__()
         self.bot = bot
-        self.memebers_manager = MembersManager(bot)
-        self.streams_manager = self.memebers_manager.get_streams_manager()
+        self.manager = Manager(bot)
         self.config = StarsStreamConfig()
         bot.add_cog(self.config)
 

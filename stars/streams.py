@@ -20,10 +20,10 @@ class Stream:
         self.id: name = kwargs.pop("id", create_id())
         self._saved_func = kwargs.pop("_saved_func", None)
 
-
-
 class StreamsManager:
 
-    def __init__(self):
+    def __init__(self, bot, manager: "Manager"):
+        self.bot = bot
         self.config = Config.get_conf(self, 12448734)
+        self.manager = manager
         self.streams = {}

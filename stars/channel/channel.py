@@ -1,6 +1,8 @@
 # local
 from stars.utils import *
 
+_, log = get_logger()
+
 class Channel:
 
     def __init__(self, **kwargs):
