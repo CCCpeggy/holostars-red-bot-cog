@@ -12,25 +12,8 @@ from .channel.youtube_channel import YoutubeChannel
 
 _, log = get_logger()
 
-class ChannelsManager():
-    def __init__(self, bot: Red, manager: "Manager", **kwargs):
-        self.bot = bot
-        self.manager = manager
-        self.config = ChannelsManagerConfig(bot, manager, **kwargs)
-        bot.add_cog(self.config)
-
-    def get_streams_manager(self):
-        return self.streams_manager
-
-    async def remove_channel(self, channel_id) -> "Channel":
-        if channel_id in channel_id:
-            channel = self.config.channels.pop(channel_id)
-            await self.config.save_channels()
-            return channel
-        return None
-
-class ChannelsManagerConfig(commands.Cog):
-
+class ChannelsManager(commands.Cog):
+    
     global_defaults = {
         "channels_": {}
     }
@@ -54,6 +37,16 @@ class ChannelsManagerConfig(commands.Cog):
             await load_channels()
             
         self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
+    
+    def get_streams_manager(self):
+        return self.streams_manager
+
+    async def remove_channel(self, channel_id) -> "Channel":
+        if channel_id in channel_id:
+            channel = self.channels.pop(channel_id)
+            await self.save_channels()
+            return channel
+        return None
 
     async def add_channel(self, Channel, channel_id: str) -> Tuple[Channel, bool]:
         if channel_id not in self.channels:

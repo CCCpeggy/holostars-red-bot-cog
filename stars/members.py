@@ -13,27 +13,43 @@ from . import channel as _channel_types
 
 _, log = get_logger()
 
-class MembersManager():
-    def __init__(self, bot: Red, manager: "Manager"):
-        self.bot = bot
+class GuildMembersManager():
+    def __init__(self, bot: Red, config: Group, manager: "Manager", **kwargs):
+        self.config = config
         self.manager = manager
-        self.config = MembersManagerConfig(bot, manager)
-        bot.add_cog(self.config)
+        self.channel_manager = kwargs.pop("channel_manager", None)
+        self.members = {}
+        self.bot = bot
+        
+        async def async_load():
+            async def load_members():
+                for key, value in (await config.members()).items():
+                    await self.add_member(saved=False, **value)
+            await load_members()
+        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
 
-    def get_member(self, guild: Union[int, discord.Guild], name: str) -> "Member":
-        guild_config = self.config.get_guild_config(guild)
-        if name in guild_config.members:
-            return guild_config.members[name]
-        else:
-            return None
+    async def save_memebers(self):
+        await self.config.members.set(ConvertToRawData.dict(self.members))
+
+    async def add_member(self, saved=True, **kwargs) -> Tuple["Member", bool]:
+        name = kwargs.get("name")
+        if name not in self.members:
+            member = Member(bot=self.bot, _save_func=self.save_memebers, **kwargs)
+            self.members[name] = member
+            if saved:
+                await self.save_memebers()
+            return member, True
+        return self.members[name], False
     
-    def get_all_member(self) -> list:
-        members = []
-        for guild_config in self.config.guild_configs.values():
-            members += list(guild_config.members.values())
-        return members
+    async def remove_member(self, name: str, saved: bool=True) -> "Member":
+        if name in self.members:
+            member = self.members.pop(name)
+            if saved:
+                await self.save_memebers()
+            return member
+        return None
 
-class MembersManagerConfig(commands.Cog):
+class MembersManager(commands.Cog):
 
     global_defaults = {
     }
@@ -41,42 +57,6 @@ class MembersManagerConfig(commands.Cog):
     guild_defaults = {
         "members": {}
     }
-
-    class Guild():
-        def __init__(self, bot: Red, config: Group, manager: "Manager", **kwargs):
-            self.config = config
-            self.manager = manager
-            self.channel_manager = kwargs.pop("channel_manager", None)
-            self.members = {}
-            self.bot = bot
-            
-            async def async_load():
-                async def load_members():
-                    for key, value in (await config.members()).items():
-                        await self.add_member(saved=False, **value)
-                await load_members()
-            self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
-
-        async def save_memebers(self):
-            await self.config.members.set(ConvertToRawData.dict(self.members))
-
-        async def add_member(self, saved=True, **kwargs) -> Tuple["Member", bool]:
-            name = kwargs.get("name")
-            if name not in self.members:
-                member = Member(bot=self.bot, _save_func=self.save_memebers, **kwargs)
-                self.members[name] = member
-                if saved:
-                    await self.save_memebers()
-                return member, True
-            return self.members[name], False
-        
-        async def remove_member(self, name: str, saved: bool=True) -> "Member":
-            if name in self.members:
-                member = self.members.pop(name)
-                if saved:
-                    await self.save_memebers()
-                return member
-            return None
 
     def __init__(self, bot: Red, manager: "Manager"):
         self.bot = bot
@@ -93,18 +73,30 @@ class MembersManagerConfig(commands.Cog):
             
         self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
 
+    def get_member(self, guild: Union[int, discord.Guild], name: str) -> "Member":
+        guild_config = self.get_guild_config(guild)
+        if name in guild_config.members:
+            return guild_config.members[name]
+        else:
+            return None
+    
+    def get_all_member(self) -> list:
+        members = []
+        for guild_config in self.guild_configs.values():
+            members += list(guild_config.members.values())
+        return members
+
+    def get_guild_config(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
+        guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
+        if not guild.id in self.guild_configs:
+            self.guild_configs[guild.id] = GuildMembersManager(self.bot, self.config.guild(guild), self.manager)
+        return self.guild_configs[guild.id]
 
     @commands.group(name="member")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def member_group(self, ctx: commands.Context):
         pass
-
-    def get_guild_config(self, guild: Union[int, discord.Guild]) -> "MembersManagerConfig.Guild":
-        guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
-        if not guild.id in self.guild_configs:
-            self.guild_configs[guild.id] = MembersManagerConfig.Guild(self.bot, self.config.guild(guild), self.manager)
-        return self.guild_configs[guild.id]
 
     @member_group.command(name="add")
     async def add_member(self, ctx: commands.Context, name: str):
@@ -122,7 +114,7 @@ class MembersManagerConfig(commands.Cog):
         if member:
             await Send.remove_completed(ctx, "成員資料", name)
             for channel_id in member.channel_ids:
-                belong_members = self.manager.channels_manager.config.get_channel_belong_member(channel_id)
+                belong_members = self.manager.channels_manager.get_channel_belong_member(channel_id)
                 if len(belong_members) == 0:
                     channel = await self.manager.channels_manager.remove_channel(channel_id)
                     await Send.remove_completed(ctx, f"只屬於 {member.name} 的頻道資料", channel)
