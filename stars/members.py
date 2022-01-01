@@ -4,6 +4,7 @@ from redbot.core.config import Group
 
 # other
 import asyncio
+from typing import *
 
 # local
 from .utils import *
@@ -15,11 +16,10 @@ _, log = get_logger()
 
 class GuildMembersManager():
     def __init__(self, bot: Red, config: Group, manager: "Manager", **kwargs):
-        self.config = config
-        self.manager = manager
-        self.channel_manager = kwargs.pop("channel_manager", None)
-        self.members = {}
-        self.bot = bot
+        self.bot: Red = bot
+        self.config: Config = config
+        self.manager: "Manager" = manager
+        self.members: Dict[str, "Member"] = {}
         
         async def async_load():
             async def load_members():
@@ -28,26 +28,35 @@ class GuildMembersManager():
             await load_members()
         self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
 
-    async def save_memebers(self):
+    async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
 
-    async def add_member(self, saved=True, **kwargs) -> Tuple["Member", bool]:
-        name = kwargs.get("name")
+    async def add_member(self, name: str, channel_ids: List[str], save=True, **kwargs) -> Tuple["Member", bool]:
         if name not in self.members:
-            member = Member(bot=self.bot, _save_func=self.save_memebers, **kwargs)
+            member = Member(
+                bot=self.bot,
+                name=name,
+                save_func=self.save_memebers,
+                channel_ids=channel_ids,
+                channels={id: self.manager.channels_manager.channels[id] for id in channel_ids},
+                **kwargs
+            )
             self.members[name] = member
-            if saved:
+            if save:
                 await self.save_memebers()
             return member, True
         return self.members[name], False
     
-    async def remove_member(self, name: str, saved: bool=True) -> "Member":
-        if name in self.members:
-            member = self.members.pop(name)
+    async def remove_member(self, member_name: str, saved: bool=True) -> "Member":
+        if member_name in self.members:
+            member = self.members.pop(member_name)
             if saved:
                 await self.save_memebers()
             return member
         return None
+
+    def get_member(self, member_name: str) -> "Member":
+        return self.members.get(member_name, None)
 
 class MembersManager(commands.Cog):
 
@@ -64,33 +73,29 @@ class MembersManager(commands.Cog):
         self.config = Config.get_conf(self, 45611846)
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
-        self.guild_configs = {}
+        self.guild_managers = {}
         async def async_load():
             async def load_guild():
                 for guild_id, config in (await self.config.all_guilds()).items():
-                    self.get_guild_config(guild_id)
+                    self.get_guild_manager(guild_id)
             await load_guild()
             
         self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
-
-    def get_member(self, guild: Union[int, discord.Guild], name: str) -> "Member":
-        guild_config = self.get_guild_config(guild)
-        if name in guild_config.members:
-            return guild_config.members[name]
-        else:
-            return None
     
     def get_all_member(self) -> list:
         members = []
-        for guild_config in self.guild_configs.values():
-            members += list(guild_config.members.values())
+        for guild_manager in self.guild_managers.values():
+            members += list(guild_manager.members.values())
         return members
 
-    def get_guild_config(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
+    def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
         guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
-        if not guild.id in self.guild_configs:
-            self.guild_configs[guild.id] = GuildMembersManager(self.bot, self.config.guild(guild), self.manager)
-        return self.guild_configs[guild.id]
+        if not guild.id in self.guild_managers:
+            self.guild_managers[guild.id] = GuildMembersManager(self.bot, self.config.guild(guild), self.manager)
+        return self.guild_managers[guild.id]
+
+    def get_member(self, guild: Union[int, discord.Guild], member_name: str) -> "Member":
+        return self.get_guild_manager(guild).get_member(member_name)
 
     @commands.group(name="member")
     @commands.guild_only()
@@ -100,8 +105,8 @@ class MembersManager(commands.Cog):
 
     @member_group.command(name="add")
     async def add_member(self, ctx: commands.Context, name: str):
-        guild_config = self.get_guild_config(ctx.guild)
-        member, successful = await guild_config.add_member(name=name)
+        guild_manager = self.get_guild_manager(ctx.guild)
+        member, successful = await guild_manager.add_member(name=name)
         if successful:
             await Send.add_completed(ctx, "成員資料", member)
         else:
@@ -109,8 +114,8 @@ class MembersManager(commands.Cog):
 
     @member_group.command(name="remove")
     async def remove_member(self, ctx: commands.Context, name: str):
-        guild_config = self.get_guild_config(ctx.guild)
-        member = await guild_config.remove_member(name)
+        guild_manager = self.get_guild_manager(ctx.guild)
+        member = await guild_manager.remove_member(name)
         if member:
             await Send.remove_completed(ctx, "成員資料", name)
             for channel_id in member.channel_ids:
@@ -123,15 +128,15 @@ class MembersManager(commands.Cog):
 
     @member_group.command(name="list")
     async def list_member(self, ctx: commands.Context, name: str=None):
-        guild_config = self.get_guild_config(ctx.guild)
+        guild_manager = self.get_guild_manager(ctx.guild)
         data = None
-        if len(guild_config.members) == 0:
+        if len(guild_manager.members) == 0:
             await Send.empty(ctx, "成員資料")
             return
         elif name == None:
-            data = [str(m) for m in guild_config.members.values()]
-        elif name in guild_config.members:
-            data = [str(guild_config.members[name])]
+            data = [str(m) for m in guild_manager.members.values()]
+        elif name in guild_manager.members:
+            data = [str(guild_manager.members[name])]
         else:
             await Send.not_existed(ctx, "成員資料", name)
             return
@@ -158,29 +163,28 @@ class Member:
         self._bot: Red = kwargs.pop("bot")
         self.name: str = kwargs.pop("name")
         self.emoji: str = kwargs.pop("emoji", None)
-        self.channel_ids: dict = kwargs.pop("channel_ids", [])
-        self._save_func = kwargs.pop("_save_func", None)
+        self.channel_ids: List[str] = kwargs.pop("channel_ids", [])
+        self._channels: Dict[str, "Channel"] = kwargs.pop("channels", {})
+        self._save_func = kwargs.pop("save_func", None)
 
-        self.notify_text_channel = None
-        self.chat_text_channel = None
-        self.memeber_channel = None
+        self.notify_text_channel: discord.TextChannel = None
+        self.chat_text_channel: discord.TextChannel = None
+        self.memeber_channel: discord.TextChannel = None
 
         async def async_load():
-            self.notify_text_channel: discord.TextChannel = await get_channel(self._bot, kwargs.pop("notify_text_channel", None))
-            self.chat_text_channel: discord.TextChannel = await get_channel(self._bot, kwargs.pop("chat_text_channel", None))
-            self.memeber_channel: discord.TextChannel = await get_channel(self._bot, kwargs.pop("memeber_channel", None))
+            self.notify_text_channel = await get_text_channel(self._bot, kwargs.pop("notify_text_channel", None))
+            self.chat_text_channel = await get_text_channel(self._bot, kwargs.pop("chat_text_channel", None))
+            self.memeber_channel = await get_text_channel(self._bot, kwargs.pop("memeber_channel", None))
 
         self._init_task: asyncio.Task = self._bot.loop.create_task(async_load())
 
     def __repr__(self):
-        def getChannelMention(channel, default="未設定"):
-            return channel.mention if channel else '未設定'
         data = [
             f"成員名稱：{self.name}",
             f"> Emoji：{self.emoji if self.emoji else '未設定'}",
-            f"> 通知文字頻道：{getChannelMention(self.notify_text_channel)}",
-            f"> 討論文字頻道：{getChannelMention(self.chat_text_channel)}",
-            f"> 會員文字頻道：{getChannelMention(self.memeber_channel)}",
+            f"> 通知文字頻道：{GetSendStr.getChannelMention(self.notify_text_channel)}",
+            f"> 討論文字頻道：{GetSendStr.getChannelMention(self.chat_text_channel)}",
+            f"> 會員文字頻道：{GetSendStr.getChannelMention(self.memeber_channel)}",
             f"> 頻道 ID：{', '.join(self.channel_ids)}",
         ]
         return "\n".join(data)

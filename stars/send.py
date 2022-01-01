@@ -17,15 +17,7 @@ from .manager import Manager
 _, log = get_logger()
 
 @cog_i18n(_)
-class StarsStream(commands.Cog):
-    def __init__(self, bot: Red):
-        super().__init__()
-        self.bot = bot
-        self.manager = Manager(bot)
-        self.config = StarsStreamConfig()
-        bot.add_cog(self.config)
-
-class StarsStreamConfig(commands.Cog):
+class SendManager(commands.Cog):
 
     global_defaults = {
         # "refresh_timer": 100000

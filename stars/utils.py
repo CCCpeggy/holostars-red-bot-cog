@@ -17,7 +17,7 @@ def get_logger(level: int=logging.DEBUG)->logging.Logger:
     return _, log
 _, log = get_logger()
 
-async def get_channel(place: Union[discord.Guild, Red], channel_id: str) -> discord.TextChannel:
+async def get_text_channel(place: Union[discord.Guild, Red], channel_id: str) -> discord.TextChannel:
     if channel_id == None:
         return None
     return place.get_channel(channel_id)
@@ -40,14 +40,17 @@ class ConvertToRawData:
         if callable(export_func):
             return data.export()
         else:
+            from datetime import datetime
             raw_data = {}
             for k, v in data.__dict__.items():
                 if k.startswith("_"):
                     continue
-                if isinstance(v, (int, str, list, dict)):
-                    raw_data[k] = v
-                elif not v:
+                if not v:
                     raw_data[k] = None
+                elif isinstance(v, (int, str, list, dict)):
+                    raw_data[k] = v
+                elif isinstance(v, datetime):
+                    raw_data[k] = Time.to_standard_time_str(v)
                 else:
                     raw_data[k] = v.id
         return raw_data
@@ -140,3 +143,49 @@ class GetSendStr:
     @staticmethod
     def getChannelMention(channel, default="未設定"):
         return channel.mention if channel else '未設定'
+
+from datetime import datetime
+class Time:
+    @staticmethod
+    def add_timezone(time: datetime) -> datetime:
+        import pytz
+        return pytz.utc.localize(time)
+
+    @staticmethod
+    def to_datetime(time: Union[str, datetime, None]) -> datetime:
+        if isinstance(time, datetime):
+            return time
+        elif isinstance(time, str):
+            from dateutil.parser import parse as parse_time
+            time = parse_time(time)
+            return Time.add_timezone(time)
+        return None
+
+    @staticmethod
+    def to_standard_time_str(time: datetime) -> str:
+        return time.isoformat()
+
+    @staticmethod
+    def get_specified_timezone_str(time: datetime, timezone: str='Asia/Taipei') -> str:
+        if time.tzinfo == None:
+            time = Time.add_timezone(time)
+        import pytz
+        return time.astimezone(pytz.timezone(timezone))
+
+    @staticmethod
+    def get_now():
+        from datetime import timezone
+        return datetime.now(timezone.utc)
+
+    @staticmethod
+    def get_diff_from_now_total_sec(time: datetime) -> int:
+        return (time - Time.get_now()).total_seconds()
+
+    @staticmethod
+    def is_time_in_future_range(time: datetime, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0) -> bool:
+        if time.tzinfo == None:
+            time = Time.add_timezone(time)
+        from dateutil.relativedelta import relativedelta
+        delta_time = relativedelta(months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
+        return (Time.get_now() + delta_time) > time
+

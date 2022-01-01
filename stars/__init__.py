@@ -1,7 +1,6 @@
-from .stars_stream import StarsStream
+from .manager import Manager
 import json
 from pathlib import Path
 
 def setup(bot):
-    star_stream_cog = StarsStream(bot)
-    bot.add_cog(star_stream_cog)
+    manager = Manager(bot)

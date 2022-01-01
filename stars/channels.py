@@ -22,13 +22,12 @@ class ChannelsManager(commands.Cog):
     }
 
     def __init__(self, bot: Red, manager: "Manager", **kwargs):
-        self.bot = bot
+        self.bot: Red = bot
         self.manager: "Manager" = manager
-        self.config = Config.get_conf(self, 45611846)
+        self.config: Config = Config.get_conf(self, 45611846)
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
-        self.guild_configs = {}
-        self.channels = {}
+        self.channels: Dict[str, Channel] = {}
         async def async_load():
             async def load_channels():
                 for id, raw_data in (await self.config.channels_()).items():
@@ -38,10 +37,7 @@ class ChannelsManager(commands.Cog):
             
         self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
     
-    def get_streams_manager(self):
-        return self.streams_manager
-
-    async def remove_channel(self, channel_id) -> "Channel":
+    async def remove_channel(self, channel_id: str) -> "Channel":
         if channel_id in channel_id:
             channel = self.channels.pop(channel_id)
             await self.save_channels()
@@ -59,7 +55,7 @@ class ChannelsManager(commands.Cog):
     async def save_channels(self) -> None:
         await self.config.channels_.set(ConvertToRawData.dict(self.channels))
 
-    def get_channel_belong_member(self, channel_id: str):
+    def get_channel_belong_member(self, channel_id: str) -> "Member":
         members = self.manager.members_manager.get_all_member()
         members = {member for member in members if channel_id in member.channel_ids}
         return members
