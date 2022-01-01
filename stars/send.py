@@ -12,7 +12,6 @@ import logging
 
 # local
 from .utils import *
-from .manager import Manager
 
 _, log = get_logger()
 

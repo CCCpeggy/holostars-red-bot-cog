@@ -8,9 +8,6 @@ from typing import *
 
 # local
 from .utils import *
-from .channel.channel import Channel
-from .channel.youtube_channel import YoutubeChannel
-from . import channel as _channel_types
 
 _, log = get_logger()
 
@@ -31,7 +28,7 @@ class GuildMembersManager():
     async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
 
-    async def add_member(self, name: str, channel_ids: List[str], save=True, **kwargs) -> Tuple["Member", bool]:
+    async def add_member(self, name: str, channel_ids: List[str]=[], save=True, **kwargs) -> Tuple["Member", bool]:
         if name not in self.members:
             member = Member(
                 bot=self.bot,

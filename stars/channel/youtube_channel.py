@@ -15,6 +15,6 @@ class YoutubeChannel(Channel):
     def __repr__(self):
         data = super().__repr__()
         data += "\n".join([
-            # f"頻道 ID：{self.id}",
+            # f"> 頻道 ID：{self.id}",
         ])
         return data

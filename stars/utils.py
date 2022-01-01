@@ -17,10 +17,10 @@ def get_logger(level: int=logging.DEBUG)->logging.Logger:
     return _, log
 _, log = get_logger()
 
-async def get_text_channel(place: Union[discord.Guild, Red], channel_id: str) -> discord.TextChannel:
-    if channel_id == None:
-        return None
-    return place.get_channel(channel_id)
+async def get_text_channel(place: Union[discord.Guild, Red], channel: Union[str, discord.TextChannel, None]) -> discord.TextChannel:
+    if isinstance(channel, str):
+        return place.get_channel(channel)
+    return channel
 
 def create_id():
     import uuid
@@ -41,13 +41,14 @@ class ConvertToRawData:
             return data.export()
         else:
             from datetime import datetime
+            from enum import Enum
             raw_data = {}
             for k, v in data.__dict__.items():
                 if k.startswith("_"):
                     continue
                 if not v:
                     raw_data[k] = None
-                elif isinstance(v, (int, str, list, dict)):
+                elif isinstance(v, (int, str, list, dict, Enum)):
                     raw_data[k] = v
                 elif isinstance(v, datetime):
                     raw_data[k] = Time.to_standard_time_str(v)

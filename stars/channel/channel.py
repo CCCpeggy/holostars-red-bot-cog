@@ -22,8 +22,8 @@ class Channel:
     def __repr__(self):
         data = [
             f"{self.type}",
-            f"頻道 ID：{self.id}",
-            f"頻道名稱：{self.name}",
+            f"> 頻道 ID：{self.id}",
+            f"> 頻道名稱：{self.name}",
         ]
         return "\n".join(data)
 
