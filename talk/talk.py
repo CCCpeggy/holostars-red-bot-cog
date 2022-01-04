@@ -124,7 +124,7 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
-        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message[2:].content]):
+        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
             await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
