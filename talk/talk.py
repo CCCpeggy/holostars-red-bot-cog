@@ -39,13 +39,24 @@ class Talk(commands.Cog):
                 await message.channel.send("這個沒有作用啦")
         if not message.content.startswith("冷丸"):
             return
+        if "人氣" in message.content and "票" in message.content:
+            await message.add_reaction("<:1_1Miyabi:890277022658592800>")
+            await message.add_reaction("<:1_2Izuru:890278709297287279>")
+            await message.add_reaction("<:1_3Arurandeisu:890279210839597137>")
+            await message.add_reaction("<:1_4Rikka:890279428016443443>")
+            await message.add_reaction("<:1_5Astel:890280329741484032>")
+            await message.add_reaction("<:1_6Temma:890280329724694579>")
+            await message.add_reaction("<:1_7Roberu:890280329741471754>")
+            await message.add_reaction("<:1_8Shien:890280329909252126>")
+            await message.add_reaction("<:1_9Oga:890280329812787211>")
+            return
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
         if "天才" in message.content:
             await message.add_reaction("<:Te_tensai:887747027637792888>")
         elif "天真" in message.content or "3D" in message.content:
-            await message.add_reaction("<:Te_light:887747027658764300>")
+            await message.add_reaction("<:0_6Temma_light:900835047639244830>")
 
         
         if message.content.startswith("冷丸學"):
@@ -113,16 +124,6 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
-        elif "人氣" in message.content and "票" in message.content:
-            await message.add_reaction("<:1_1Miyabi:890277022658592800>")
-            await message.add_reaction("<:1_2Izuru:890278709297287279>")
-            await message.add_reaction("<:1_3Arurandeisu:890279210839597137>")
-            await message.add_reaction("<:1_4Rikka:890279428016443443>")
-            await message.add_reaction("<:1_5Astel:890280329741484032>")
-            await message.add_reaction("<:1_6Temma:890280329724694579>")
-            await message.add_reaction("<:1_7Roberu:890280329741471754>")
-            await message.add_reaction("<:1_8Shien:890280329909252126>")
-            await message.add_reaction("<:1_9Oga:890280329812787211>")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
                 await message.channel.send(f"{random.int(0, 100)}%")
