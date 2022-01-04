@@ -113,8 +113,7 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
-        elif message.content.startswith("冷丸人氣票選"):
-            await message.add_reaction("<:Te_tensai:887747027637792888>")
+        elif "人氣" in message.content and "票" in message.content:
             await message.add_reaction("<:1_1Miyabi:890277022658592800>")
             await message.add_reaction("<:1_2Izuru:890278709297287279>")
             await message.add_reaction("<:1_3Arurandeisu:890279210839597137>")
@@ -124,7 +123,7 @@ class Talk(commands.Cog):
             await message.add_reaction("<:1_7Roberu:890280329741471754>")
             await message.add_reaction("<:1_8Shien:890280329909252126>")
             await message.add_reaction("<:1_9Oga:890280329812787211>")
-        elif message.content.startswith("機率"):
+        elif "機率" in message.content:
             if random.randint(0, 3) == 0:
                 await message.channel.send(f"{random.int(0, 100)}%")
             else:
