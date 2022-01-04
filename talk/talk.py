@@ -124,6 +124,8 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
+        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱"] for w in message.content.split(" ")]):
+            await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
                 await message.channel.send(f"{random.int(0, 100)}%")
@@ -260,7 +262,7 @@ print("Re: Hello world")
 ```"""]
             await message.channel.send(random.choice(code))
         elif "機器人" in message.content:
-            await message.channel.send(":two::regional_indicator_b::regional_indicator_g:")
+            await message.channel.send(":two: :regional_indicator_b: :regional_indicator_g:")
         elif "廁所" in message.content:
             await message.channel.send("<:Roberu_question:887748105234174014>")
         elif "外掛" in message.content:
@@ -311,6 +313,8 @@ print("Re: Hello world")
             await message.channel.send(f"{random.choice(['早', '午', '晚'])}安")
         elif "主人" in message.content:
             await message.channel.send("天真天才")
+        elif "抱" in message.content or ":people_hugging:" in message.content:
+            await message.channel.send(f":people_hugging:")
         elif "我" in message.content:
             await message.channel.send(f"我不認識你.")
         elif "bonk" in message.content:
@@ -356,3 +360,9 @@ print("Re: Hello world")
             return False
         else:
             return message
+    
+    async def get_author_name(self, message):
+        if message.author.nick:
+            return message.author.nick
+        return message.author.name
+
