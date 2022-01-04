@@ -54,7 +54,7 @@ class Talk(commands.Cog):
             return
         message.content = message.content.lower()
         if "天才" in message.content:
-            await message.add_reaction("<:Te_tensai:887747027637792888>")
+            await message.add_reaction("<:9_6Temma_tensai:917056396854456390> ")
         elif "天真" in message.content or "3D" in message.content:
             await message.add_reaction("<:0_6Temma_light:900835047639244830>")
 
@@ -201,6 +201,7 @@ for(;;) {
     
 }
 ```"""]
+            await message.channel.send(random.choice(code))
         elif "python" in message.content:
             code = [
 """```python
