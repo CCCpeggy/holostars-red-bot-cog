@@ -361,7 +361,7 @@ print("Re: Hello world")
         else:
             return message
     
-    async def get_author_name(self, message):
+    def get_author_name(self, message):
         if message.author.nick:
             return message.author.nick
         return message.author.name
