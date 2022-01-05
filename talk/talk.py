@@ -111,7 +111,7 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if que != "" and len(ans) >= 2:
-                if random.randint(0, 4) == 0:
+                if random.randint(0, 3) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -134,6 +134,19 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
+        elif message.content == "冷丸功能":
+            info = \
+"""
+冷丸學[項目] [內容]
+冷丸選[項目] [選項1] [選項2] ... (這個會記住，`冷丸[項目]` 才會出現結果)
+冷丸忘[項目] 
+冷丸現在選[項目] [選項1] [選項2] ...
+冷丸 + 機率
+冷丸 + 籤
+冷丸 + 人氣投票
+需要的話也可以跟冷丸要個抱抱
+"""
+            await message.channel.send(info)
         elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
             await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
         elif "機率" in message.content:
@@ -145,6 +158,8 @@ class Talk(commands.Cog):
                     "別做夢了", "醒"
                 ]
                 await message.channel.send(random.choice(choice))
+        elif "籤" in message.content:
+            await message.channel.send(f"12 分之 {random.randint(1, 12)} 個 <:9_4Rikka_daikichi:927577264730808411>")
         elif message.content[2:] in self.learned_talk_queue:
             ans = self.learned_talk[message.content[2:]]
             if isinstance(ans, str):
@@ -279,8 +294,6 @@ print("Re: Hello world")
             await message.channel.send("!?")
         elif "本物" in message.content:
             await message.channel.send("Yesss")
-        elif "籤" in message.content:
-            await message.channel.send(f"12 分之 {random.randint(1, 12)} 個 <:9_4Rikka_daikichi:927577264730808411>")
         elif "吃雞" in message.content or "champion" in message.content or "冠軍" in message.content:
             await message.channel.send("蝦?????")
         elif "apex" in message.content:
