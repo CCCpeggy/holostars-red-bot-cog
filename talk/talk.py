@@ -167,11 +167,11 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(f"比{random.choice(['咖咩醬', '虛無雀', '天真'])}更可愛！")
         elif "娶" in message.content:
-            await message.channel.send("Noo")
+            await message.channel.send("不要！")
         elif "椰香" in message.content or "椰子" in message.content or "綠色乖乖" in message.content:
-            await message.channel.send("<:As_bonk:887746980179247194><:As_bonk:887746980179247194>")
+            await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
-            await message.channel.send("No" + "o" * random.randint(0, 20))
+            await message.channel.send("乖乖好吃")
         elif "歐姆" in message.content:
             await message.channel.send("v=ir => av=air => 色即是空")
         elif "程式" in message.content or "代碼" in message.content:
@@ -300,7 +300,7 @@ print("Re: Hello world")
         elif "定理" in message.content or"定律" in message.content or "數學" in message.content or "物理" in message.content or "化學" in message.content or "生物" in message.content or "公式" in message.content or "喜歡誰" in message.content or "比" in message.content or "社會" in message.content or "歷史" in message.content:
             await message.channel.send("去問咖咩啦")
         elif "乖" in message.content:
-            await message.channel.send("No" + "o" * random.randint(0, 20))
+            await message.channel.send("咖咩學學我啊")
         elif "棒" in message.content:
             await message.channel.send("<:Oga_Bonk:900404897600659487>")
         elif "幫" in message.content:
@@ -318,6 +318,10 @@ print("Re: Hello world")
         elif "bonk" in message.content:
             await message.add_reaction("<:Oga_Bonk:900404897600659487>")
             await message.channel.send("冷丸最乖了，咖咩才不乖")
+        elif "我是誰" in message.content:
+            await message.channel.send(f"聽說是 {message.author.name}")
+        elif "咖咩" in message.content and "翹班" in message.content:
+            await message.channel.send("@月嵐")
         elif ("會" in message.content and "嗎" in message.content) or "會不會" in message.content:
             await message.channel.send(random.choice(["會", "不會", "不知道"]))
         elif ("要" in message.content and "嗎" in message.content) or "要不要" in message.content:
@@ -346,8 +350,8 @@ print("Re: Hello world")
             await message.channel.send(random.choice(["可以", "不可以", "不知道"]))
         elif "黑" in message.content and "嗎" in message.content:
             await message.channel.send(random.choice(["黑的", "白的"]))
-        elif "我是誰" in message.content:
-            await message.channel.send(message.author.name)
+        elif "哪" in message.content:
+            await message.channel.send("地球的某一個角落")
         elif "嗎" in message.content or "嘛" in message.content or "?" in message.content or "？" in message.content:
             await message.channel.send(random.choice(["不知道", "你猜", "問咖咩", "問月嵐"]))
         elif "(" in message.content:
