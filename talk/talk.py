@@ -80,6 +80,16 @@ class Talk(commands.Cog):
                     await message.channel.send("這不好說")
             else:
                 await message.channel.send("嘖嘖")
+        elif message.content.startswith("冷丸忘"):
+            key = message.content[3:].split(" ")[0]
+            if key in self.learned_talk_queue:
+                self.learned_talk_queue.remove(key)
+                self.learned_talk.pop(key)
+                await self.config.learned_talk.set(self.learned_talk)
+                await self.config.learned_talk_queue.set(self.learned_talk_queue)
+                await message.channel.send(f"{key} 是什麼可以吃嗎")
+            else:
+                await message.channel.send("我沒學過那個東西")
         elif message.content.startswith("冷丸現在選"):
             tmp = message.content[5:].split(" ")
             ans = list(set(tmp[1:]))
@@ -270,7 +280,7 @@ print("Re: Hello world")
         elif "本物" in message.content:
             await message.channel.send("Yesss")
         elif "籤" in message.content:
-            await message.channel.send(f"<:9_4Rikka_daikichi:927577264730808411> × {random.randint(1, 12)} / 12")
+            await message.channel.send(f"12 分之 {random.randint(1, 12)} 個 <:9_4Rikka_daikichi:927577264730808411>")
         elif "吃雞" in message.content or "champion" in message.content or "冠軍" in message.content:
             await message.channel.send("蝦?????")
         elif "apex" in message.content:
