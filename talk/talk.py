@@ -128,7 +128,7 @@ class Talk(commands.Cog):
             await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
-                await message.channel.send(f"{random.int(0, 100)}%")
+                await message.channel.send(f"{random.randint(0, 100)}%")
             else:
                 choice = [
                     "可能", "不可能", "大概", "有機會", "非常有機會", "不知道", "0.0001%", "比 papa 抽到藍色蠑螈機率還低",
