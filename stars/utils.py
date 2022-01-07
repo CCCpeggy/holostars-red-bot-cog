@@ -33,12 +33,12 @@ def checkInit(method):
             raise NotInitYet
     return _checkInit   
 
-async def getHttpData(url):
+async def getHttpData(url, params={}):
     import aiohttp
     from .errors import MException
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as r:
-            data = r.json()
+        async with session.get(url, params=params) as r:
+            data = await r.json()
             try:
                 check_api_errors(data)
             except MException as e:
@@ -129,6 +129,15 @@ class Send:
                 allowed_mentions=discord.AllowedMentions.none())
         else:
             await send_place.send(f"**{name}**已新增一筆\n{str(obj)}")
+    @staticmethod
+    async def update_completed(send_place: SendPlaceType, name:str, obj=None):
+        if obj == None:
+            await send_place.send(f"**{name}**已更新一筆資料")
+        elif isinstance(obj, discord.TextChannel):
+            await send_place.send(f"**{name}**已更新一筆：{obj.mention}",
+                allowed_mentions=discord.AllowedMentions.none())
+        else:
+            await send_place.send(f"**{name}**已更新一筆\n{str(obj)}")
     @staticmethod
     async def remove_completed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:

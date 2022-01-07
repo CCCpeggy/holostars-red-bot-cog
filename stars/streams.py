@@ -20,30 +20,58 @@ _, log = get_logger()
 
 
 class StreamStatus(str, Enum):
-    STANDBY = "standby"
-    START = "start"
-    END = "end"
+    NOTSURE = "notsure"
+    UPCOMING = "upcoming"
+    LIVE = "live"
+    MISSING = "missing"
 
 class Stream:
 
     def __init__(self, **kwargs):
         self._bot: Red = kwargs.pop("bot")
         self.id: str = kwargs.pop("id", create_id())
-        status = kwargs.pop("status", StreamStatus.STANDBY)
-        self.status: StreamStatus = StreamStatus(status) if isinstance(status, str) else status
+        self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
         self.time: datetime = Time.to_datetime(kwargs.pop("time"))
         self.channel_id: datetime = kwargs.pop("channel_id")
+        self.topic: str = kwargs.pop("topic", None)
+        self.title: str = kwargs.pop("title", None)
+        self.type: str = kwargs.pop("type", None)
         self._channel: "Channel" = kwargs.pop("channel")
+        self.info_update: bool = kwargs.pop("info_update", False)
     
     def __repr__(self):
         data = [
             f"Stream",
             f"> id：{self.id}",
-            f"> 狀態：{self.status}",
+            f"> 狀態：{self._status}",
             f"> 預定時間：{self.time}",
             f"> 所屬頻道：{self._channel.type}: {self._channel.name}",
+            f"> 標題：{self.title}",
+            f"> 類型：{self.type}",
+            f"> 主題：{self.topic}",
         ]
         return "\n".join(data)
+    
+    def is_valid(self):
+        return self._channel
+
+    def update_info(self, **kwargs):
+        time = Time.to_datetime(kwargs.pop("time"))
+        topic = kwargs.pop("topic", None)
+        title = kwargs.pop("title", None)
+        status = StreamStatus(kwargs.pop("status", "notsure"))
+        if self.time != time:
+            self.info_update = True
+            self.time = time
+        if self.topic != topic:
+            self.info_update = True
+            self.topic = topic
+        if self.title != title:
+            self.info_update = True
+            self.title = title
+        if self._status != status:
+            self.info_update = True
+            self._status = status
 
 # class GuildStreamStatus(Enum):
 #     STANDBY = 1
@@ -71,6 +99,9 @@ class GuildStream:
     async def initial(self):
         self.notify_text_channel: discord.TextChannel = await get_text_channel(self._bot, self._notify_text_channel_id)
         self.is_init = True
+    
+    def is_valid(self):
+        return self._stream
 
     def set_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream"):
         self.guild_collab_stream_id = guild_collab_stream.id
@@ -107,6 +138,19 @@ class GuildCollabStream:
     async def initial(self):
         self.standby_text_channel = await get_text_channel(self._bot, self._standby_text_channel_id)
         self.is_init = True
+    
+    def is_valid(self) -> bool:
+        not_valid_guild_stream_ids = []
+        for id, guild_stream in self._guild_streams.items():
+            if not guild_stream or not guild_stream.is_valid():
+                not_valid_guild_stream_ids.append(id)
+        if len(not_valid_guild_stream_ids) == len(self._guild_streams) \
+            and not Time.is_time_in_future_range(self.time):
+            return False
+        # for guild_stream_id in not_valid_guild_stream_ids:
+        #     self.guild_stream_ids.remove(guild_stream_id)
+        #     self._guild_streams.pop(guild_stream_id)
+        return True
     
     def __repr__(self):
         data = [
@@ -148,6 +192,8 @@ class GuildStreamsManager():
 
     async def get_stream_belong_member(self, stream_id: str) -> "Member":
         stream=self.get_stream(stream_id)
+        if not stream:
+            return None
         channel_id = stream.channel_id
         guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
         for member in guild_members_manager.members.values():
@@ -175,10 +221,11 @@ class GuildStreamsManager():
                 **kwargs
             )
             await guild_stream.initial()
-            self.guild_streams[stream_id] = guild_stream
-            if save:
-                await self.save_guild_streams()
-            return guild_stream
+            if guild_stream.is_valid():
+                self.guild_streams[stream_id] = guild_stream
+                if save:
+                    await self.save_guild_streams()
+                return guild_stream
         return None
 
     async def add_guild_collab_stream(self, guild_stream_ids: List["GuildStream"], save=True, **kwargs) -> "GuildCollabStream":
@@ -199,6 +246,8 @@ class GuildStreamsManager():
             **kwargs
         )
         await guild_collab_stream.initial()
+        if not guild_collab_stream.is_valid():
+            return None
         for guild_stream in guild_streams.values():
             guild_stream.set_guild_collab_stream(guild_collab_stream)
         self.guild_collab_streams[guild_collab_stream.id] = guild_collab_stream
@@ -240,6 +289,7 @@ class StreamsManager(commands.Cog):
 
     async def initial(self):
         async def load_streams():
+            from .errors import MException
             for id, raw_data in (await self.config.streams()).items():
                 await self.add_stream(save=False, **raw_data)
         await load_streams()
@@ -262,14 +312,23 @@ class StreamsManager(commands.Cog):
                 bot=self.bot,
                 id=id,
                 channel_id=channel_id,
-                channel=self.manager.channels_manager.channels[channel_id],
+                channel=self.manager.channels_manager.channels.get(channel_id, None),
                 **kwargs
             )
-            self.streams[id] = stream
-            if save:
-                await self.save_streams()
-            return stream
+            if stream.is_valid():
+                self.streams[id] = stream
+                if save:
+                    await self.save_streams()
+                return stream
         return None
+
+    async def update_stream(self, id: str, save=True, **kwargs) -> "Stream":
+        if id not in self.streams:
+            from .errors import DataNotFound
+            raise DataNotFound
+        self.streams[id].update_info(kwargs)
+        if save:
+            await self.save_streams()
 
     def get_stream(self, id: str) -> "Stream":
         return self.streams.get(id, None)

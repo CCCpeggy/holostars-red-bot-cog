@@ -14,7 +14,7 @@ _, log = get_logger()
 class Manager(commands.Cog):
     def __init__(self, bot: Red, **kwargs):
         self.bot = bot
-        self._init_task: asyncio.Task = self.bot.loop.create_task(self.initial())
+        self.bot.loop.create_task(self.initial())
     
     async def initial(self):
         self.bot.add_cog(self)
@@ -66,12 +66,21 @@ class Manager(commands.Cog):
             guild_collab_stream = await guild_streams_manager.add_guild_collab_stream([stream.id])
             await Send.add_completed(ctx, type(guild_collab_stream).__name__, guild_collab_stream)
 
-    @test.command(name="channel")
-    async def test_channel(self, ctx):
-        from .channel.holodex import HolodexChannel
-        info = {
-            "bot": self.bot,
-            "id": "UCZgOv3YDEs-ZnZWDYVwJdmA"
-        }
-        channel = HolodexChannel(info)
-        print(channel)
+    @test.command(name="holodex")
+    async def test_holodex(self, ctx):
+        member_name = "Lamy"
+        channel_id = "UCFKOVgVbGmX65RxO3EtH3iw"
+        await self.members_manager.add_member(ctx=ctx, name=member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.channels_manager.add_holodex_channel(ctx, member_name, channel_id)
+        channel = self.channels_manager.channels[channel_id]
+        streams_info = await channel.get_streams_info()
+        for stream_info in streams_info:
+            stream = self.streams_manager.get_stream(stream_info["id"])
+            if stream:
+                stream.update_info(**stream_info)
+                await Send.update_completed(ctx, type(stream).__name__, stream)
+            else:
+                stream = await self.streams_manager.add_stream(**stream_info)
+                await Send.add_completed(ctx, type(stream).__name__, stream)
+        await self.members_manager.remove_member(ctx=ctx, name=member_name)

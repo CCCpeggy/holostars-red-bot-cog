@@ -30,8 +30,14 @@ class YoutubeQuotaExceeded(APIError):
     def get_message(self) -> str:
         return "YouTube quota has been exceeded."
 
-class NotInitYet(Exception):
+class NotInitYet(MException):
     def __repr__(self) -> str:
         return f"NotInitYet"
     def get_message(self) -> str:
         return "Your class need to initial."
+
+class DataNotFound(MException):
+    def __repr__(self) -> str:
+        return f"NotFound"
+    def get_message(self) -> str:
+        return "此資料不存在於現有的資料中."

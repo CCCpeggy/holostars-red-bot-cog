@@ -17,13 +17,22 @@ class GuildMembersManager():
         self.config: Config = config
         self.manager: "Manager" = manager
         self.members: Dict[str, "Member"] = {}
+        self.is_init = False
         
-        async def async_load():
-            async def load_members():
-                for key, value in (await config.members()).items():
-                    await self.add_member(saved=False, **value)
-            await load_members()
-        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
+    async def initial(self):
+        async def load_members():
+            for key, value in (await self.config.members()).items():
+                await self.add_member(saved=False, **value)
+        await load_members()
+        self.is_init = True
+    
+    # def checkInit(method):
+    #     def _checkInit(self, *args, **kwargs):
+    #         log.debug(kwargs)
+    #         if not self.isInit:
+    #             from .errors import NotInitYet
+    #             raise NotInitYet
+    #     return _checkInit
 
     async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
@@ -38,6 +47,7 @@ class GuildMembersManager():
                 channels={id: self.manager.channels_manager.channels[id] for id in channel_ids},
                 **kwargs
             )
+            await member.initial()
             self.members[name] = member
             if save:
                 await self.save_memebers()
@@ -71,38 +81,40 @@ class MembersManager(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
         self.guild_managers = {}
-        async def async_load():
-            async def load_guild():
-                for guild_id, config in (await self.config.all_guilds()).items():
-                    self.get_guild_manager(guild_id)
-            await load_guild()
+        self.is_init = False
+
+    async def initial(self):
+        async def load_guild():
+            for guild_id, config in (await self.config.all_guilds()).items():
+                await self.get_guild_manager(guild_id)
+        await load_guild()
+        self.is_init = True
             
-        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
-    
     def get_all_member(self) -> list:
         members = []
         for guild_manager in self.guild_managers.values():
             members += list(guild_manager.members.values())
         return members
 
-    def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
+    async def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
         guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
         if not guild.id in self.guild_managers:
             self.guild_managers[guild.id] = GuildMembersManager(self.bot, self.config.guild(guild), self.manager)
+            await self.guild_managers[guild.id].initial()
         return self.guild_managers[guild.id]
 
-    def get_member(self, guild: Union[int, discord.Guild], member_name: str) -> "Member":
-        return self.get_guild_manager(guild).get_member(member_name)
+    async def get_member(self, guild: Union[int, discord.Guild], member_name: str) -> "Member":
+        return (await self.get_guild_manager(guild)).get_member(member_name)
 
     @commands.group(name="member")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
-    async def member_group(self, ctx: commands.Context):
+    async def member_group(self):
         pass
 
     @member_group.command(name="add")
     async def add_member(self, ctx: commands.Context, name: str):
-        guild_manager = self.get_guild_manager(ctx.guild)
+        guild_manager = await self.get_guild_manager(ctx.guild)
         member, successful = await guild_manager.add_member(name=name)
         if successful:
             await Send.add_completed(ctx, "成員資料", member)
@@ -111,7 +123,7 @@ class MembersManager(commands.Cog):
 
     @member_group.command(name="remove")
     async def remove_member(self, ctx: commands.Context, name: str):
-        guild_manager = self.get_guild_manager(ctx.guild)
+        guild_manager = await self.get_guild_manager(ctx.guild)
         member = await guild_manager.remove_member(name)
         if member:
             await Send.remove_completed(ctx, "成員資料", name)
@@ -125,7 +137,7 @@ class MembersManager(commands.Cog):
 
     @member_group.command(name="list")
     async def list_member(self, ctx: commands.Context, name: str=None):
-        guild_manager = self.get_guild_manager(ctx.guild)
+        guild_manager = await self.get_guild_manager(ctx.guild)
         data = None
         if len(guild_manager.members) == 0:
             await Send.empty(ctx, "成員資料")
@@ -167,13 +179,18 @@ class Member:
         self.notify_text_channel: discord.TextChannel = None
         self.chat_text_channel: discord.TextChannel = None
         self.memeber_channel: discord.TextChannel = None
+        self.is_init = False
 
-        async def async_load():
-            self.notify_text_channel = await get_text_channel(self._bot, kwargs.pop("notify_text_channel", None))
-            self.chat_text_channel = await get_text_channel(self._bot, kwargs.pop("chat_text_channel", None))
-            self.memeber_channel = await get_text_channel(self._bot, kwargs.pop("memeber_channel", None))
+        self._notify_text_channel_id: str = kwargs.pop("notify_text_channel", None)
+        self._chat_text_channel_id: str = kwargs.pop("chat_text_channel", None)
+        self._memeber_channel_id: str = kwargs.pop("memeber_channel", None)
 
-        self._init_task: asyncio.Task = self._bot.loop.create_task(async_load())
+    async def initial(self):
+        async def load_channels():
+            self.notify_text_channel = await get_text_channel(self._bot, self._notify_text_channel_id)
+            self.chat_text_channel = await get_text_channel(self._bot, self._chat_text_channel_id)
+            self.memeber_channel = await get_text_channel(self._bot, self._memeber_channel_id)
+        self.is_init = True
 
     def __repr__(self):
         data = [
@@ -185,7 +202,7 @@ class Member:
             f"> 頻道 ID：{', '.join(self.channel_ids)}",
         ]
         return "\n".join(data)
-        
+       
     async def add_channel(self, channel_id: str) -> bool:
         if channel_id in self.channel_ids:
             return False

@@ -9,6 +9,7 @@ from .utils import *
 from .streams import StreamsManager
 from .channel.channel import Channel
 from .channel.youtube import YoutubeChannel
+from .channel.holodex import HolodexChannel
 
 _, log = get_logger()
 
@@ -28,15 +29,16 @@ class ChannelsManager(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
         self.channels: Dict[str, Channel] = {}
-        async def async_load():
-            async def load_channels():
-                for id, raw_data in (await self.config.channels_()).items():
-                    _class = Channel.get_class(raw_data["type"])
-                    self.channels[id] = _class(bot=bot, **raw_data)
-            await load_channels()
-            
-        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
-    
+        self.is_init = False
+
+    async def initial(self):
+        async def load_channels():
+            for id, raw_data in (await self.config.channels_()).items():
+                _class = Channel.get_class(raw_data["type"])
+                self.channels[id] = _class(bot=self.bot, **raw_data)
+        await load_channels()
+        self.is_init = True
+
     async def remove_channel(self, channel_id: str) -> "Channel":
         if channel_id in channel_id:
             channel = self.channels.pop(channel_id)
@@ -77,11 +79,37 @@ class ChannelsManager(commands.Cog):
         if not Youtube.check_id(channel_id):
             await Send.data_error(ctx, "頻道 ID", channel_id)
             return
-        member = self.manager.members_manager.get_member(ctx.guild, name)
+        member = await self.manager.members_manager.get_member(ctx.guild, name)
         if member == None:
             await Send.not_existed(ctx, "成員資料", name)
             return
         channel, successful = await self.add_channel(YoutubeChannel, channel_id)            
+        if successful:
+            await Send.add_completed(ctx, "頻道資料", channel)
+        else:
+            await Send.already_existed(ctx, "頻道資料", channel)
+        if await member.add_channel(channel_id):
+            await Send.add_completed(ctx, f"{name} 成員資料對於此頻道", channel)
+        else:
+            await Send.already_existed(ctx, f"{name} 成員資料對於此頻道", channel)
+
+    @channel_group.group(name="holodex")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def holodex_group(self, ctx: commands.Context):
+        pass
+
+    @holodex_group.command(name="add")
+    async def add_holodex_channel(self, ctx: commands.Context, name: str, channel_id: str):
+        if not Youtube.check_id(channel_id):
+            await Send.data_error(ctx, "頻道 ID", channel_id)
+            return
+        member = await self.manager.members_manager.get_member(ctx.guild, name)
+        if member == None:
+            await Send.not_existed(ctx, "成員資料", name)
+            return
+        channel, successful = await self.add_channel(HolodexChannel, channel_id)  
+        await channel.fetch_channel_data()        
         if successful:
             await Send.add_completed(ctx, "頻道資料", channel)
         else:
@@ -112,3 +140,13 @@ class ChannelsManager(commands.Cog):
             await Send.not_existed(ctx, "頻道資料", id)
             return
         await Send.send(ctx, "\n".join(data))
+
+
+    @channel_group.command(name="remove")
+    async def _remove_channel(self, ctx: commands.Context, channel_id: str):
+        channel = await self.remove_channel(channel_id)
+        if channel:
+            await Send.remove_completed(ctx, "頻道資料", channel)
+        else:
+            await Send.not_existed(ctx, "頻道資料", channel_id)
+

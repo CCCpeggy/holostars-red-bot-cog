@@ -9,7 +9,32 @@ class HolodexChannel(Channel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.type = "YoutubeChannel"
+        self.type = "HolodexChannel"
+
+    async def fetch_channel_data(self):
+        channel_url = f"https://holodex.net/api/v2/channels/{self.id}"
+        data = await getHttpData(channel_url)
+        self.name = data["name"]
+
+    async def get_streams_info(self):
+        live_url = f"https://holodex.net/api/v2/live"
+        params = {
+            "channel_id": self.id,
+        }
+        ori_videos = await getHttpData(live_url, params)
+        new_videos = []
+        for ori_video in ori_videos:
+            new_video = {
+                "id": ori_video["id"],
+                "channel_id": self.id,
+                "title": ori_video["title"],
+                "type": ori_video["type"],
+                "topic": ori_video.get("topic_id", None),
+                "status": ori_video.get("status"),
+                "time": Time.to_datetime(ori_video["start_scheduled"]),
+            }
+            new_videos.append(new_video)
+        return new_videos
     
     def __repr__(self):
         data = super().__repr__()

@@ -17,8 +17,6 @@ class Channel:
         #     self.chat_text_channel: discord.TextChannel = await get_text_channel(self.bot, kwargs.pop("chat_text_channel", None))
         #     self.memeber_channel: discord.TextChannel = await get_text_channel(self.bot, kwargs.pop("memeber_channel", None))
 
-        # self._init_task: asyncio.Task = self._bot.loop.create_task(async_load())
-
     def __repr__(self):
         data = [
             f"{self.type}",
@@ -27,7 +25,10 @@ class Channel:
         ]
         return "\n".join(data)
 
-    def update(self):
+    async def fetch_channel_data(self):
+        pass
+
+    def get_streams_info(self):
         pass
 
     @staticmethod
@@ -37,7 +38,7 @@ class Channel:
             return YoutubeChannel
         elif class_type == "HolodexChannel":
             from .holodex import HolodexChannel
-            return YoutubeChannel
+            return HolodexChannel
         else:
             return Channel
 
