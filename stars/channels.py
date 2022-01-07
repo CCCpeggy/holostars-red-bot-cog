@@ -8,7 +8,7 @@ import asyncio
 from .utils import *
 from .streams import StreamsManager
 from .channel.channel import Channel
-from .channel.youtube_channel import YoutubeChannel
+from .channel.youtube import YoutubeChannel
 
 _, log = get_logger()
 

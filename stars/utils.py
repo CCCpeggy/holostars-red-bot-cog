@@ -159,7 +159,9 @@ class Time:
         elif isinstance(time, str):
             from dateutil.parser import parse as parse_time
             time = parse_time(time)
-            return Time.add_timezone(time)
+            if time.tzinfo == None:
+                time = Time.add_timezone(time)
+            return time
         return None
 
     @staticmethod

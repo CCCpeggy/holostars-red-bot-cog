@@ -30,7 +30,10 @@ class Channel:
     @staticmethod
     def get_class(class_type: str):
         if class_type == "YoutubeChannel":
-            from .youtube_channel import YoutubeChannel
+            from .youtube import YoutubeChannel
+            return YoutubeChannel
+        elif class_type == "HolodexChannel":
+            from .holodex import HolodexChannel
             return YoutubeChannel
         else:
             return Channel
