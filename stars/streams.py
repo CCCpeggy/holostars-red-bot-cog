@@ -65,9 +65,12 @@ class GuildStream:
         self._saved_func = kwargs.pop("saved_func", None)
 
         self.notify_text_channel: discord.TextChannel = None
-        async def async_load():
-            self.notify_text_channel: discord.TextChannel = await get_text_channel(self._bot, kwargs.pop("notify_text_channel", None))
-        self._bot.loop.create_task(async_load())
+        self._notify_text_channel_id: str = kwargs.pop("notify_text_channel", None)
+        self.is_init = False
+
+    async def initial(self):
+        self.notify_text_channel: discord.TextChannel = await get_text_channel(self._bot, self._notify_text_channel_id)
+        self.is_init = True
 
     def set_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream"):
         self.guild_collab_stream_id = guild_collab_stream.id
@@ -98,9 +101,12 @@ class GuildCollabStream:
         self._saved_func = kwargs.pop("saved_func", None)
 
         self.standby_text_channel: discord.TextChannel = None
-        async def async_load():
-            self.standby_text_channel = await get_text_channel(self._bot, kwargs.pop("standby_text_channel", None))
-        self._bot.loop.create_task(async_load())
+        self.is_init = False
+        self._standby_text_channel_id = kwargs.pop("standby_text_channel", None)
+
+    async def initial(self):
+        self.standby_text_channel = await get_text_channel(self._bot, self._standby_text_channel_id)
+        self.is_init = True
     
     def __repr__(self):
         data = [
@@ -123,47 +129,43 @@ class GuildStreamsManager():
         self.guild_streams: Dict[str, "GuildStream"] = {}
         self.guild_collab_streams: Dict[str, "GuildCollabStream"] = {}
 
-        async def async_load():
-            async def load_guild_streams():
-                for id, raw_data in (await self.config.guild_streams()).items():
-                    guild_stream = await self.add_guild_stream(save=False, **raw_data)
-                    log.debug(guild_stream)
-            await load_guild_streams()
-            log.debug(self.guild_streams)
-            
-            # async def load_collab_guild_streams():
-            #     log.debug(789)
-            #     for id, raw_data in (await self.config.guild_collab_streams()).items():
-            #         log.debug(id)
-            #         await self.add_guild_collab_stream(save=False, **raw_data)
-            # await load_collab_guild_streams()
-            log.debug(self.guild_collab_streams)
+        self.is_init = False
 
-        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
+    async def initial(self):
+        async def load_guild_streams():
+            for id, raw_data in (await self.config.guild_streams()).items():
+                guild_stream = await self.add_guild_stream(save=False, **raw_data)
+        await load_guild_streams()
+        
+        async def load_collab_guild_streams():
+            for id, raw_data in (await self.config.guild_collab_streams()).items():
+                await self.add_guild_collab_stream(save=False, **raw_data)
+        await load_collab_guild_streams()
+        self.is_init = True
 
     def get_stream(self, stream_id) -> "Stream":
         return self.manager.streams_manager.streams.get(stream_id, None)
 
-    def get_stream_belong_member(self, stream_id: str) -> "Member":
+    async def get_stream_belong_member(self, stream_id: str) -> "Member":
         stream=self.get_stream(stream_id)
         channel_id = stream.channel_id
-        guild_members_manager = self.manager.members_manager.get_guild_manager(self.guild)
-        log.debug(guild_members_manager.members)
-        log.debug("channel_id: " + channel_id)
+        guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
         for member in guild_members_manager.members.values():
-            log.debug(member.channel_ids)
             if channel_id in member.channel_ids:
-                log.debug("Found")
                 return member
         return None
+    
+    def get_guild_stream(self, id: str)  -> "GuildStream":
+        return self.guild_streams.get(id, None)
+    
+    def get_guild_collab_stream(self, id: str)  -> "GuildCollabStream":
+        return self.guild_collab_streams.get(id, None)
 
     async def add_guild_stream(self, stream_id, save=True, **kwargs) -> "GuildStream":
         if stream_id not in self.guild_streams:
-            member = self.get_stream_belong_member(stream_id)
+            member = await self.get_stream_belong_member(stream_id)
             if member == None:
                 return None
-            # log.debug("member")
-            # log.debug(member)
             guild_stream = GuildStream(
                 bot=self.bot,
                 stream_id=stream_id,
@@ -172,6 +174,7 @@ class GuildStreamsManager():
                 saved_func=self.save_guild_streams,
                 **kwargs
             )
+            await guild_stream.initial()
             self.guild_streams[stream_id] = guild_stream
             if save:
                 await self.save_guild_streams()
@@ -186,7 +189,7 @@ class GuildStreamsManager():
             if not guild_stream.guild_collab_stream_id:
                 continue
             return None
-        member = self.get_stream_belong_member(guild_stream_id)
+        member = await self.get_stream_belong_member(guild_stream_id)
         guild_collab_stream = GuildCollabStream(
             bot=self.bot,
             guild_stream_ids=guild_stream_ids,
@@ -195,6 +198,7 @@ class GuildStreamsManager():
             saved_func=self.save_guild_collab_streams,
             **kwargs
         )
+        await guild_collab_stream.initial()
         for guild_stream in guild_streams.values():
             guild_stream.set_guild_collab_stream(guild_collab_stream)
         self.guild_collab_streams[guild_collab_stream.id] = guild_collab_stream
@@ -232,22 +236,24 @@ class StreamsManager(commands.Cog):
         self.streams: Dict[str, "Stream"] = {}
         self.guild_managers: Dict[str, "GuildStreamsManager"] = {}
 
-        async def async_load():
-            async def load_streams():
-                for id, raw_data in (await self.config.streams()).items():
-                    await self.add_stream(save=False, **raw_data)
-            await load_streams()
-            async def load_guild():
-                for guild_id, config in (await self.config.all_guilds()).items():
-                    self.get_guild_manager(guild_id)
-            await load_guild()
-            
-        self._init_task: asyncio.Task = self.bot.loop.create_task(async_load())
+        self.is_init = False
 
-    def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildStreamsManager":
+    async def initial(self):
+        async def load_streams():
+            for id, raw_data in (await self.config.streams()).items():
+                await self.add_stream(save=False, **raw_data)
+        await load_streams()
+        async def load_guild():
+            for guild_id, config in (await self.config.all_guilds()).items():
+                await self.get_guild_manager(guild_id)
+        await load_guild()
+        self.is_init = True
+            
+    async def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildStreamsManager":
         guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
         if not guild.id in self.guild_managers:
             self.guild_managers[guild.id] = GuildStreamsManager(self.bot, self.config.guild(guild), guild, self.manager)
+            await self.guild_managers[guild.id].initial()
         return self.guild_managers[guild.id]
         
     async def add_stream(self, id: str, channel_id: str, save=True, **kwargs) -> "Stream":
@@ -264,6 +270,9 @@ class StreamsManager(commands.Cog):
                 await self.save_streams()
             return stream
         return None
+
+    def get_stream(self, id: str) -> "Stream":
+        return self.streams.get(id, None)
 
     # @commands.command(name="test")
     # @commands.guild_only()

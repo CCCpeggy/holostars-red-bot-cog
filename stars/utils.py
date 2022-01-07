@@ -26,6 +26,44 @@ def create_id():
     import uuid
     return uuid.uuid4().hex[:16]
 
+def checkInit(method):
+    def _checkInit(self, *args, **kwargs):
+        if not self.isInit:
+            from .errors import NotInitYet
+            raise NotInitYet
+    return _checkInit   
+
+async def getHttpData(url):
+    import aiohttp
+    from .errors import MException
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as r:
+            data = r.json()
+            try:
+                check_api_errors(data)
+            except MException as e:
+                log.error(e.get_message())
+            except Exception as e:
+                log.error(e)
+            else:
+                return data
+    return None
+
+
+def check_api_errors(data: dict):
+    from .errors import APIError, InvalidYoutubeCredentials, YoutubeQuotaExceeded
+    if "error" in data:
+        error_code = data["error"]["code"]
+        if error_code == 400 and data["error"]["errors"][0]["reason"] == "keyInvalid":
+            raise InvalidYoutubeCredentials()
+        elif error_code == 403 and data["error"]["errors"][0]["reason"] in (
+            "dailyLimitExceeded",
+            "quotaExceeded",
+            "rateLimitExceeded",
+        ):
+            raise YoutubeQuotaExceeded()
+        raise APIError(error_code, data)
+
 class Youtube:
     @staticmethod
     def check_id(id: str) -> bool:

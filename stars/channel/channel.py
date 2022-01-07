@@ -27,6 +27,9 @@ class Channel:
         ]
         return "\n".join(data)
 
+    def update(self):
+        pass
+
     @staticmethod
     def get_class(class_type: str):
         if class_type == "YoutubeChannel":
