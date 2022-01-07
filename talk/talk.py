@@ -39,13 +39,24 @@ class Talk(commands.Cog):
                 await message.channel.send("這個沒有作用啦")
         if not message.content.startswith("冷丸"):
             return
+        if "人氣" in message.content and "票" in message.content:
+            await message.add_reaction("<:1_1Miyabi:890277022658592800>")
+            await message.add_reaction("<:1_2Izuru:890278709297287279>")
+            await message.add_reaction("<:1_3Arurandeisu:890279210839597137>")
+            await message.add_reaction("<:1_4Rikka:890279428016443443>")
+            await message.add_reaction("<:1_5Astel:890280329741484032>")
+            await message.add_reaction("<:1_6Temma:890280329724694579>")
+            await message.add_reaction("<:1_7Roberu:890280329741471754>")
+            await message.add_reaction("<:1_8Shien:890280329909252126>")
+            await message.add_reaction("<:1_9Oga:890280329812787211>")
+            return
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
         if "天才" in message.content:
-            await message.add_reaction("<:Te_tensai:887747027637792888>")
+            await message.add_reaction("<:9_6Temma_tensai:917056396854456390>")
         elif "天真" in message.content or "3D" in message.content:
-            await message.add_reaction("<:Te_light:887747027658764300>")
+            await message.add_reaction("<:0_6Temma_light:900835047639244830>")
 
         
         if message.content.startswith("冷丸學"):
@@ -54,7 +65,7 @@ class Talk(commands.Cog):
             ans = " ".join(tmp[1:])
             # que, ans = message.content[3:].split(" ")[:2]
             if que != "" and ans != "":
-                if random.randint(0, 1) == 0:
+                if random.randint(0, 4) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -69,6 +80,16 @@ class Talk(commands.Cog):
                     await message.channel.send("這不好說")
             else:
                 await message.channel.send("嘖嘖")
+        elif message.content.startswith("冷丸忘"):
+            key = message.content[3:].split(" ")[0]
+            if key in self.learned_talk_queue:
+                self.learned_talk_queue.remove(key)
+                self.learned_talk.pop(key)
+                await self.config.learned_talk.set(self.learned_talk)
+                await self.config.learned_talk_queue.set(self.learned_talk_queue)
+                await message.channel.send(f"{key} 是什麼可以吃嗎")
+            else:
+                await message.channel.send("我沒學過那個東西")
         elif message.content.startswith("冷丸現在選"):
             tmp = message.content[5:].split(" ")
             ans = list(set(tmp[1:]))
@@ -90,7 +111,7 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if que != "" and len(ans) >= 2:
-                if random.randint(0, 1) == 0:
+                if random.randint(0, 3) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -112,14 +133,55 @@ class Talk(commands.Cog):
                 await ref_msg.reply(message.content[3:], mention_author=False)
             else:
                 await message.channel.send(message.content[3:])
+            await message.delete()
+        elif message.content == "冷丸功能":
+            info = \
+"""
+冷丸學[項目] [內容]
+冷丸選[項目] [選項1] [選項2] ... (這個會記住，`冷丸[項目]` 才會出現結果)
+冷丸忘[項目] 
+冷丸現在選[項目] [選項1] [選項2] ...
+冷丸 + 機率
+冷丸 + 籤
+冷丸 + 人氣投票
+需要的話也可以跟冷丸要個抱抱
+"""
+            await message.channel.send(info)
+        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
+            await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
+        elif "機率" in message.content:
+            if random.randint(0, 3) == 0:
+                await message.channel.send(f"{random.randint(0, 100)}%")
+            else:
+                choice = [
+                    "可能", "不可能", "大概", "有機會", "非常有機會", "不知道", "0.0001%", "比 papa 抽到藍色蠑螈機率還低",
+                    "別做夢了", "醒"
+                ]
+                await message.channel.send(random.choice(choice))
+        elif "籤" in message.content:
+            await message.channel.send(f"12 分之 {random.randint(1, 12)} 個 <:9_4Rikka_daikichi:927577264730808411>")
         elif message.content[2:] in self.learned_talk_queue:
             ans = self.learned_talk[message.content[2:]]
             if isinstance(ans, str):
                 await message.channel.send(ans)
             else:
                 await message.channel.send(random.choice(ans))
+        elif "待機" in message.content:
+            taigi = [
+                "<:3_1Taigi_Miyabi:900877303788224573>", "<:3_2Taigi_Izuru:900877316220153947>", "<:3_3Taigi_Aruran:900877327607689257>",
+                "<:3_4Taigi_Rikka:900877341482426468>", "<:3_5Taigi_Astel:900877356519018536>", "<:3_6Taigi_Temma:900877373166190692>",
+                "<:3_7Taigi_Roberu:900877387871420416>", "<:3_8Taigi_Shien:900877418238210078>", "<:3_9Taigi_Oga:900877428879142925>"]
+            await message.channel.send(" ". join(taigi))
+        elif "螢光棒" in message.content or "light" in message.content:
+            light = [
+                "<:0_1Miyabi_light:900388353067851776>", "<:0_2Izuru_light:900395151195775046>", "<:0_3Arurandeisu_light:900400350366928906>",
+                "<:0_4Rikka_light:900400189016268890>", "<:0_5Astel_light:919742537382629426>", "<:0_6Temma_light:900835047639244830>",
+                "<:0_7Roberu_light:900412554755571722>", "<:0_8Shien_light:900416024493576252>", "<:0_8Shien_light:900416024493576252>",
+                "<:0_9Oga_light:900866684980699191>", 
+            ]
+            await message.channel.send(" ". join(light))
         elif "天才" in message.content:
-            await message.channel.send("<:Te_tensai:887747027637792888>")
+            await message.channel.send("<:9_6Temma_tensai:917056396854456390> ")
         elif "天真" in message.content or "3D" in message.content:
             await message.channel.send("天真好棒！")
         elif "月嵐" in message.content:
@@ -129,14 +191,12 @@ class Talk(commands.Cog):
                 await message.channel.send("冷丸最可愛！")
             else:
                 await message.channel.send(f"比{random.choice(['咖咩醬', '虛無雀', '天真'])}更可愛！")
-        elif "在" in message.content:
-            await message.channel.send(random.choice(["不在", "不在", "在"]))
         elif "娶" in message.content:
-            await message.channel.send("Noo")
+            await message.channel.send("不要！")
         elif "椰香" in message.content or "椰子" in message.content or "綠色乖乖" in message.content:
-            await message.channel.send("<:As_bonk:887746980179247194><:As_bonk:887746980179247194>")
+            await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
-            await message.channel.send("No" + "o" * random.randint(0, 20))
+            await message.channel.send("乖乖好吃")
         elif "歐姆" in message.content:
             await message.channel.send("v=ir => av=air => 色即是空")
         elif "程式" in message.content or "代碼" in message.content:
@@ -168,6 +228,7 @@ for(;;) {
     
 }
 ```"""]
+            await message.channel.send(random.choice(code))
         elif "python" in message.content:
             code = [
 """```python
@@ -226,15 +287,13 @@ print("Re: Hello world")
 ```"""]
             await message.channel.send(random.choice(code))
         elif "機器人" in message.content:
-            await message.channel.send("<:Ri_2GB_1:887732339600404490><:Ri_2GB_2:887732340825141318><:Ri_2GB_3:887732339982094366>")
+            await message.channel.send(":two: :regional_indicator_b: :regional_indicator_g:")
         elif "廁所" in message.content:
             await message.channel.send("<:Roberu_question:887748105234174014>")
         elif "外掛" in message.content:
             await message.channel.send("!?")
         elif "本物" in message.content:
             await message.channel.send("Yesss")
-        elif "籤" in message.content:
-            await message.channel.send("平" * random.randint(1, 12))
         elif "吃雞" in message.content or "champion" in message.content or "冠軍" in message.content:
             await message.channel.send("蝦?????")
         elif "apex" in message.content:
@@ -243,28 +302,17 @@ print("Re: Hello world")
             await message.channel.send("niceeeee")
         elif "性別" in message.content:
             await message.channel.send("女生")
-        elif "吃" in message.content:
-            await message.channel.send("不吃")
         elif "睡" in message.content:
             await message.channel.send("z" * random.randint(3, 20))
-        elif "要不要" in message.content:
-            await message.channel.send("不要")
-        elif "好不好" in message.content:
-            await message.channel.send("不好")
-        elif "行不行" in message.content:
-            await message.channel.send("不行")
-        elif "買不買" in message.content:
-            await message.channel.send("不買")
-        elif "想不想" in message.content:
-            await message.channel.send("不想")
-        elif "愛不愛" in message.content:
-            await message.channel.send("不愛")
-        elif "有沒有" in message.content:
-            await message.channel.send("沒有")
         elif "圓周率" in message.content:
-            await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286203998")
+            await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286208998")
         elif "貼貼" in message.content:
-            await message.channel.send("<:Tee_Ro:887762077626794027><:Tee_Te:887762077689720953>")
+            choice = [
+                "<:2_1Tee_Mi:887762077907841065>", "<:2_2Tee_Iz:887762078188859442>", "<:2_3Tee_Ar:887762077777805323>",
+                "<:2_4Tee_As:887762077589045269>", "<:2_4Tee_Ri:887762077882654752>", "<:2_6Tee_Te:887762077689720953>", 
+                "<:2_7Tee_Ro:887762077626794027>", "<:2_8Tee_Sh:887762077706493962>", "<:2_9Tee_Og:887762078088179762>"
+            ]
+            await message.channel.send(f"{random.choice(choice)}{choice[5]}")
         elif "對不起" in message.content:
             await message.channel.send(":pleading_face:")
         elif "不乖" in message.content or"叛逆" in message.content:
@@ -273,11 +321,11 @@ print("Re: Hello world")
             else:
                 await message.channel.send(":pleading_face:")
         elif "定理" in message.content or"定律" in message.content or "數學" in message.content or "物理" in message.content or "化學" in message.content or "生物" in message.content or "公式" in message.content or "喜歡誰" in message.content or "比" in message.content or "社會" in message.content or "歷史" in message.content:
-            await message.channel.send("<:Sh_hmmm:887761992352407552> ")
+            await message.channel.send("去問咖咩啦")
         elif "乖" in message.content:
-            await message.channel.send("No" + "o" * random.randint(0, 20))
+            await message.channel.send("咖咩學學我啊")
         elif "棒" in message.content:
-            await message.channel.send("<:As_bonk:887746980179247194>")
+            await message.channel.send("<:Oga_Bonk:900404897600659487>")
         elif "幫" in message.content:
             await message.channel.send("油加你幫！")
         elif "a-z" in message.content:
@@ -285,19 +333,50 @@ print("Re: Hello world")
         elif "嗎" not in message.content and ("摸" in message.content or "喜歡" in message.content or "fire" in message.content or "water" in message.content):
             await message.channel.send("Fire" + "e" * random.randint(0, 10))
         elif "早" in message.content or "午" in message.content or "晚" in message.content:
-            await message.channel.send("不好")
+            await message.channel.send(f"{random.choice(['早', '午', '晚'])}安")
         elif "主人" in message.content:
-            await message.channel.send("<:Sh_hmmm:887761992352407552>")
-        elif "我" in message.content:
-            await message.channel.send(f"I don't know you.")
-        elif ":As_bonk:" in message.content:
-            await message.channel.send("<:As_bonk:887746980179247194><:As_bonk:887746980179247194>")
-        elif "會" in message.content and "嗎" in message.content:
-            await message.channel.send("不會！")
+            await message.channel.send("天真天才")
+        elif "抱" in message.content or ":people_hugging:" in message.content:
+            await message.channel.send(f":people_hugging:")
+        elif "bonk" in message.content:
+            await message.add_reaction("<:Oga_Bonk:900404897600659487>")
+            await message.channel.send("冷丸最乖了，咖咩才不乖")
+        elif "我是誰" in message.content:
+            await message.channel.send(f"聽說是 {message.author.name}")
+        elif "咖咩" in message.content and "翹班" in message.content:
+            await message.channel.send("@月嵐")
+        elif ("會" in message.content and "嗎" in message.content) or "會不會" in message.content:
+            await message.channel.send(random.choice(["會", "不會", "不知道"]))
+        elif ("要" in message.content and "嗎" in message.content) or "要不要" in message.content:
+            await message.channel.send(random.choice(["要", "不要", "不知道"]))
+        elif ("有" in message.content and "嗎" in message.content) or "有沒有" in message.content:
+            await message.channel.send(random.choice(["有", "沒有", "不知道"]))
+        elif ("是" in message.content and "嗎" in message.content) or "是不是" in message.content:
+            await message.channel.send(random.choice(["是", "不是", "不知道"]))
+        elif ("在" in message.content and "嗎" in message.content) or "在不在" in message.content:
+            await message.channel.send(random.choice(["在", "不在", "不在", "不在", "不在"]))
+        elif ("好" in message.content and "嗎" in message.content) or "好不好" in message.content:
+            await message.channel.send(random.choice(["好", "不好", "不知道"]))
+        elif ("行" in message.content and "嗎" in message.content) or "行不行" in message.content:
+            await message.channel.send(random.choice(["行", "不行", "不知道"]))
+        elif ("買" in message.content and "嗎" in message.content) or "買不買" in message.content:
+            await message.channel.send(random.choice(["買", "不買", "不知道"]))
+        elif ("想" in message.content and "嗎" in message.content) or "想不想" in message.content:
+            await message.channel.send(random.choice(["想", "不想", "不知道"]))
+        elif ("愛" in message.content and "嗎" in message.content) or "愛不愛" in message.content:
+            await message.channel.send(random.choice(["愛", "不愛", "不知道"]))
+        elif ("吃" in message.content and "嗎" in message.content) or "吃不吃" in message.content:
+            await message.channel.send(random.choice(["吃", "不吃", "不知道"]))
+        elif ("該" in message.content and "嗎" in message.content) or "該不該" in message.content:
+            await message.channel.send(random.choice(["該", "不該", "不知道"]))
+        elif ("可" in message.content and "嗎" in message.content) or "可不可" in message.content:
+            await message.channel.send(random.choice(["可以", "不可以", "不知道"]))
         elif "黑" in message.content and "嗎" in message.content:
-            await message.channel.send("白的！")
+            await message.channel.send(random.choice(["黑的", "白的"]))
+        elif "哪" in message.content:
+            await message.channel.send("地球的某一個角落")
         elif "嗎" in message.content or "嘛" in message.content or "?" in message.content or "？" in message.content:
-            await message.channel.send("不知道")
+            await message.channel.send(random.choice(["不知道", "你猜", "問咖咩", "問月嵐"]))
         elif "(" in message.content:
             await message.channel.send("(天才")
         elif "（" in message.content:
@@ -312,3 +391,9 @@ print("Re: Hello world")
             return False
         else:
             return message
+    
+    def get_author_name(self, message):
+        if message.author.nick:
+            return message.author.nick
+        return message.author.name
+
