@@ -189,8 +189,12 @@ class Send:
         
 class GetSendStr:
     @staticmethod
-    def getChannelMention(channel, default="未設定"):
+    def get_channel_mention(channel, default="未設定"):
         return channel.mention if channel else '未設定'
+    @staticmethod
+    def concat_list(data: list):
+        return ", ".join(data) if data else None
+
 
 from datetime import datetime
 class Time:

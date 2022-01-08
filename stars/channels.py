@@ -69,7 +69,7 @@ class ChannelsManager(commands.Cog):
         pass
 
     @channel_group.command(name="add")
-    async def add_youtube_channel(self, ctx: commands.Context, name: str, channel_type_name: str, channel_id: str):
+    async def _add_channel(self, ctx: commands.Context, name: str, channel_type_name: str, channel_id: str):
         ChannelType = Channel.get_class_by_name(channel_type_name)
         if not ChannelType:
             await Send.data_error(ctx, "頻道類型錯誤", channel_type_name)
@@ -82,6 +82,7 @@ class ChannelsManager(commands.Cog):
             return
         channel, successful = await self.add_channel(ChannelType, channel_id)            
         if successful:
+            await channel.fetch_channel_data()
             await Send.add_completed(ctx, "頻道資料", channel)
         else:
             await Send.already_existed(ctx, "頻道資料", channel)
@@ -91,7 +92,7 @@ class ChannelsManager(commands.Cog):
             await Send.already_existed(ctx, f"{name} 成員資料對於此頻道", channel)
 
     @channel_group.command(name="list")
-    async def list_channel(self, ctx: commands.Context, id: str=None, output_member: bool=False):
+    async def _list_channel(self, ctx: commands.Context, id: str=None, output_member: bool=False):
         def get_channel_str(channel) -> str:
             data = [str(channel)]
             if output_member:

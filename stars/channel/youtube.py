@@ -7,6 +7,7 @@ _, log = get_logger()
 class YoutubeChannel(Channel):
     
     toke_name = "youtube"
+    type_name = "youtube"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

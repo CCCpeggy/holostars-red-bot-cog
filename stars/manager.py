@@ -43,14 +43,23 @@ class Manager(commands.Cog):
     async def test(self, ctx):
         pass
 
+    @test.command(name="astel")
+    async def test_astel(self, ctx):
+        member_name = "astel"
+        channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
+        await self.members_manager.add_member(ctx=ctx, name=member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
+        channel = self.channels_manager.channels[channel_id]
+
     @test.command(name="data")
     async def test_data(self, ctx):
         member_name = "astel"
-        channel_id = "UCqoW8wtwI20rmtr69UItpvw"
+        channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
         stream_id = "YVm6IrOcSSM"
         await self.members_manager.add_member(ctx=ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
-        await self.channels_manager.add_youtube_channel(ctx, member_name, channel_id)
+        await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
         stream = await self.streams_manager.add_stream(stream_id, channel.id, time=Time.get_now())
         if stream:
@@ -78,7 +87,7 @@ class Manager(commands.Cog):
         channel_id = "UC6eWCld0KwmyHFbAqK3V-Rw"
         await self.members_manager.add_member(ctx=ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
-        await self.channels_manager.add_holodex_channel(ctx, member_name, channel_id)
+        await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
         streams_info = await channel.get_streams_info()
         for stream_info in streams_info:

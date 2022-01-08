@@ -7,6 +7,7 @@ _, log = get_logger()
 class HolodexChannel(Channel):
     
     toke_name = "holodex"
+    type_name = "holodex"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

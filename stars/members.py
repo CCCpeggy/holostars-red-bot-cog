@@ -178,6 +178,8 @@ class Member:
         self.name: str = kwargs.pop("name")
         self.emoji: str = kwargs.pop("emoji", None)
         self.channel_ids: List[str] = kwargs.pop("channel_ids", [])
+        if not isinstance(self.channel_ids, list):
+            raise Exception
         self._channels: Dict[str, "Channel"] = kwargs.pop("channels", {})
         self._save_func = kwargs.pop("save_func", None)
 
@@ -201,9 +203,9 @@ class Member:
         data = [
             f"成員名稱：{self.name}",
             f"> Emoji：{self.emoji if self.emoji else '未設定'}",
-            f"> 通知文字頻道：{GetSendStr.getChannelMention(self.notify_text_channel)}",
-            f"> 討論文字頻道：{GetSendStr.getChannelMention(self.chat_text_channel)}",
-            f"> 會員文字頻道：{GetSendStr.getChannelMention(self.memeber_channel)}",
+            f"> 通知文字頻道：{GetSendStr.get_channel_mention(self.notify_text_channel)}",
+            f"> 討論文字頻道：{GetSendStr.get_channel_mention(self.chat_text_channel)}",
+            f"> 會員文字頻道：{GetSendStr.get_channel_mention(self.memeber_channel)}",
             f"> 頻道 ID：{', '.join(self.channel_ids)}",
         ]
         return "\n".join(data)
