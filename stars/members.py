@@ -114,7 +114,7 @@ class MembersManager(commands.Cog):
     @commands.group(name="member")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
-    async def member_group(self):
+    async def member_group(self, ctx: commands.Context):
         pass
 
     @member_group.command(name="add")

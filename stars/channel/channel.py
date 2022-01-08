@@ -32,6 +32,10 @@ class Channel:
         return []
 
     @staticmethod
+    def check_channel_id(channel_id):
+        return True
+
+    @staticmethod
     def get_class(class_type: str):
         if class_type == "YoutubeChannel":
             from .youtube import YoutubeChannel
@@ -41,4 +45,15 @@ class Channel:
             return HolodexChannel
         else:
             return Channel
+
+    @staticmethod
+    def get_class_by_name(name: str):
+        if name == "youtube":
+            from .youtube import YoutubeChannel
+            return YoutubeChannel
+        elif name == "holodex":
+            from .holodex import HolodexChannel
+            return HolodexChannel
+        else:
+            return None
 

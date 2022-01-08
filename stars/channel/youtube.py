@@ -18,3 +18,7 @@ class YoutubeChannel(Channel):
             # f"> 頻道 ID：{self.id}",
         ])
         return data
+
+    @staticmethod
+    def check_channel_id(channel_id):
+        return Youtube.check_channel_id(channel_id)

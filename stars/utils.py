@@ -66,7 +66,7 @@ def check_api_errors(data: dict):
 
 class Youtube:
     @staticmethod
-    def check_id(id: str) -> bool:
+    def check_channel_id(id: str) -> bool:
         import re
         channel_id_re = re.compile("^UC[-_A-Za-z0-9]{21}[AQgw]$")
         return channel_id_re.fullmatch(id)
