@@ -28,8 +28,8 @@ class Channel:
     async def fetch_channel_data(self):
         pass
 
-    def get_streams_info(self):
-        pass
+    async def get_streams_info(self) -> List[Dict]:
+        return []
 
     @staticmethod
     def get_class(class_type: str):

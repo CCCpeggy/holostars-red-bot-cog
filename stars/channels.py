@@ -150,3 +150,13 @@ class ChannelsManager(commands.Cog):
         else:
             await Send.not_existed(ctx, "頻道資料", channel_id)
 
+    async def check(self):
+        self.manager.streams_manager.set_stream_to_notsure()
+        for id, channel in self.channels.items():
+            streams_info = await channel.get_streams_info()
+            for stream_info in streams_info:
+                stream = self.manager.streams_manager.get_stream(stream_info["id"])
+                if stream:
+                    stream.update_info(**stream_info)
+                else:
+                    stream = await self.manager.streams_manager.add_stream(**stream_info)

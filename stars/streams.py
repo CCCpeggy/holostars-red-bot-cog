@@ -32,28 +32,35 @@ class Stream:
         self.id: str = kwargs.pop("id", create_id())
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
         self.time: datetime = Time.to_datetime(kwargs.pop("time"))
-        self.channel_id: datetime = kwargs.pop("channel_id")
+        self.channel_id: str = kwargs.pop("channel_id")
+        self._channel: "Channel" = kwargs.pop("channel")
         self.topic: str = kwargs.pop("topic", None)
         self.title: str = kwargs.pop("title", None)
         self.type: str = kwargs.pop("type", None)
-        self._channel: "Channel" = kwargs.pop("channel")
         self.info_update: bool = kwargs.pop("info_update", False)
     
     def __repr__(self):
-        data = [
-            f"Stream",
-            f"> id：{self.id}",
-            f"> 狀態：{self._status}",
-            f"> 預定時間：{self.time}",
-            f"> 所屬頻道：{self._channel.type}: {self._channel.name}",
-            f"> 標題：{self.title}",
-            f"> 類型：{self.type}",
-            f"> 主題：{self.topic}",
-        ]
+        if self.is_valid():
+            data = [
+                f"Stream",
+                f"> id：{self.id}",
+                f"> 狀態：{self._status}",
+                f"> 預定時間：{self.time}",
+                f"> 所屬頻道：{self._channel.type}: {self._channel.name}",
+                f"> 標題：{self.title}",
+                f"> 類型：{self.type}",
+                f"> 主題：{self.topic}",
+                f"> 資料更新：{self.info_update}",
+            ]
+        else:
+            data = [
+                f"NOT VALID: Stream",
+                f"> id：{self.id}",
+            ]
         return "\n".join(data)
     
     def is_valid(self):
-        return self._channel
+        return self._channel and self._status != StreamStatus.MISSING
 
     def update_info(self, **kwargs):
         time = Time.to_datetime(kwargs.pop("time"))
@@ -72,7 +79,9 @@ class Stream:
         if self._status != status:
             self.info_update = True
             self._status = status
-
+        log.debug("已更新 stream：" + str(self))
+        log.info("已更新 stream：" + self.id)
+    
 # class GuildStreamStatus(Enum):
 #     STANDBY = 1
 #     START = 2
@@ -86,7 +95,7 @@ class GuildStream:
         self._stream: "Stream" = kwargs.pop("stream", None)
         self.id: str = self._stream.id
         self.enable: bool = kwargs.pop("enable", True)
-        self.need_update_notify: bool = kwargs.pop("need_update_notify", False)
+        self.info_update: bool = kwargs.pop("info_update", False)
         self.notify_msg_id: int = kwargs.pop("notify_msg_id", None)
         self.guild_collab_stream_id: str = None
         self._guild_collab_stream: "GuildCollabStream" = None
@@ -106,16 +115,27 @@ class GuildStream:
     def set_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream"):
         self.guild_collab_stream_id = guild_collab_stream.id
         self._guild_collab_stream = guild_collab_stream
+
+    def check(self):
+        if self.is_valid():
+            if self._stream.info_update:
+                self.info_update = True
     
     def __repr__(self):
-        data = [
-            f"GuildStream",
-            f"> id：{self.id}",
-            f"> 通知啟用狀態：{self.enable}",
-            f"> 是否需要更新通知：{self.need_update_notify}",
-            f"> 通知訊息的 ID：{self.notify_msg_id}",
-            f"> 所屬待機 ID：{self.guild_collab_stream_id}",
-        ]
+        if self.is_valid():
+            data = [
+                f"GuildStream",
+                f"> id：{self.id}",
+                f"> 通知啟用狀態：{self.enable}",
+                f"> 通知訊息的 ID：{self.notify_msg_id}",
+                f"> 所屬待機 ID：{self.guild_collab_stream_id}",
+                f"> 資料更新：{self.info_update}",
+            ]
+        else:
+            data = [
+                f"NOT VALID: GuildStream",
+                f"> id：{self.id}",
+            ]
         return "\n".join(data)
     
 class GuildCollabStream:
@@ -127,7 +147,7 @@ class GuildCollabStream:
         self.guild_stream_ids: List[str] = kwargs.pop("guild_stream_ids", [])
         self._guild_streams: List[str] = kwargs.pop("guild_streams", {})
         self.standby_msg_id: int = kwargs.pop("standby_msg_id", None)
-        self.need_update_standby: bool = kwargs.pop("need_update_standby", False)
+        self.info_update: bool = kwargs.pop("info_update", False)
         self.time: datetime = Time.to_datetime(kwargs.pop("time", None))
         self._saved_func = kwargs.pop("saved_func", None)
 
@@ -151,16 +171,28 @@ class GuildCollabStream:
         #     self.guild_stream_ids.remove(guild_stream_id)
         #     self._guild_streams.pop(guild_stream_id)
         return True
+
+    def check(self):
+        if self.is_valid():
+            for id, guild_stream in self._guild_streams.items():
+                if guild_stream.info_update:
+                    self.info_update = True
     
     def __repr__(self):
-        data = [
-            f"GuildCollabStream",
-            f"> id：{self.id}",
-            f"> 待機台啟用狀態：{self.enable}",
-            f"> 是否需要更新待機台：{self.need_update_standby}",
-            f"> 相關直播 ID：{', '.join(self.guild_stream_ids)}",
-            f"> 待機台時間：{self.time}",
-        ]
+        if self.is_valid():
+            data = [
+                f"GuildCollabStream",
+                f"> id：{self.id}",
+                f"> 待機台啟用狀態：{self.enable}",
+                f"> 相關直播 ID：{', '.join(self.guild_stream_ids)}",
+                f"> 待機台時間：{self.time}",
+                f"> 資料更新：{self.info_update}",
+            ]
+        else:
+            data = [
+                f"NOT VALID: GuildCollabStream",
+                f"> id：{self.id}",
+            ]
         return "\n".join(data)
 
 class GuildStreamsManager():
@@ -211,6 +243,7 @@ class GuildStreamsManager():
         if stream_id not in self.guild_streams:
             member = await self.get_stream_belong_member(stream_id)
             if member == None:
+                log.debug("找不到 member，沒有新增 guild_stream 成功：" + stream_id)
                 return None
             guild_stream = GuildStream(
                 bot=self.bot,
@@ -221,20 +254,29 @@ class GuildStreamsManager():
                 **kwargs
             )
             await guild_stream.initial()
-            if guild_stream.is_valid():
+            if True or guild_stream.is_valid():
                 self.guild_streams[stream_id] = guild_stream
                 if save:
                     await self.save_guild_streams()
+                log.debug("已新增 guild_stream：" + str(guild_stream))
+                log.info("已新增 guild_stream：" + guild_stream.id)
                 return guild_stream
+        log.debug("已存在，所以沒有新增 guild_stream：" + stream_id)
         return None
 
-    async def add_guild_collab_stream(self, guild_stream_ids: List["GuildStream"], save=True, **kwargs) -> "GuildCollabStream":
+    async def add_guild_collab_stream(self, guild_stream_ids: List[str], save=True, **kwargs) -> "GuildCollabStream":
+        if len(guild_stream_ids) == 0:
+            log.debug("guild_stream_ids 長度為 0，沒有新增 guild_collab_stream 成功")
+            return None
+
         guild_streams = {}
         for guild_stream_id in guild_stream_ids:
-            guild_stream = self.guild_streams[guild_stream_id]
-            guild_streams[guild_stream_id] = guild_stream
-            if not guild_stream.guild_collab_stream_id:
-                continue
+            guild_stream = self.get_guild_stream(guild_stream_id)
+            if guild_stream:
+                guild_streams[guild_stream_id] = guild_stream
+                if not guild_stream.guild_collab_stream_id:
+                    continue
+            log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
             return None
         member = await self.get_stream_belong_member(guild_stream_id)
         guild_collab_stream = GuildCollabStream(
@@ -246,13 +288,16 @@ class GuildStreamsManager():
             **kwargs
         )
         await guild_collab_stream.initial()
-        if not guild_collab_stream.is_valid():
+        if False and not guild_collab_stream.is_valid():
+            log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
             return None
         for guild_stream in guild_streams.values():
             guild_stream.set_guild_collab_stream(guild_collab_stream)
         self.guild_collab_streams[guild_collab_stream.id] = guild_collab_stream
         if save:
             await self.save_guild_collab_streams()
+        log.debug("已新增 guild_collab_stream：" + str(guild_collab_stream))
+        log.info("已新增 guild_collab_stream：" + ', '.join(guild_stream_ids))
         return guild_collab_stream
 
     async def save_guild_streams(self) -> None:
@@ -261,9 +306,39 @@ class GuildStreamsManager():
     async def save_guild_collab_streams(self) -> None:
         await self.config.guild_collab_streams.set(ConvertToRawData.dict(self.guild_collab_streams))
 
-    async def update(self):
-        self.manager.streams_manager.streams
+    async def check(self):
+        for guild_stream in self.guild_streams.values():
+            if not guild_stream._guild_collab_stream:
+                await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
+                guild_stream.info_update = True
+            guild_stream.check()
 
+        for guild_collab_stream in self.guild_collab_streams.values():
+            guild_collab_stream.check()
+
+        def delete_not_valid_guild_stream(self) -> None:
+            remove_guild_stream_ids = []
+            for id, guild_stream in self.guild_streams.items():
+                if not guild_stream.is_valid():
+                    remove_guild_stream_ids.append(id)
+            for id in remove_guild_stream_ids:
+                self.guild_streams.pop(id)
+        delete_not_valid_guild_stream(self)
+
+        def delete_not_valid_guild_collab_stream(self) -> None:
+            remove_guild_collab_stream_ids = []
+            for id, guild_collab_stream in self.guild_collab_streams.items():
+                if not guild_collab_stream.is_valid():
+                    remove_guild_collab_stream_ids.append(id)
+            for id in remove_guild_collab_stream_ids:
+                self.guild_collab_streams.pop(id)
+        delete_not_valid_guild_collab_stream(self)
+
+        for guild_stream in self.guild_streams.values():
+            guild_stream.info_update = False
+        
+        await self.save_guild_streams()
+        await self.save_guild_collab_streams()
 
 class StreamsManager(commands.Cog):
 
@@ -283,7 +358,7 @@ class StreamsManager(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
         self.streams: Dict[str, "Stream"] = {}
-        self.guild_managers: Dict[str, "GuildStreamsManager"] = {}
+        self.guild_managers: Dict[int, "GuildStreamsManager"] = {}
 
         self.is_init = False
 
@@ -295,7 +370,7 @@ class StreamsManager(commands.Cog):
         await load_streams()
         async def load_guild():
             for guild_id, config in (await self.config.all_guilds()).items():
-                await self.get_guild_manager(guild_id)
+                await self.get_guild_manager(int(guild_id))
         await load_guild()
         self.is_init = True
             
@@ -315,11 +390,14 @@ class StreamsManager(commands.Cog):
                 channel=self.manager.channels_manager.channels.get(channel_id, None),
                 **kwargs
             )
-            if stream.is_valid():
+            if True or stream.is_valid():
                 self.streams[id] = stream
                 if save:
                     await self.save_streams()
+                log.debug("已新增 stream：" + str(stream))
+                log.info("已新增 stream：" + id)
                 return stream
+            log.debug("沒有新增 stream 成功：" + id)
         return None
 
     async def update_stream(self, id: str, save=True, **kwargs) -> "Stream":
@@ -332,6 +410,32 @@ class StreamsManager(commands.Cog):
 
     def get_stream(self, id: str) -> "Stream":
         return self.streams.get(id, None)
+
+    def set_stream_to_notsure(self) -> None:
+        for stream in self.streams.values():
+            stream._status = StreamStatus.NOTSURE
+
+    async def delete_not_valid_and_notsure_stream(self) -> None:
+        remove_stream_ids = []
+        for id, stream in self.streams.items():
+            if stream._status == StreamStatus.NOTSURE or not stream.is_valid():
+                remove_stream_ids.append(id)
+        await self.remove_streams(remove_stream_ids)
+
+    async def remove_streams(self, stream_ids: List[str]) -> None:
+        for id in stream_ids:
+            log.debug("刪除：" + str(self.streams[id]))
+            log.info("刪除 stream：" + id)
+            self.streams.pop(id)
+        await self.save_streams()
+
+    async def check(self) -> None:
+        for guild_streams_manager in self.guild_managers.values():
+            await guild_streams_manager.check()
+
+        for stream in self.streams.values():
+            stream.info_update = False
+        await self.save_streams()
 
     # @commands.command(name="test")
     # @commands.guild_only()

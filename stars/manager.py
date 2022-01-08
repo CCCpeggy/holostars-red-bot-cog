@@ -29,7 +29,13 @@ class Manager(commands.Cog):
         self.streams_manager: "StreamsManager" = StreamsManager(self.bot, self)
         self.bot.add_cog(self.streams_manager)
         await self.streams_manager.initial()
+        await self.check()
 
+    async def check(self):
+        await self.channels_manager.check()
+        await self.streams_manager.delete_not_valid_and_notsure_stream()
+        await self.members_manager.check()
+        await self.streams_manager.check()
 
     @commands.group(name="test")
     @commands.guild_only()
@@ -68,8 +74,8 @@ class Manager(commands.Cog):
 
     @test.command(name="holodex")
     async def test_holodex(self, ctx):
-        member_name = "Lamy"
-        channel_id = "UCFKOVgVbGmX65RxO3EtH3iw"
+        member_name = "Koyori"
+        channel_id = "UC6eWCld0KwmyHFbAqK3V-Rw"
         await self.members_manager.add_member(ctx=ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
         await self.channels_manager.add_holodex_channel(ctx, member_name, channel_id)
@@ -83,4 +89,5 @@ class Manager(commands.Cog):
             else:
                 stream = await self.streams_manager.add_stream(**stream_info)
                 await Send.add_completed(ctx, type(stream).__name__, stream)
-        await self.members_manager.remove_member(ctx=ctx, name=member_name)
+        await self.check()
+        # await self.members_manager.remove_member(ctx=ctx, name=member_name)

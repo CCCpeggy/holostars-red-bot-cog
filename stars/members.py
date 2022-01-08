@@ -12,10 +12,11 @@ from .utils import *
 _, log = get_logger()
 
 class GuildMembersManager():
-    def __init__(self, bot: Red, config: Group, manager: "Manager", **kwargs):
+    def __init__(self, bot: Red, config: Group, guild: discord.Guild, manager: "Manager", **kwargs):
         self.bot: Red = bot
         self.config: Config = config
         self.manager: "Manager" = manager
+        self.guild: discord.Guild = guild
         self.members: Dict[str, "Member"] = {}
         self.is_init = False
         
@@ -25,14 +26,6 @@ class GuildMembersManager():
                 await self.add_member(saved=False, **value)
         await load_members()
         self.is_init = True
-    
-    # def checkInit(method):
-    #     def _checkInit(self, *args, **kwargs):
-    #         log.debug(kwargs)
-    #         if not self.isInit:
-    #             from .errors import NotInitYet
-    #             raise NotInitYet
-    #     return _checkInit
 
     async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
@@ -65,6 +58,13 @@ class GuildMembersManager():
     def get_member(self, member_name: str) -> "Member":
         return self.members.get(member_name, None)
 
+    async def check(self):
+        for guild_streams_manager in self.manager.streams_manager.guild_managers.values():
+            for stream in self.manager.streams_manager.streams.values():
+                for member in self.members.values():
+                    if stream.channel_id in member.channel_ids:
+                        guild_stream = await guild_streams_manager.add_guild_stream(stream.id)
+
 class MembersManager(commands.Cog):
 
     global_defaults = {
@@ -80,13 +80,13 @@ class MembersManager(commands.Cog):
         self.config = Config.get_conf(self, 45611846)
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
-        self.guild_managers = {}
+        self.guild_managers: Dict[int, "GuildMembersManager"] = {}
         self.is_init = False
 
     async def initial(self):
         async def load_guild():
             for guild_id, config in (await self.config.all_guilds()).items():
-                await self.get_guild_manager(guild_id)
+                await self.get_guild_manager(int(guild_id))
         await load_guild()
         self.is_init = True
             
@@ -99,12 +99,17 @@ class MembersManager(commands.Cog):
     async def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildMembersManager":
         guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)
         if not guild.id in self.guild_managers:
-            self.guild_managers[guild.id] = GuildMembersManager(self.bot, self.config.guild(guild), self.manager)
+            self.guild_managers[guild.id] = GuildMembersManager(
+                self.bot, self.config.guild(guild), guild, self.manager)
             await self.guild_managers[guild.id].initial()
         return self.guild_managers[guild.id]
 
     async def get_member(self, guild: Union[int, discord.Guild], member_name: str) -> "Member":
         return (await self.get_guild_manager(guild)).get_member(member_name)
+
+    async def check(self):
+        for id, members_guild_managers in self.guild_managers.items():
+            await members_guild_managers.check()
 
     @commands.group(name="member")
     @commands.guild_only()

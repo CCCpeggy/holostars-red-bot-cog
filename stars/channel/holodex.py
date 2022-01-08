@@ -1,5 +1,6 @@
 from stars.utils import *
 from .channel import Channel
+from typing import *
 
 _, log = get_logger()
 
@@ -11,12 +12,12 @@ class HolodexChannel(Channel):
         super().__init__(**kwargs)
         self.type = "HolodexChannel"
 
-    async def fetch_channel_data(self):
+    async def fetch_channel_data(self) -> None:
         channel_url = f"https://holodex.net/api/v2/channels/{self.id}"
         data = await getHttpData(channel_url)
         self.name = data["name"]
 
-    async def get_streams_info(self):
+    async def get_streams_info(self) -> List[Dict]:
         live_url = f"https://holodex.net/api/v2/live"
         params = {
             "channel_id": self.id,
