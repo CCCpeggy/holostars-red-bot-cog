@@ -43,6 +43,12 @@ class Manager(commands.Cog):
     async def test(self, ctx):
         pass
 
+    @test.command(name="set")
+    async def test_set(self, ctx):
+        await self.members_manager.set_notify_channel(ctx, "astel", 884066848822427708)
+        await self.members_manager.set_chat_channel(ctx, "astel", 884066992762523649)
+        await self.members_manager.set_member_channel(ctx, "astel", 886454736344186963)
+
     @test.command(name="astel")
     async def test_astel(self, ctx):
         member_name = "astel"

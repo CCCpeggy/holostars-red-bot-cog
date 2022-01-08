@@ -102,7 +102,7 @@ class GuildStream:
         self._saved_func = kwargs.pop("saved_func", None)
 
         self.notify_text_channel: discord.TextChannel = None
-        self._notify_text_channel_id: str = kwargs.pop("notify_text_channel", None)
+        self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self.is_init = False
 
     async def initial(self):

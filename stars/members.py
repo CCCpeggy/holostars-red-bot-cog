@@ -155,16 +155,46 @@ class MembersManager(commands.Cog):
             await Send.not_existed(ctx, "成員資料", name)
             return
         await Send.send(ctx, "\n".join(data))
-    # @memberset_group.group(name="set")
-    # async def set_member_group(self, ctx: commands.Context, name: str):
-    #     if name not in self.members:
-    #         await Send.not_existed(ctx, "成員資料", name)
-    #     else:
-    #         member = self.members[name]
 
-    # @set_member_group.command(name="notify_channel")
-    # async def set_member(self, ctx: commands.Context, notify_text_channel:discord.TextChannel):
-    #     member.notify_text_channel = notify_text_channel
+    @member_group.group(name="set")
+    async def memberset_group(self, ctx: commands.Context):
+        pass
+
+    @memberset_group.command(name="notify_channel")
+    async def set_notify_channel(
+        self, ctx: commands.Context, name: str, notify_text_channel: discord.TextChannel):
+        guild_members_manager = await self.get_guild_manager(ctx.guild)
+        member = guild_members_manager.members.get(name, None)
+        if member:
+            member.notify_text_channel = notify_text_channel
+            await member._save_func()
+            await Send.set_up_completed(ctx, f"{name} 的通知文字頻道", notify_text_channel)
+        else:
+            await Send.not_existed(ctx, "成員頻道", name)
+
+    @memberset_group.command(name="chat_channel")
+    async def set_chat_channel(
+        self, ctx: commands.Context, name: str, chat_text_channel: discord.TextChannel):
+        guild_members_manager = await self.get_guild_manager(ctx.guild)
+        member = guild_members_manager.members.get(name, None)
+        if member:
+            member.chat_text_channel = chat_text_channel
+            await member._save_func()
+            await Send.set_up_completed(ctx, f"{name} 的討論文字頻道", chat_text_channel)
+        else:
+            await Send.not_existed(ctx, "成員頻道", name)
+
+    @memberset_group.command(name="member_channel")
+    async def set_member_channel(
+        self, ctx: commands.Context, name: str, memeber_text_channel: discord.TextChannel):
+        guild_members_manager = await self.get_guild_manager(ctx.guild)
+        member = guild_members_manager.members.get(name, None)
+        if member:
+            member.memeber_text_channel = memeber_text_channel
+            await member._save_func()
+            await Send.set_up_completed(ctx, f"{name} 的會員文字頻道", memeber_text_channel)
+        else:
+            await Send.not_existed(ctx, "成員頻道", name)
 
     # async def get_start_channel(self, guild:discord.Guild):
     #     return await self.config.guild(guild).stream_start_message_format.get()
@@ -188,15 +218,15 @@ class Member:
         self.memeber_channel: discord.TextChannel = None
         self.is_init = False
 
-        self._notify_text_channel_id: str = kwargs.pop("notify_text_channel", None)
-        self._chat_text_channel_id: str = kwargs.pop("chat_text_channel", None)
-        self._memeber_channel_id: str = kwargs.pop("memeber_channel", None)
+        self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
+        self._chat_text_channel_id: int = kwargs.pop("chat_text_channel", None)
+        self._memeber_text_channel_id: str = kwargs.pop("memeber_channel", None)
 
     async def initial(self):
         async def load_channels():
             self.notify_text_channel = await get_text_channel(self._bot, self._notify_text_channel_id)
             self.chat_text_channel = await get_text_channel(self._bot, self._chat_text_channel_id)
-            self.memeber_channel = await get_text_channel(self._bot, self._memeber_channel_id)
+            self.memeber_text_channel = await get_text_channel(self._bot, self._memeber_channel_id)
         self.is_init = True
 
     def __repr__(self):
