@@ -197,6 +197,8 @@ class Talk(commands.Cog):
             await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
             await message.channel.send("乖乖好吃")
+        elif "喵" in message.content:
+            await message.channel.send("汪")
         elif "歐姆" in message.content:
             await message.channel.send("v=ir => av=air => 色即是空")
         elif "程式" in message.content or "代碼" in message.content:
