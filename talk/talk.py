@@ -375,6 +375,8 @@ print("Re: Hello world")
             await message.channel.send(random.choice(["該", "不該", "不知道"]))
         elif ("可" in message.content and "嗎" in message.content) or "可不可" in message.content:
             await message.channel.send(random.choice(["可以", "不可以", "不知道"]))
+        elif "有幾個" in message.content:
+            await message.channel.send(random.randint(-100, 200))
         elif "黑" in message.content and "嗎" in message.content:
             await message.channel.send(random.choice(["黑的", "白的"]))
         elif "哪" in message.content:
