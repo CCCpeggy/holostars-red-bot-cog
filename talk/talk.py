@@ -293,7 +293,7 @@ print("Re: Hello world")
         elif "機器人" in message.content:
             await message.channel.send(":two: :regional_indicator_b: :regional_indicator_g:")
         elif "廁所" in message.content:
-            await message.channel.send("<:Roberu_question:887748105234174014>")
+            await message.channel.send("<:9_7Roberu_whaat:900662697769717770> ")
         elif "外掛" in message.content:
             await message.channel.send("!?")
         elif "本物" in message.content:
