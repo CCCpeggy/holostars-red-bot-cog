@@ -147,9 +147,9 @@ class Talk(commands.Cog):
 需要的話也可以跟冷丸要個抱抱
 """
             await message.channel.send(info)
-        elif message == "冷丸":
+        elif message.content == "冷丸":
             await message.channel.send(f"{self.get_author_name(message)}")
-        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
+        elif all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
             await message.channel.send(f"{message.author.mention} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
