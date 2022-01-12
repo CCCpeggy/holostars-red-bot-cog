@@ -65,7 +65,7 @@ class Talk(commands.Cog):
             ans = " ".join(tmp[1:])
             # que, ans = message.content[3:].split(" ")[:2]
             if que != "" and ans != "":
-                if random.randint(0, 4) != 0:
+                if random.randint(0, 20) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -98,7 +98,7 @@ class Talk(commands.Cog):
             if len(ans) >= 2:
                 if "睡覺" in ans:
                     await message.channel.send("睡覺")
-                elif random.randint(0, 3) != 0:
+                elif random.randint(0, 40) != 0:
                     await message.channel.send(random.choice(ans))
                 else:
                     await message.channel.send("這不好說")
@@ -111,7 +111,7 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if que != "" and len(ans) >= 2:
-                if random.randint(0, 3) != 0:
+                if random.randint(0, 20) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -147,8 +147,10 @@ class Talk(commands.Cog):
 需要的話也可以跟冷丸要個抱抱
 """
             await message.channel.send(info)
+        elif message == "冷丸":
+            await message.channel.send(f"{self.get_author_name(message)}")
         elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
-            await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
+            await message.channel.send(f"{message.author.mention} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
                 await message.channel.send(f"{random.randint(0, 100)}%")
@@ -345,7 +347,7 @@ print("Re: Hello world")
             await message.channel.send("冷丸最乖了，咖咩才不乖")
         elif "我是誰" in message.content:
             await message.channel.send(f"聽說是 {message.author.name}")
-        elif "咖咩" in message.content and "翹班" in message.content:
+        elif "咖咩" in message.content and ("翹班" in message.content or "不在" in message.content):
             await message.channel.send("@月嵐")
         elif ("會" in message.content and "嗎" in message.content) or "會不會" in message.content:
             await message.channel.send(random.choice(["會", "不會", "不知道"]))
