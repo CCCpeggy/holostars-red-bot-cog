@@ -59,11 +59,11 @@ class GuildMembersManager():
         return self.members.get(member_name, None)
 
     async def check(self):
-        for guild_streams_manager in self.manager.streams_manager.guild_managers.values():
-            for stream in self.manager.streams_manager.streams.values():
-                for member in self.members.values():
-                    if stream.channel_id in member.channel_ids:
-                        guild_stream = await guild_streams_manager.add_guild_stream(stream.id)
+        guild_streams_manager = await self.manager.streams_manager.get_guild_manager(self.guild)
+        for stream in self.manager.streams_manager.streams.values():
+            for member in self.members.values():
+                if stream.channel_id in member.channel_ids:
+                    guild_stream = await guild_streams_manager.add_guild_stream(stream.id)
 
 class MembersManager(commands.Cog):
 
