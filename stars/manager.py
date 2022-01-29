@@ -100,20 +100,21 @@ class Manager(commands.Cog):
 
     @test.command(name="holodex")
     async def test_holodex(self, ctx):
-        member_name = "Koyori"
-        channel_id = "UC6eWCld0KwmyHFbAqK3V-Rw"
+        log.debug("-------------------test_holodex---------------------")
+        member_name = "oga"
+        channel_id = "UCwL7dgTxKo8Y4RFIKWaf8gA"
+        await self.members_manager.remove_member(ctx=ctx, name=member_name)
+        await self.check()
+
+        # add member
         await self.members_manager.add_member(ctx=ctx, name=member_name)
+        await self.members_manager.set_notify_channel(ctx, member_name, await get_text_channel(ctx.guild, 864755730677497876))
+        await self.members_manager.set_chat_channel(ctx, member_name, await get_text_channel(ctx.guild, 884066992762523649))
+        await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
         member = await self.members_manager.get_member(ctx.guild, member_name)
+        
+        # add channel
         await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
-        streams_info = await channel.get_streams_info()
-        for stream_info in streams_info:
-            stream = self.streams_manager.get_stream(stream_info["id"])
-            if stream:
-                stream.update_info(**stream_info)
-                await Send.update_completed(ctx, type(stream).__name__, stream)
-            else:
-                stream = await self.streams_manager.add_stream(**stream_info)
-                await Send.add_completed(ctx, type(stream).__name__, stream)
+
         await self.check()
-        # await self.members_manager.remove_member(ctx=ctx, name=member_name)

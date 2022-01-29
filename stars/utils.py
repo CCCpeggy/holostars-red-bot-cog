@@ -17,8 +17,8 @@ def get_logger(level: int=logging.DEBUG)->logging.Logger:
     return _, log
 _, log = get_logger()
 
-async def get_text_channel(place: Union[discord.Guild, Red], channel: Union[str, discord.TextChannel, None]) -> discord.TextChannel:
-    if isinstance(channel, int):
+async def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
+    if isinstance(channel, int) or isinstance(channel, str):
         return place.get_channel(channel)
     return channel
 
@@ -226,9 +226,17 @@ class Time:
     @staticmethod
     def to_standard_time_str(time: datetime) -> str:
         return time.isoformat()
+    
+    @staticmethod
+    def get_total_seconds(time: datetime) -> int:
+        return int(time.timestamp())
 
     @staticmethod
-    def get_specified_timezone_str(time: datetime, timezone: str='Asia/Taipei') -> str:
+    def to_discord_time_str(time: datetime) -> str:
+        return "<t:{}:f>".format(Time.get_total_seconds(time))
+
+    @staticmethod
+    def get_specified_timezone(time: datetime, timezone: str='Asia/Taipei') -> datetime:
         if time.tzinfo == None:
             time = Time.add_timezone(time)
         import pytz

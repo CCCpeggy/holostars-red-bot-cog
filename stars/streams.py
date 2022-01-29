@@ -36,6 +36,7 @@ class Stream:
         self._channel: "Channel" = kwargs.pop("channel")
         self.topic: str = kwargs.pop("topic", None)
         self.title: str = kwargs.pop("title", None)
+        self.url: str = kwargs.pop("url", "")
         self.type: str = kwargs.pop("type", None)
         self._info_update: bool = kwargs.pop("info_update", True)
     
@@ -46,7 +47,7 @@ class Stream:
                 f"> id：{self.id}",
                 f"> 狀態：{self._status}",
                 f"> 預定時間：{self.time}",
-                f"> 所屬頻道：{self._channel.type}: {self._channel.name}",
+                f"> 所屬頻道：[{self._channel.type}]{self._channel.name}",
                 f"> 標題：{self.title}",
                 f"> 類型：{self.type}",
                 f"> 主題：{self.topic}",
@@ -100,6 +101,8 @@ class GuildStream:
         self.guild_collab_stream_id: str = None
         self._guild_collab_stream: "GuildCollabStream" = None
         self._saved_func = kwargs.pop("saved_func", None)
+        self._member: "Member" = kwargs.pop("member", True)
+        self.member_name: str = self._member.name if self._member else None
 
         self.notify_text_channel: discord.TextChannel = None
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
@@ -130,6 +133,7 @@ class GuildStream:
                 f"> 通知訊息的 ID：{self.notify_msg_id}",
                 f"> 所屬待機 ID：{self.guild_collab_stream_id}",
                 f"> 資料更新：{self._info_update}",
+                f"> member name：{self.member_name}",
             ]
         else:
             data = [
@@ -148,6 +152,7 @@ class GuildCollabStream:
         self.standby_msg_enable: bool = kwargs.pop("standby_msg_enable", True)
         self.standby_msg_id: int = kwargs.pop("standby_msg_id", None)
         self._info_update: bool = kwargs.pop("info_update", True)
+        self.description: str = kwargs.pop("description", None)
         self.time: datetime = Time.to_datetime(kwargs.pop("time", None))
         self._saved_func = kwargs.pop("saved_func", None)
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
@@ -184,7 +189,31 @@ class GuildCollabStream:
                         self._status = guild_stream._stream._status
 
     def get_standby_msg(self, message_format):
-        message_format.replace("{time}", Time.)
+        def get_url(self):
+            data = []
+            for guild_stream in self._guild_streams.values():
+                data.append(f"{guild_stream._stream._channel.name}:{guild_stream._stream.url}")
+            return "\n".join(data)
+        def get_title(self):
+            return "\n".join([guild_stream._stream.title for guild_stream in self._guild_streams.values()])
+        def get_description(self):
+            if self.description:
+                return self.description
+            topics = [guild_stream._stream.topic for guild_stream in self._guild_streams.values()]
+            if len(topics) > 0:
+                return "/".join(set(topics))
+            return get_title(self)
+        def get_channel_name(self):
+            return "\n".join([guild_stream._stream._channel.name for guild_stream in self._guild_streams.values()])
+                
+        message_format = message_format.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
+        message_format = message_format.replace("{title}", get_title(self))
+        message_format = message_format.replace("{channel_name}", get_channel_name(self))
+        message_format = message_format.replace("{url}", get_url(self))
+        message_format = message_format.replace("{mention}", "")
+        message_format = message_format.replace("{description}", get_description(self))
+        message_format = message_format.replace("{new_line}", "\n")
+        return message_format
     
     def __repr__(self):
         if self.is_valid():
@@ -242,6 +271,10 @@ class GuildStreamsManager():
                 return member
         return None
     
+    async def get_member_by_name(self, member_name: str) -> "Member":
+        guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
+        return guild_members_manager.members.get(member_name, None)
+    
     def get_guild_stream(self, id: str)  -> "GuildStream":
         return self.guild_streams.get(id, None)
     
@@ -250,16 +283,25 @@ class GuildStreamsManager():
 
     async def add_guild_stream(self, stream_id, save=True, **kwargs) -> "GuildStream":
         if stream_id not in self.guild_streams:
-            member = await self.get_stream_belong_member(stream_id)
+            # get member
+            member_name = kwargs.pop("member_name", None)
+            member = None
+            if member_name:
+                member = await self.get_member_by_name(member_name)
+            else:
+                member = await self.get_stream_belong_member(stream_id)
             if member == None:
                 log.debug("找不到 member，沒有新增 guild_stream 成功：" + stream_id)
                 return None
+            log.debug("add_guild_stream: " + str(member))
+            notify_text_channel = kwargs.pop("notify_text_channel", member.notify_text_channel)
             guild_stream = GuildStream(
                 bot=self.bot,
                 stream_id=stream_id,
                 stream=self.get_stream(stream_id),
-                notify_text_channel=kwargs.pop("notify_text_channel", member.notify_text_channel),
+                notify_text_channel=notify_text_channel.id if notify_text_channel else None,
                 saved_func=self.save_guild_streams,
+                member=member,
                 **kwargs
             )
             await guild_stream.initial()
@@ -288,11 +330,12 @@ class GuildStreamsManager():
             log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
             return None
         member: "Member" = await self.get_stream_belong_member(guild_stream_id)
+        chat_text_channel = kwargs.pop("standby_text_channel", member.chat_text_channel)
         guild_collab_stream = GuildCollabStream(
             bot=self.bot,
             guild_stream_ids=guild_stream_ids,
             guild_streams=guild_streams,
-            standby_text_channel=kwargs.pop("standby_text_channel", member.chat_text_channel),
+            standby_text_channel=chat_text_channel.id if chat_text_channel else None,
             saved_func=self.save_guild_collab_streams,
             **kwargs
         )

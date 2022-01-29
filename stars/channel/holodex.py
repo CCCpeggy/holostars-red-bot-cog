@@ -33,6 +33,7 @@ class HolodexChannel(Channel):
                 "type": ori_video["type"],
                 "topic": ori_video.get("topic_id", None),
                 "status": ori_video.get("status"),
+                "url": f"https://www.youtube.com/watch?v={ori_video['id']}",
                 "time": Time.to_datetime(ori_video["start_scheduled"]),
             }
             new_videos.append(new_video)

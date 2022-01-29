@@ -30,14 +30,17 @@ class GuildMembersManager():
     async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
 
-    async def add_member(self, name: str, channel_ids: List[str]=[], save=True, **kwargs) -> Tuple["Member", bool]:
+    async def add_member(self, name: str, channel_ids: List[str]=None, save=True, **kwargs) -> Tuple["Member", bool]:
         if name not in self.members:
+            channels = {}
+            if channel_ids:
+                channels = {id: self.manager.channels_manager.channels[id] for id in channel_ids}
             member = Member(
                 bot=self.bot,
                 name=name,
                 save_func=self.save_memebers,
-                channel_ids=channel_ids,
-                channels={id: self.manager.channels_manager.channels[id] for id in channel_ids},
+                channel_ids=channel_ids if channel_ids else [],
+                channels=channels,
                 **kwargs
             )
             await member.initial()
@@ -220,7 +223,7 @@ class Member:
 
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self._chat_text_channel_id: int = kwargs.pop("chat_text_channel", None)
-        self._memeber_text_channel_id: str = kwargs.pop("memeber_channel", None)
+        self._memeber_text_channel_id: int = kwargs.pop("memeber_channel", None)
 
     async def initial(self):
         async def load_channels():

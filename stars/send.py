@@ -52,8 +52,8 @@ class SendManager(commands.Cog):
         await self.config.guild(ctx.guild).standby_message_format.set(message_format)
         await Send.set_up_completed(ctx, "待機台訊息格式", message_format)
 
-    async def get_start_channel(self, guild:discord.Guild):
-        return await self.config.guild(guild).stream_start_message_format.get()
+    # async def get_start_channel(self, guild:discord.Guild):
+    #     return await self.config.guild(guild).stream_start_message_format.get()
 
     async def check(self):
         for guild_manager in self.manager.streams_manager.guild_managers.values():
@@ -70,10 +70,14 @@ class SendManager(commands.Cog):
         if guild_collab_stream.standby_msg_enable \
             and guild_collab_stream.standby_text_channel:
             standby_msg = await get_message(standby_text_channel, guild_collab_stream.standby_msg_id)
+            
+            guild = standby_text_channel.guild
+            msg_format = await self.config.guild(guild).standby_message_format()
+            msg = guild_collab_stream.get_standby_msg(msg_format)
             if standby_msg:
-                await standby_msg.edit(content=str(guild_collab_stream))
+                await standby_msg.edit(msg)
             else:
-                standby_msg_id = await standby_text_channel.send(guild_collab_stream)
+                standby_msg_id = await standby_text_channel.send(msg)
                 guild_collab_stream.standby_msg_id = standby_msg_id
                 await guild_collab_stream._saved_func()
             # elif not guild_collab_stream.standby_msg_id:
