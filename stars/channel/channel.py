@@ -4,6 +4,7 @@ from stars.utils import *
 _, log = get_logger()
 
 class Channel:
+    type_name = "default"
 
     def __init__(self, **kwargs):
         self._bot: Red = kwargs.pop("bot")
@@ -32,13 +33,28 @@ class Channel:
         return []
 
     @staticmethod
+    def check_channel_id(channel_id):
+        return True
+
+    @staticmethod
     def get_class(class_type: str):
-        if class_type == "YoutubeChannel":
-            from .youtube import YoutubeChannel
+        from .youtube import YoutubeChannel
+        from .holodex import HolodexChannel
+        if class_type == YoutubeChannel.__name__:
             return YoutubeChannel
-        elif class_type == "HolodexChannel":
-            from .holodex import HolodexChannel
+        elif class_type == HolodexChannel.__name__:
             return HolodexChannel
         else:
             return Channel
+
+    @staticmethod
+    def get_class_by_name(name: str):
+        from .youtube import YoutubeChannel
+        from .holodex import HolodexChannel
+        if name == YoutubeChannel.type_name:
+            return YoutubeChannel
+        elif name == HolodexChannel.type_name:
+            return HolodexChannel
+        else:
+            return None
 

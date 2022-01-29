@@ -37,7 +37,7 @@ class Stream:
         self.topic: str = kwargs.pop("topic", None)
         self.title: str = kwargs.pop("title", None)
         self.type: str = kwargs.pop("type", None)
-        self.info_update: bool = kwargs.pop("info_update", False)
+        self._info_update: bool = kwargs.pop("info_update", True)
     
     def __repr__(self):
         if self.is_valid():
@@ -50,7 +50,7 @@ class Stream:
                 f"> 標題：{self.title}",
                 f"> 類型：{self.type}",
                 f"> 主題：{self.topic}",
-                f"> 資料更新：{self.info_update}",
+                f"> 資料更新：{self._info_update}",
             ]
         else:
             data = [
@@ -68,16 +68,16 @@ class Stream:
         title = kwargs.pop("title", None)
         status = StreamStatus(kwargs.pop("status", "notsure"))
         if self.time != time:
-            self.info_update = True
+            self._info_update = True
             self.time = time
         if self.topic != topic:
-            self.info_update = True
+            self._info_update = True
             self.topic = topic
         if self.title != title:
-            self.info_update = True
+            self._info_update = True
             self.title = title
         if self._status != status:
-            self.info_update = True
+            self._info_update = True
             self._status = status
         log.debug("已更新 stream：" + str(self))
         log.info("已更新 stream：" + self.id)
@@ -94,15 +94,15 @@ class GuildStream:
         self.stream_id: str = kwargs.pop("stream_id", {})
         self._stream: "Stream" = kwargs.pop("stream", None)
         self.id: str = self._stream.id
-        self.enable: bool = kwargs.pop("enable", True)
-        self.info_update: bool = kwargs.pop("info_update", False)
+        self._info_update: bool = kwargs.pop("info_update", True)
+        self.notify_msg_enable: bool = kwargs.pop("notify_msg_enable", True)
         self.notify_msg_id: int = kwargs.pop("notify_msg_id", None)
         self.guild_collab_stream_id: str = None
         self._guild_collab_stream: "GuildCollabStream" = None
         self._saved_func = kwargs.pop("saved_func", None)
 
         self.notify_text_channel: discord.TextChannel = None
-        self._notify_text_channel_id: str = kwargs.pop("notify_text_channel", None)
+        self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self.is_init = False
 
     async def initial(self):
@@ -118,18 +118,18 @@ class GuildStream:
 
     def check(self):
         if self.is_valid():
-            if self._stream.info_update:
-                self.info_update = True
+            if self._stream._info_update:
+                self._info_update = True
     
     def __repr__(self):
         if self.is_valid():
             data = [
                 f"GuildStream",
                 f"> id：{self.id}",
-                f"> 通知啟用狀態：{self.enable}",
+                f"> 通知啟用狀態：{self.notify_msg_enable}",
                 f"> 通知訊息的 ID：{self.notify_msg_id}",
                 f"> 所屬待機 ID：{self.guild_collab_stream_id}",
-                f"> 資料更新：{self.info_update}",
+                f"> 資料更新：{self._info_update}",
             ]
         else:
             data = [
@@ -143,13 +143,14 @@ class GuildCollabStream:
     def __init__(self, **kwargs):
         self._bot: Red = kwargs.pop("bot")
         self.id: str = kwargs.pop("id", create_id())
-        self.enable: bool = kwargs.pop("enable", True)
         self.guild_stream_ids: List[str] = kwargs.pop("guild_stream_ids", [])
         self._guild_streams: List[str] = kwargs.pop("guild_streams", {})
+        self.standby_msg_enable: bool = kwargs.pop("standby_msg_enable", True)
         self.standby_msg_id: int = kwargs.pop("standby_msg_id", None)
-        self.info_update: bool = kwargs.pop("info_update", False)
+        self._info_update: bool = kwargs.pop("info_update", True)
         self.time: datetime = Time.to_datetime(kwargs.pop("time", None))
         self._saved_func = kwargs.pop("saved_func", None)
+        self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
 
         self.standby_text_channel: discord.TextChannel = None
         self.is_init = False
@@ -173,20 +174,28 @@ class GuildCollabStream:
         return True
 
     def check(self):
+        self._status = StreamStatus.NOTSURE
         if self.is_valid():
             for id, guild_stream in self._guild_streams.items():
-                if guild_stream.info_update:
-                    self.info_update = True
+                if guild_stream._info_update:
+                    self._info_update = True
+                if guild_stream._stream and self._status != StreamStatus.LIVE:
+                    if guild_stream._stream._status in [StreamStatus.LIVE, StreamStatus.UPCOMING]:
+                        self._status = guild_stream._stream._status
+
+    def get_standby_msg(self, message_format):
+        message_format.replace("{time}", Time.)
     
     def __repr__(self):
         if self.is_valid():
             data = [
                 f"GuildCollabStream",
                 f"> id：{self.id}",
-                f"> 待機台啟用狀態：{self.enable}",
+                f"> 待機台啟用狀態：{self.standby_msg_enable}",
                 f"> 相關直播 ID：{', '.join(self.guild_stream_ids)}",
                 f"> 待機台時間：{self.time}",
-                f"> 資料更新：{self.info_update}",
+                f"> 資料更新：{self._info_update}",
+                f"> 狀態：{self._status}",
             ]
         else:
             data = [
@@ -278,7 +287,7 @@ class GuildStreamsManager():
                     continue
             log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
             return None
-        member = await self.get_stream_belong_member(guild_stream_id)
+        member: "Member" = await self.get_stream_belong_member(guild_stream_id)
         guild_collab_stream = GuildCollabStream(
             bot=self.bot,
             guild_stream_ids=guild_stream_ids,
@@ -310,7 +319,7 @@ class GuildStreamsManager():
         for guild_stream in self.guild_streams.values():
             if not guild_stream._guild_collab_stream:
                 await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
-                guild_stream.info_update = True
+                guild_stream._info_update = True
             guild_stream.check()
 
         for guild_collab_stream in self.guild_collab_streams.values():
@@ -335,7 +344,7 @@ class GuildStreamsManager():
         delete_not_valid_guild_collab_stream(self)
 
         for guild_stream in self.guild_streams.values():
-            guild_stream.info_update = False
+            guild_stream._info_update = False
         
         await self.save_guild_streams()
         await self.save_guild_collab_streams()
@@ -434,7 +443,7 @@ class StreamsManager(commands.Cog):
             await guild_streams_manager.check()
 
         for stream in self.streams.values():
-            stream.info_update = False
+            stream._info_update = False
         await self.save_streams()
 
     # @commands.command(name="test")

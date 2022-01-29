@@ -7,6 +7,7 @@ _, log = get_logger()
 class HolodexChannel(Channel):
     
     toke_name = "holodex"
+    type_name = "holodex"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -43,3 +44,7 @@ class HolodexChannel(Channel):
             # f"> 頻道 ID：{self.id}",
         ])
         return data
+
+    @staticmethod
+    def check_channel_id(channel_id):
+        return Youtube.check_channel_id(channel_id)

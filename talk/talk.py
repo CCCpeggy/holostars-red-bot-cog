@@ -65,7 +65,7 @@ class Talk(commands.Cog):
             ans = " ".join(tmp[1:])
             # que, ans = message.content[3:].split(" ")[:2]
             if que != "" and ans != "":
-                if random.randint(0, 4) != 0:
+                if random.randint(0, 20) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -98,7 +98,7 @@ class Talk(commands.Cog):
             if len(ans) >= 2:
                 if "睡覺" in ans:
                     await message.channel.send("睡覺")
-                elif random.randint(0, 3) != 0:
+                elif random.randint(0, 40) != 0:
                     await message.channel.send(random.choice(ans))
                 else:
                     await message.channel.send("這不好說")
@@ -111,7 +111,7 @@ class Talk(commands.Cog):
             if "" in ans:
                 ans.remove("")
             if que != "" and len(ans) >= 2:
-                if random.randint(0, 3) != 0:
+                if random.randint(0, 20) != 0:
                     if que in self.learned_talk_queue:
                         self.learned_talk_queue.remove(que)
                     self.learned_talk_queue.insert(0, que)
@@ -147,8 +147,10 @@ class Talk(commands.Cog):
 需要的話也可以跟冷丸要個抱抱
 """
             await message.channel.send(info)
-        elif message.content.startswith("冷丸") and all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
-            await message.channel.send(f"{self.get_author_name(message)} :people_hugging:")
+        elif message.content == "冷丸":
+            await message.channel.send(f"{self.get_author_name(message)}")
+        elif all([w in [":people_hugging:", "抱", " "] for w in message.content[2:]]):
+            await message.channel.send(f"{message.author.mention} :people_hugging:")
         elif "機率" in message.content:
             if random.randint(0, 3) == 0:
                 await message.channel.send(f"{random.randint(0, 100)}%")
@@ -197,6 +199,8 @@ class Talk(commands.Cog):
             await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
             await message.channel.send("乖乖好吃")
+        elif "喵" in message.content:
+            await message.channel.send("汪")
         elif "歐姆" in message.content:
             await message.channel.send("v=ir => av=air => 色即是空")
         elif "程式" in message.content or "代碼" in message.content:
@@ -289,7 +293,7 @@ print("Re: Hello world")
         elif "機器人" in message.content:
             await message.channel.send(":two: :regional_indicator_b: :regional_indicator_g:")
         elif "廁所" in message.content:
-            await message.channel.send("<:Roberu_question:887748105234174014>")
+            await message.channel.send("<:9_7Roberu_whaat:900662697769717770> ")
         elif "外掛" in message.content:
             await message.channel.send("!?")
         elif "本物" in message.content:
@@ -343,7 +347,7 @@ print("Re: Hello world")
             await message.channel.send("冷丸最乖了，咖咩才不乖")
         elif "我是誰" in message.content:
             await message.channel.send(f"聽說是 {message.author.name}")
-        elif "咖咩" in message.content and "翹班" in message.content:
+        elif "咖咩" in message.content and ("翹班" in message.content or "不在" in message.content):
             await message.channel.send("@月嵐")
         elif ("會" in message.content and "嗎" in message.content) or "會不會" in message.content:
             await message.channel.send(random.choice(["會", "不會", "不知道"]))
@@ -371,6 +375,8 @@ print("Re: Hello world")
             await message.channel.send(random.choice(["該", "不該", "不知道"]))
         elif ("可" in message.content and "嗎" in message.content) or "可不可" in message.content:
             await message.channel.send(random.choice(["可以", "不可以", "不知道"]))
+        elif "有幾個" in message.content:
+            await message.channel.send(random.randint(-100, 200))
         elif "黑" in message.content and "嗎" in message.content:
             await message.channel.send(random.choice(["黑的", "白的"]))
         elif "哪" in message.content:

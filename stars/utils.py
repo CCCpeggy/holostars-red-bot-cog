@@ -18,7 +18,7 @@ def get_logger(level: int=logging.DEBUG)->logging.Logger:
 _, log = get_logger()
 
 async def get_text_channel(place: Union[discord.Guild, Red], channel: Union[str, discord.TextChannel, None]) -> discord.TextChannel:
-    if isinstance(channel, str):
+    if isinstance(channel, int):
         return place.get_channel(channel)
     return channel
 
@@ -26,12 +26,12 @@ def create_id():
     import uuid
     return uuid.uuid4().hex[:16]
 
-def checkInit(method):
-    def _checkInit(self, *args, **kwargs):
-        if not self.isInit:
-            from .errors import NotInitYet
-            raise NotInitYet
-    return _checkInit   
+# def checkInit(method):
+#     def _checkInit(self, *args, **kwargs):
+#         if not self.isInit:
+#             from .errors import NotInitYet
+#             raise NotInitYet
+#     return _checkInit   
 
 async def getHttpData(url, params={}):
     import aiohttp
@@ -64,9 +64,17 @@ def check_api_errors(data: dict):
             raise YoutubeQuotaExceeded()
         raise APIError(error_code, data)
 
+async def get_message(channel: discord.TextChannel, message_id: int) -> "Message":
+    try:
+        message = await channel.fetch_message(message_id)
+    except:
+        return None
+    else:
+        return message
+
 class Youtube:
     @staticmethod
-    def check_id(id: str) -> bool:
+    def check_channel_id(id: str) -> bool:
         import re
         channel_id_re = re.compile("^UC[-_A-Za-z0-9]{21}[AQgw]$")
         return channel_id_re.fullmatch(id)
@@ -189,8 +197,12 @@ class Send:
         
 class GetSendStr:
     @staticmethod
-    def getChannelMention(channel, default="未設定"):
+    def get_channel_mention(channel, default="未設定"):
         return channel.mention if channel else '未設定'
+    @staticmethod
+    def concat_list(data: list):
+        return ", ".join(data) if data else None
+
 
 from datetime import datetime
 class Time:
