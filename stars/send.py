@@ -89,7 +89,7 @@ class SendManager(commands.Cog):
         if standby_msg:
             await standby_msg.edit(content=msg)
         else:
-            standby_msg_id = await standby_text_channel.send(msg)
+            standby_msg_id = await standby_text_channel.send(content=msg)
             guild_collab_stream.standby_msg_id = standby_msg_id
             await guild_collab_stream._saved_func()
         # elif not guild_collab_stream.standby_msg_id:

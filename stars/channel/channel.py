@@ -10,6 +10,9 @@ class Channel:
         self._bot: Red = kwargs.pop("bot")
         self.id: str = kwargs.pop("id")
         self.name: str = kwargs.pop("name", None)
+        self.url: str = kwargs.pop("url", None)
+        self.source_name: str = kwargs.pop("source_name", None)
+        self.source_url: str = kwargs.pop("source_url", None)
         self.type = "Channel"
 
         # async def async_load():

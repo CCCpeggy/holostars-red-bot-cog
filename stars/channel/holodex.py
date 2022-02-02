@@ -12,11 +12,14 @@ class HolodexChannel(Channel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = "HolodexChannel"
+        self.source_name: str = "YouTube"
+        self.source_url: str = "https://www.youtube.com/"
 
     async def fetch_channel_data(self) -> None:
         channel_url = f"https://holodex.net/api/v2/channels/{self.id}"
         data = await getHttpData(channel_url)
         self.name = data["name"]
+        self.url: str = f"https://www.youtube.com/channel/{self.id}"
 
     async def get_streams_info(self) -> List[Dict]:
         live_url = f"https://holodex.net/api/v2/live"
@@ -33,7 +36,9 @@ class HolodexChannel(Channel):
                 "type": ori_video["type"],
                 "topic": ori_video.get("topic_id", None),
                 "status": ori_video.get("status"),
+                "start_actual": ori_video.get("start_actual"),
                 "url": f"https://www.youtube.com/watch?v={ori_video['id']}",
+                "thumbnail": f"https://img.youtube.com/vi/{ori_video['id']}/maxresdefault.jpg",
                 "time": Time.to_datetime(ori_video["start_scheduled"]),
             }
             new_videos.append(new_video)

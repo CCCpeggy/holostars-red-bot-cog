@@ -10,6 +10,7 @@ from redbot.core import checks, commands, Config
 # other
 import os
 import logging
+import random
 from typing import *
 from datetime import datetime
 from enum import Enum
@@ -35,6 +36,7 @@ class Stream:
         self.id: str = kwargs.pop("id", create_id())
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
         self.time: datetime = Time.to_datetime(kwargs.pop("time"))
+        self._start_actual: datetime = Time.to_datetime(kwargs.pop("start_actual", None))   
         self.channel_id: str = kwargs.pop("channel_id")
         self._channel: "Channel" = kwargs.pop("channel")
         self.topic: str = kwargs.pop("topic", None)
@@ -76,6 +78,7 @@ class Stream:
         topic = kwargs.pop("topic", None)
         title = kwargs.pop("title", None)
         status = StreamStatus(kwargs.pop("status", "notsure"))
+        start_actual = Time.to_datetime(kwargs.pop("start_actual"))
         if self.time != time:
             self._info_update = True
             self.time = time
@@ -88,6 +91,9 @@ class Stream:
         if self._status != status:
             self._info_update = True
             self._status = status
+        if self._start_actual != start_actual:
+            self._info_update = True
+            self._start_actual = start_actual
         log.debug("已更新 stream：" + str(self))
         log.info("已更新 stream：" + self.id)
     
@@ -135,7 +141,7 @@ class GuildStream:
         # make message
         message_format = message_format.replace("{title}", stream.title)
         message_format = message_format.replace("{channel_name}", stream._channel.name)
-        message_format = message_format.replace("{url}", stream.url)
+        message_format = message_format.replace("{url}", f"<{stream.url}>")
         message_format = message_format.replace("{mention}", "")
         message_format = message_format.replace("{description}", stream.topic if stream.topic else stream.title)
         message_format = message_format.replace("{new_line}", "\n")
@@ -144,7 +150,10 @@ class GuildStream:
         # make embed
         if need_embed:
             embed = discord.Embed(title=stream.title, url=stream.url)
-            embed.set_author(name=stream._channel.name)
+            embed.set_author(name=stream._channel.name, url=stream._channel.url)
+            
+            if stream._start_actual:
+                embed.timestamp = stream._start_actual
             if stream.thumbnail:
                 embed.set_image(url=get_url_rnd(stream.thumbnail))
             embed.colour = self._member.color
@@ -213,11 +222,11 @@ class GuildCollabStream:
                     if guild_stream._stream._status in [StreamStatus.LIVE, StreamStatus.UPCOMING]:
                         self._status = guild_stream._stream._status
 
-    def get_standby_msg(self, message_format: str) -> str:
+    def get_standby_msg(self, message_format: str, need_embed: bool=True) -> Tuple[str, discord.Embed]:
         def get_url(self):
             data = []
             for guild_stream in self._guild_streams.values():
-                data.append(f"{guild_stream._stream._channel.name}:{guild_stream._stream.url}")
+                data.append(f"{guild_stream._stream._channel.name}\n{guild_stream._stream.url}&r={random.randint(0,10000)}")
             return "\n".join(data)
         def get_title(self):
             return "\n".join([guild_stream._stream.title for guild_stream in self._guild_streams.values()])
