@@ -295,6 +295,15 @@ class GuildCollabStream:
             self.member_names.append(member.name)
             self._members.append(member)
             self._info_update = True
+    
+    def check_guild_stream_fit(self, guild_stream: "GuildStream") -> bool:
+        if not Time.is_diff_in_range(guild_stream._stream.time, self.time, minutes=15):
+            log.debug(f"reason 1: {guild_stream._stream.time}, {self.time}")
+            return False
+        if guild_stream._member.name not in [m.name for m in self._members]:
+            log.debug(f"reason 2: {guild_stream._member.name}, {[m.name for m in self._members]}")
+            return False
+        return True
 
     def __repr__(self):
         if self.is_valid():
@@ -483,10 +492,26 @@ class GuildStreamsManager():
     async def save_guild_collab_streams(self) -> None:
         await self.config.guild_collab_streams.set(ConvertToRawData.dict(self.guild_collab_streams))
 
+    async def check_old_guild_stream(self):
+        for guild_stream in self.guild_streams.values():
+            if guild_stream._guild_collab_stream:
+                for guild_collab_stream in self.guild_collab_streams.values():
+                    if guild_collab_stream.check_guild_stream_fit(guild_stream):
+                        guild_collab_stream.add_guild_stream(guild_stream)
+                        await guild_collab_stream._saved_func()
+                        break
+    
     async def check(self):
         for guild_stream in self.guild_streams.values():
+            # await self.check_old_guild_stream() # TODO
             if not guild_stream._guild_collab_stream:
-                await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
+                for guild_collab_stream in self.guild_collab_streams.values():
+                    if guild_collab_stream.check_guild_stream_fit(guild_stream):
+                        guild_collab_stream.add_guild_stream(guild_stream)
+                        await guild_collab_stream._saved_func()
+                        break
+                else:
+                    await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
                 guild_stream._info_update = True
             guild_stream.check()
 

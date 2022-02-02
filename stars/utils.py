@@ -409,6 +409,17 @@ class Time:
         return (time - Time.get_now()).total_seconds()
 
     @staticmethod
+    def is_diff_in_range(time1: datetime, time2: datetime, weeks=0, days=0, hours=0, minutes=0, seconds=0) -> bool:
+        if time1.tzinfo == None:
+            time1 = Time.add_timezone(time1)
+        if time2.tzinfo == None:
+            time2 = Time.add_timezone(time2)
+        from datetime import timedelta
+        delta_time = timedelta(weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
+        diff = time1 - time2 if time1 > time2 else time2 - time1
+        return diff < delta_time
+
+    @staticmethod
     def is_time_in_future_range(time: datetime, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0) -> bool:
         if time.tzinfo == None:
             time = Time.add_timezone(time)
