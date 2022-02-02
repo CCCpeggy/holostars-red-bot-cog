@@ -125,7 +125,7 @@ class SendManager(commands.Cog):
             else:
                 notify_msg_id = await notify_text_channel.send(content=msg, embed=embed)
                 guild_stream.notify_msg_id = notify_msg_id
-                saved_func = guild_stream._saved_func()
+                saved_func = guild_stream._saved_func
             # elif not guild_collab_stream.standby_msg_id:
             #     await self.update_standby_msg(guild_collab_stream)
         if saved_func:
