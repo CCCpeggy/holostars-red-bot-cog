@@ -83,9 +83,9 @@ class ChannelsManager(commands.Cog):
         else:
             await Send.already_existed(ctx, "頻道資料", channel)
         if await member.add_channel(channel_id):
-            await Send.add_completed(ctx, f"{member} 成員資料對於此頻道", channel)
+            await Send.add_completed(ctx, f"{member.name} 成員資料對於此頻道", channel)
         else:
-            await Send.already_existed(ctx, f"{member} 成員資料對於此頻道", channel)
+            await Send.already_existed(ctx, f"{member.name} 成員資料對於此頻道", channel)
 
     @channel_group.command(name="list")
     async def _list_channel(self, ctx: commands.Context, id: str=None, output_member: bool=False):
