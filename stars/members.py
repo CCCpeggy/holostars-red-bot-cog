@@ -141,19 +141,16 @@ class MembersManager(commands.Cog):
             await Send.not_existed(ctx, "成員資料", name)
 
     @member_group.command(name="list")
-    async def list_member(self, ctx: commands.Context, name: str=None):
+    async def list_member(self, ctx: commands.Context, member: MemberConverter=None):
         guild_manager = await self.get_guild_manager(ctx.guild)
         data = None
         if len(guild_manager.members) == 0:
             await Send.empty(ctx, "成員資料")
             return
-        elif name == None:
+        elif member == None:
             data = [str(m) for m in guild_manager.members.values()]
-        elif name in guild_manager.members:
-            data = [str(guild_manager.members[name])]
         else:
-            await Send.not_existed(ctx, "成員資料", name)
-            return
+            data = [str(member)]
         await Send.send(ctx, "\n".join(data))
 
     @member_group.group(name="set")
@@ -162,99 +159,69 @@ class MembersManager(commands.Cog):
 
     @memberset_group.command(name="notify_channel")
     async def set_notify_channel(
-        self, ctx: commands.Context, member_name: str, notify_text_channel: discord.TextChannel):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)
-        if member:
-            member.notify_text_channel = notify_text_channel
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name} 的通知文字頻道", notify_text_channel)
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+        self, ctx: commands.Context, member: MemberConverter, notify_text_channel: discord.TextChannel):
+        member.notify_text_channel = notify_text_channel
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的通知文字頻道", notify_text_channel)
 
     @memberset_group.command(name="chat_channel")
     async def set_chat_channel(
-        self, ctx: commands.Context, member_name: str, chat_text_channel: discord.TextChannel):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)
-        if member:
-            member.chat_text_channel = chat_text_channel
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name} 的討論文字頻道", chat_text_channel)
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+        self, ctx: commands.Context, member: MemberConverter, chat_text_channel: discord.TextChannel):
+        member.chat_text_channel = chat_text_channel
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的討論文字頻道", chat_text_channel)
 
     @memberset_group.command(name="member_channel")
     async def set_member_channel(
-        self, ctx: commands.Context, member_name: str, memeber_text_channel: discord.TextChannel):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)
-        if member:
-            member.memeber_text_channel = memeber_text_channel
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name} 的會員文字頻道", memeber_text_channel)
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+        self, ctx: commands.Context, member: MemberConverter, memeber_text_channel: discord.TextChannel):
+        member.memeber_text_channel = memeber_text_channel
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的會員文字頻道", memeber_text_channel)
 
     @memberset_group.command(name="color")
     async def set_color(
-        self, ctx: commands.Context, member_name: str, r: ColorChannelonverter, g: ColorChannelonverter, b: ColorChannelonverter):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)
-        if member:
-            member.color = (r * 255 + g) * 255 + b
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name} 的 color ", f"#{r:X}{g:X}{b:X}")
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+        self, ctx: commands.Context, member: MemberConverter, r: ColorChannelonverter, g: ColorChannelonverter, b: ColorChannelonverter):
+        member.color = (r * 255 + g) * 255 + b
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的 color ", f"#{r:X}{g:X}{b:X}")
 
     @memberset_group.command(name="emoji")
-    async def set_emoji(self, ctx: commands.Context, member_name: str, emoji: EmojiConverter):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)   
-        if member:
-            member.emoji = emoji
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name} 的 emoji ", f"{emoji}")
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+    async def set_emoji(self, ctx: commands.Context, member: MemberConverter, emoji: EmojiConverter):
+        member.emoji = emoji
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的 emoji ", f"{emoji}")
 
     @memberset_group.command(name="all")
     async def set_all(
-        self, ctx: commands.Context, member_name: str,
+        self, ctx: commands.Context, member: MemberConverter,
         notify_text_channel: discord.TextChannel, chat_text_channel: discord.TextChannel, 
         memeber_text_channel: discord.TextChannel, 
         r: ColorChannelonverter, g: ColorChannelonverter, b: ColorChannelonverter, 
         emoji: EmojiConverter):
-        guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)   
-        if member:
-            member.notify_text_channel = notify_text_channel
-            member.chat_text_channel = chat_text_channel
-            member.memeber_text_channel = memeber_text_channel
-            member.color = (r * 255 + g) * 255 + b
-            member.emoji = emoji
-            await member._save_func()
-            await Send.set_up_completed(ctx, f"{member_name}", str(member))
-        else:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+        member.notify_text_channel = notify_text_channel
+        member.chat_text_channel = chat_text_channel
+        member.memeber_text_channel = memeber_text_channel
+        member.color = (r * 255 + g) * 255 + b
+        member.emoji = emoji
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name}", str(member))
 
     @memberset_group.group(name="mention_role")
     async def mentionrole_group(self, ctx: commands.Context):
         pass
 
     @mentionrole_group.command(name="add")
-    async def add_mention_role(self, ctx: commands.Context, member_name: str, role: discord.Role):
+    async def add_mention_role(self, ctx: commands.Context, member: str, role: discord.Role):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member_name, None)
+        member = guild_members_manager.members.get(member, None)
         if not member:
-            await Send.not_existed(ctx, "成員頻道", member_name)
+            await Send.not_existed(ctx, "成員頻道", member)
         elif role.id in member.mention_roles:
             await Send.already_existed(ctx, "mention role", role.mention)
         else:
             member.mention_roles.append(role.id)
             await member._save_func()
-            await Send.add_completed(ctx, f"{member_name} 的 mention role", role)
+            await Send.add_completed(ctx, f"{member.name} 的 mention role", role)
 
     # async def get_start_channel(self, guild:discord.Guild):
     #     return await self.config.guild(guild).stream_start_message_format.get()

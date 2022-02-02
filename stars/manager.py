@@ -1,4 +1,5 @@
 # redbot
+from glob import glob
 from redbot.core.i18n import Translator
 from redbot.core import checks, commands, Config
 
@@ -10,6 +11,10 @@ from .members import MembersManager
 from .send import SendManager
 
 _, log = get_logger()
+send_manager = None
+channels_manager = None
+members_manager = None
+streams_manager = None
 
 class Manager(commands.Cog):
     def __init__(self, bot: Red, **kwargs):
@@ -24,6 +29,14 @@ class Manager(commands.Cog):
         self.streams_manager: "StreamsManager" = StreamsManager(self.bot, self)
         self.bot.add_cog(self.streams_manager)
         self.bot.loop.create_task(self.initial())
+        global send_manager
+        send_manager = self.send_manager
+        global channels_manager
+        channels_manager = self.channels_manager
+        global members_manager
+        members_manager = self.members_manager
+        global streams_manager
+        streams_manager = self.streams_manager
 
     async def initial(self):
         await self.bot.wait_until_red_ready()
@@ -32,12 +45,20 @@ class Manager(commands.Cog):
         await self.streams_manager.initial()
         await self.check()
 
-    async def check(self):
+
+    @commands.command(name="check")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def check(self, ctx=None):
+        log.debug("---------check start---------")
         await self.channels_manager.check()
         await self.streams_manager.delete_not_valid_and_notsure_stream()
         await self.members_manager.check()
         await self.streams_manager.check()
         await self.send_manager.check()
+        log.debug("---------check end---------")
+        if ctx:
+            await Send.send(ctx, "check end")
 
     @commands.group(name="test")
     @commands.guild_only()

@@ -110,13 +110,25 @@ def getEmoji(guild_emojis, ori_emoji):
         return ori_emoji
     return None
 
+class MemberConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, member_name: str) -> "Member":
+        if member_name == None:
+            return None
+        from .manager import members_manager
+        guild_members_manager = await members_manager.get_guild_manager(ctx.guild)
+        member = guild_members_manager.members.get(member_name, None)
+        if member:
+            return member
+        else:
+            raise commands.BadArgument(member_name + " is not existed!!")
+
 class EmojiConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, arg_emoji: str) -> str:
         emoji = getEmoji(ctx.guild.emojis, arg_emoji)
         if emoji:
             return emoji
         else:
-            raise commands.BadArgument(arg_emoji + "is bad emoji!!")
+            raise commands.BadArgument(arg_emoji + " is bad emoji!!")
         
 
 class ColorChannelonverter(commands.Converter):
@@ -129,9 +141,9 @@ class ColorChannelonverter(commands.Converter):
                 num = int(arg)
             if num >= 0 and num <= 255:
                 return num
-            raise commands.BadArgument(num + "need to between 0 to 255.")
+            raise commands.BadArgument(num + " need to between 0 to 255.")
         except:
-            raise commands.BadArgument(arg + "is invaild integer.")
+            raise commands.BadArgument(arg + " is invaild integer.")
 
 def get_url_rnd(url):
     """Appends a random parameter to the url to avoid Discord's caching"""
