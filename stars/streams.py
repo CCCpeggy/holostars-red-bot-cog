@@ -159,7 +159,7 @@ class GuildStream:
         if need_embed:
             embed = discord.Embed(title=stream.title, url=stream.url)
             embed.set_author(name=stream._channel.name, url=stream._channel.url)
-            # embed.set_footer(text="start time: ")
+            embed.set_footer(text=stream._channel.source_name)
             
             if stream._start_actual:
                 embed.timestamp = stream._start_actual
@@ -540,13 +540,65 @@ class StreamsManager(commands.Cog):
             stream._info_update = False
         await self.save_streams()
 
-    # @commands.command(name="test")
-    # @commands.guild_only()
-    # @checks.mod_or_permissions(manage_channels=True)
-    # async def test(self, ctx: commands.Context, id: str):
-    #     stream = await self.add_stream(id)
-    #     guild_manager = get_guild_manager(ctx.guild)
-    #     await guild_manager.add_guild_stream([stream])
-
     async def save_streams(self) -> None:
         await self.config.streams.set(ConvertToRawData.dict(self.streams))
+    
+    
+    @commands.group(name="stream")
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def stream_group(self, ctx: commands.Context):
+        pass
+
+    # set specify channel to textchannel
+    
+    # set collab - by channel, video (exist channel or not exist)
+    # set no send
+    @stream_group.command(name="notify_status")
+    async def set_notify_status(self, ctx: commands.Context, stream_id: str, status: bool):
+        guild_streams_manager = self.get_guild_manager(self.guild)
+        for guild_stream in guild_streams_manager.guild_streams.values():
+            if guild_stream.id == stream_id:
+                guild_stream.notify_msg_enable = status
+                await Send.send(ctx, str(guild_stream))
+                return
+    
+    @stream_group.command(name="standby_status")
+    async def set_standby_status(self, ctx: commands.Context, stream_id: str, status: bool):
+        guild_streams_manager = self.get_guild_manager(self.guild)
+        for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
+            for guild_stream in guild_collab_stream._guild_streams.values():
+                if guild_stream.id == stream_id:
+                    guild_collab_stream.standby_msg_enable = status
+                    await Send.send(ctx, str(guild_collab_stream ))
+                    return
+    # list
+    @stream_group.command(name="list")
+    async def set_standby_status(self, ctx: commands.Context, member: MemberConverter=None):
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        data = []
+        for guild_stream in guild_streams_manager.guild_streams.values():
+            if not member or guild_stream._member == member:
+                data.append(str(guild_stream))
+        await Send.send(ctx, "\n".join(data))
+        data = []
+        for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
+            if not member or member in [g._member for g in guild_collab_stream._guild_streams.values()]:                data.append(str(guild_collab_stream))
+        await Send.send(ctx, "\n".join(data))
+
+    # resend
+    # update
+    @stream_group.command(name="update")
+    async def update_message(self, ctx: commands.Context, member: MemberConverter):
+        update_guild_streams_manager = []
+        guild_streams_manager = self.get_guild_manager(self.guild)
+        for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
+            if guild_collab_stream._info_update:
+                update_guild_streams_manager.append(str(guild_collab_stream))
+                continue
+            for guild_stream in guild_collab_stream._guild_streams.values():
+                if guild_stream._member.name == member.name:
+                    guild_collab_stream._info_update = True
+                    update_guild_streams_manager.append(str(guild_collab_stream))
+                    break
+        await Send.send(ctx, "all need update: " + ", ".join(update_guild_streams_manager))

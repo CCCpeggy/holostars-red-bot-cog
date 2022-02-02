@@ -8,8 +8,6 @@ from redbot.core import checks, commands, Config
 from redbot.core.i18n import cog_i18n, Translator
 
 # other
-import os
-import logging
 
 # local
 from .utils import *
