@@ -31,13 +31,14 @@ class GuildMembersManager():
     async def add_member(self, name: str, channel_ids: List[str]=None, save=True, **kwargs) -> Tuple["Member", bool]:
         if name not in self.members:
             channels = {}
+            channel_dict = self.manager.channels_manager.channels
             if channel_ids:
-                channels = {id: self.manager.channels_manager.channels[id] for id in channel_ids}
+                channels = {id: channel_dict[id] for id in channel_ids if id in channel_dict}
             member = Member(
                 bot=self.bot,
                 name=name,
                 save_func=self.save_memebers,
-                channel_ids=channel_ids if channel_ids else [],
+                channel_ids=list(channels.keys()),
                 channels=channels,
                 **kwargs
             )
@@ -206,6 +207,7 @@ class Member:
         self._bot: Red = kwargs.pop("bot")
         self.name: str = kwargs.pop("name")
         self.emoji: str = kwargs.pop("emoji", None)
+        self.color: int = kwargs.pop("color", 0x9255A5)
         self.channel_ids: List[str] = kwargs.pop("channel_ids", [])
         if not isinstance(self.channel_ids, list):
             raise Exception
@@ -214,17 +216,18 @@ class Member:
 
         self.notify_text_channel: discord.TextChannel = None
         self.chat_text_channel: discord.TextChannel = None
-        self.memeber_channel: discord.TextChannel = None
+        self.memeber_text_channel: discord.TextChannel = None
 
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self._chat_text_channel_id: int = kwargs.pop("chat_text_channel", None)
-        self._memeber_text_channel_id: int = kwargs.pop("memeber_channel", None)
+        self._memeber_text_channel_id: int = kwargs.pop("memeber_text_channel", None)
 
     async def initial(self):
         async def load_channels():
             self.notify_text_channel = await get_text_channel(self._bot, self._notify_text_channel_id)
             self.chat_text_channel = await get_text_channel(self._bot, self._chat_text_channel_id)
-            self.memeber_text_channel = await get_text_channel(self._bot, self._memeber_channel_id)
+            self.memeber_text_channel = await get_text_channel(self._bot, self._memeber_text_channel_id)
+        await load_channels()
 
     def __repr__(self):
         data = [
@@ -232,7 +235,7 @@ class Member:
             f"> Emoji：{self.emoji if self.emoji else '未設定'}",
             f"> 通知文字頻道：{GetSendStr.get_channel_mention(self.notify_text_channel)}",
             f"> 討論文字頻道：{GetSendStr.get_channel_mention(self.chat_text_channel)}",
-            f"> 會員文字頻道：{GetSendStr.get_channel_mention(self.memeber_channel)}",
+            f"> 會員文字頻道：{GetSendStr.get_channel_mention(self.memeber_text_channel)}",
             f"> 頻道 ID：{', '.join(self.channel_ids)}",
         ]
         return "\n".join(data)

@@ -1,4 +1,5 @@
 # discord
+from dis import dis
 import discord
 
 # redbot
@@ -12,6 +13,7 @@ import logging
 
 # local
 from .utils import *
+from .streams import StreamStatus
 
 _, log = get_logger()
 
@@ -23,7 +25,10 @@ class SendManager(commands.Cog):
     }
 
     guild_defaults = {
-        "standby_message_format": None
+        "standby_message_format": "{Time}\n{title}\n{url}",
+        "notify_message_format": "{url} is start, {chat_channel}",
+        "collab_notify_message_format": "someone is start, {chat_channel}",
+        "notify_embed_enable": True
     }
 
     def __init__(self, bot: Red, manager: "Manager"):
@@ -56,29 +61,72 @@ class SendManager(commands.Cog):
     #     return await self.config.guild(guild).stream_start_message_format.get()
 
     async def check(self):
-        for guild_manager in self.manager.streams_manager.guild_managers.values():
+        for guild_id, guild_manager in self.manager.streams_manager.guild_managers.items():
+            guild = self.bot.get_guild(guild_id)
             for guild_collab_stream in guild_manager.guild_collab_streams.values():
-                from .streams import StreamStatus
+                # from .streams import StreamStatus
                 if not guild_collab_stream._info_update:
                     continue
-                if guild_collab_stream._status == StreamStatus.UPCOMING \
-                    or guild_collab_stream._status == StreamStatus.LIVE:
-                    await self.check_upcoming_stream(guild_collab_stream)
+                if guild_collab_stream._status in [StreamStatus.UPCOMING, StreamStatus.LIVE]:
+                    await self.send_standby(guild, guild_collab_stream)
+                if guild_collab_stream._status in [StreamStatus.LIVE]:
+                    await self.send_notify(guild, guild_collab_stream)
+                guild_collab_stream._info_update = False
 
-    async def check_upcoming_stream(self, guild_collab_stream: "GuildCollabStream"):
+    async def send_standby(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
         standby_text_channel = guild_collab_stream.standby_text_channel
-        if guild_collab_stream.standby_msg_enable \
-            and guild_collab_stream.standby_text_channel:
-            standby_msg = await get_message(standby_text_channel, guild_collab_stream.standby_msg_id)
+        if not guild_collab_stream.standby_msg_enable or not standby_text_channel:
+            return
             
-            guild = standby_text_channel.guild
-            msg_format = await self.config.guild(guild).standby_message_format()
-            msg = guild_collab_stream.get_standby_msg(msg_format)
-            if standby_msg:
-                await standby_msg.edit(msg)
+        # get discord message
+        standby_msg = await get_message(standby_text_channel, guild_collab_stream.standby_msg_id)
+        
+        # get send data
+        msg_format = await self.config.guild(guild).standby_message_format()
+        
+        # get message content
+        msg = guild_collab_stream.get_standby_msg(msg_format)
+        if standby_msg:
+            await standby_msg.edit(content=msg)
+        else:
+            standby_msg_id = await standby_text_channel.send(msg)
+            guild_collab_stream.standby_msg_id = standby_msg_id
+            await guild_collab_stream._saved_func()
+        # elif not guild_collab_stream.standby_msg_id:
+        #     await self.update_standby_msg(guild_collab_stream)
+
+
+    async def send_notify(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
+        saved_func = None
+        for guild_stream in guild_collab_stream._guild_streams.values():
+            if not guild_stream.notify_msg_enable or not guild_stream.notify_text_channel:
+                continue
+
+            notify_text_channel = guild_stream.notify_text_channel
+            standby_text_channel = guild_collab_stream.standby_text_channel
+            
+            # get discord message
+            notify_msg = await get_message(notify_text_channel, guild_stream.notify_msg_id)
+            
+            # get send data
+            stream_start_msg_format = await self.config.guild(guild).notify_message_format()
+            collab_start_msg_format = await self.config.guild(guild).collab_notify_message_format()
+            need_embed = await self.config.guild(guild).notify_embed_enable()
+            
+            # get message content
+            if guild_stream._stream._status == StreamStatus.LIVE:
+                msg, embed = guild_stream.get_notify_msg(stream_start_msg_format, need_embed, standby_text_channel)
             else:
-                standby_msg_id = await standby_text_channel.send(msg)
-                guild_collab_stream.standby_msg_id = standby_msg_id
-                await guild_collab_stream._saved_func()
+                msg = guild_collab_stream.get_notify_msg(collab_start_msg_format, standby_text_channel)
+                embed = None
+
+            if notify_msg:
+                await notify_msg.edit(content=msg, embed=embed)
+            else:
+                notify_msg_id = await notify_text_channel.send(content=msg, embed=embed)
+                guild_stream.notify_msg_id = notify_msg_id
+                saved_func = guild_stream._saved_func()
             # elif not guild_collab_stream.standby_msg_id:
             #     await self.update_standby_msg(guild_collab_stream)
+        if saved_func:
+            await saved_func()

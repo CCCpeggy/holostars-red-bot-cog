@@ -84,6 +84,12 @@ def get_textchannel_id(textchannel: discord.TextChannel):
     else:
         raise Exception
 
+def get_url_rnd(url):
+    """Appends a random parameter to the url to avoid Discord's caching"""
+    from string import ascii_letters
+    from random import choice
+    return url + "?rnd=" + "".join([choice(ascii_letters) for _ in range(6)])
+
 class Youtube:
     @staticmethod
     def check_channel_id(id: str) -> bool:

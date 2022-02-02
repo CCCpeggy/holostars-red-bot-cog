@@ -1,4 +1,5 @@
 # discord
+from pickle import TUPLE
 import discord
 
 # redbot
@@ -40,6 +41,7 @@ class Stream:
         self.title: str = kwargs.pop("title", None)
         self.url: str = kwargs.pop("url", "")
         self.type: str = kwargs.pop("type", None)
+        self.thumbnail: str = kwargs.pop("thumbnail", None)
         self._info_update: bool = kwargs.pop("info_update", True)
     
     def __repr__(self):
@@ -65,9 +67,7 @@ class Stream:
     def is_valid(self):
         if not self._channel:
             return False
-        if self._status == StreamStatus.MISSING:
-            return False
-        if self._status == StreamStatus.PAST:
+        if self._status in [StreamStatus.MISSING, StreamStatus.PAST]:
             return False
         return True
 
@@ -119,7 +119,7 @@ class GuildStream:
         self.notify_text_channel: discord.TextChannel = await get_text_channel(self._bot, self._notify_text_channel_id)
     
     def is_valid(self):
-        return self._stream and self._stream.is_valid()
+        return self._stream.is_valid()
 
     def set_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream"):
         self.guild_collab_stream_id = guild_collab_stream.id
@@ -129,7 +129,28 @@ class GuildStream:
         if self.is_valid():
             if self._stream._info_update:
                 self._info_update = True
-    
+                
+    def get_notify_msg(self, message_format: str, need_embed: bool, chat_channel: discord.TextChannel) -> Tuple[str, discord.Embed]:
+        stream = self._stream
+        # make message
+        message_format = message_format.replace("{title}", stream.title)
+        message_format = message_format.replace("{channel_name}", stream._channel.name)
+        message_format = message_format.replace("{url}", stream.url)
+        message_format = message_format.replace("{mention}", "")
+        message_format = message_format.replace("{description}", stream.topic if stream.topic else stream.title)
+        message_format = message_format.replace("{new_line}", "\n")
+        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
+        
+        # make embed
+        if need_embed:
+            embed = discord.Embed(title=stream.title, url=stream.url)
+            embed.set_author(name=stream._channel.name)
+            if stream.thumbnail:
+                embed.set_image(url=get_url_rnd(stream.thumbnail))
+            embed.colour = self._member.color
+            return message_format, embed
+        return message_format, None
+
     def __repr__(self):
         if self.is_valid():
             data = [
@@ -175,7 +196,7 @@ class GuildCollabStream:
             if not guild_stream or not guild_stream.is_valid():
                 not_valid_guild_stream_ids.append(id)
         if len(not_valid_guild_stream_ids) == len(self._guild_streams) \
-            and not Time.is_time_in_future_range(self.time):
+            and not Time.is_time_in_future_range(self.time, days=7):
             return False
         # for guild_stream_id in not_valid_guild_stream_ids:
         #     self.guild_stream_ids.remove(guild_stream_id)
@@ -192,7 +213,7 @@ class GuildCollabStream:
                     if guild_stream._stream._status in [StreamStatus.LIVE, StreamStatus.UPCOMING]:
                         self._status = guild_stream._stream._status
 
-    def get_standby_msg(self, message_format):
+    def get_standby_msg(self, message_format: str) -> str:
         def get_url(self):
             data = []
             for guild_stream in self._guild_streams.values():
@@ -219,6 +240,14 @@ class GuildCollabStream:
         message_format = message_format.replace("{new_line}", "\n")
         return message_format
     
+                
+    def get_notify_msg(self, message_format: str, chat_channel: discord.TextChannel) -> str:
+        stream = self._stream
+        # make message
+        message_format = message_format.replace("{mention}", "")
+        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
+        return message_format
+
     def __repr__(self):
         if self.is_valid():
             data = [
@@ -374,14 +403,13 @@ class GuildStreamsManager():
         for guild_collab_stream in self.guild_collab_streams.values():
             guild_collab_stream.check()
 
-        def delete_not_valid_guild_stream(self) -> None:
-            remove_guild_stream_ids = []
-            for id, guild_stream in self.guild_streams.items():
-                if not guild_stream.is_valid():
-                    remove_guild_stream_ids.append(id)
-            for id in remove_guild_stream_ids:
-                self.guild_streams.pop(id)
-        delete_not_valid_guild_stream(self)
+        # delete not valid guild stream
+        remove_guild_stream_ids = []
+        for id, guild_stream in self.guild_streams.items():
+            if not guild_stream.is_valid():
+                remove_guild_stream_ids.append(id)
+        for id in remove_guild_stream_ids:
+            del self.guild_streams[id]
 
         def delete_not_valid_guild_collab_stream(self) -> None:
             remove_guild_collab_stream_ids = []
@@ -481,8 +509,8 @@ class StreamsManager(commands.Cog):
     async def remove_streams(self, stream_ids: List[str]) -> None:
         for id in stream_ids:
             log.debug("刪除：" + str(self.streams[id]))
-            log.info("刪除 stream：" + id)
-            self.streams.pop(id)
+            self.streams[id]._status = StreamStatus.MISSING
+            del self.streams[id]
         await self.save_streams()
 
     async def check(self) -> None:

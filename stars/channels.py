@@ -34,6 +34,7 @@ class ChannelsManager(commands.Cog):
         async def load_channels():
             for id, raw_data in (await self.config.channels_()).items():
                 _class = Channel.get_class(raw_data["type"])
+                log.debug(raw_data)
                 self.channels[id] = _class(bot=self.bot, **raw_data)
         await load_channels()
 
@@ -44,9 +45,11 @@ class ChannelsManager(commands.Cog):
             return channel
         return None
 
-    async def add_channel(self, Channel, channel_id: str) -> Tuple[Channel, bool]:
+    async def add_channel(self, Channel, channel_id: str, fetch_data: bool=False) -> Tuple[Channel, bool]:
         if channel_id not in self.channels:
             channel = Channel(bot=self.bot, id=channel_id)
+            if fetch_data:
+                await channel.fetch_channel_data()
             self.channels[channel_id] = channel
             await self.save_channels()
             return channel, True
@@ -78,9 +81,8 @@ class ChannelsManager(commands.Cog):
         if member == None:
             await Send.not_existed(ctx, "成員資料", name)
             return
-        channel, successful = await self.add_channel(ChannelType, channel_id)            
+        channel, successful = await self.add_channel(ChannelType, channel_id, True)            
         if successful:
-            await channel.fetch_channel_data()
             await Send.add_completed(ctx, "頻道資料", channel)
         else:
             await Send.already_existed(ctx, "頻道資料", channel)
