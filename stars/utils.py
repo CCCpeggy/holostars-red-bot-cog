@@ -102,13 +102,92 @@ def get_textchannel_id(textchannel: discord.TextChannel):
 def getEmoji(guild_emojis, ori_emoji):
     # check guild
     for e in guild_emojis:
-        if ori_emoji == e.name:
+        if e.id in ori_emoji and e.name in ori_emoji:
             return e
     # check emoji dictionary
     import emoji
     if ori_emoji in emoji.UNICODE_EMOJI['en']:
         return ori_emoji
     return None
+
+async def add_reaction(message: discord.Message, emojis: List[str]):
+    import contextlib
+    with contextlib.suppress(discord.NotFound):
+        for emoji in emojis:
+            await message.add_reaction(emoji)
+
+async def add_waiting_reaction(bot, user: discord.User, message: discord.Message, emojis: List[str]):
+    done_emoji = "\N{WHITE HEAVY CHECK MARK}"
+    cancel_emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
+    emojis = [done_emoji, cancel_emoji] + emojis
+    import asyncio
+    task = asyncio.create_task(add_reaction(message, emojis))
+    emojis = [getEmoji(message.guild.emojis, e) for e in emojis]
+    selected = {e: False for e in emojis[2:]}
+    try:
+        async def reaction_task(event):
+            nonlocal selected
+            while True:
+                from redbot.core.utils.predicates import ReactionPredicate
+                r, u = await bot.wait_for(
+                    event, check=ReactionPredicate.with_emojis(emojis, message, user))
+                await message.channel.send(str(r.emoji))
+                if r.emoji == done_emoji:
+                    break
+                elif r.emoji == cancel_emoji:
+                    selected = {}
+                    break
+                else:
+                    selected[r.emoji] = not selected[r.emoji]
+        tasks = [
+            asyncio.create_task(reaction_task('reaction_remove')),
+            asyncio.create_task(reaction_task('reaction_add'))
+        ]
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, timeout=30)
+      
+    except asyncio.TimeoutError:
+        selected = {}
+
+    for task in tasks:
+        if task is not None:
+            task.cancel()
+    if task is not None:
+        task.cancel()
+    
+    selected = [k for k, v in selected.items() if v]
+    await message.clear_reactions()
+    return selected
+
+async def add_bool_reaction(bot, message: discord.Message) -> bool:
+    done_emoji = "\N{WHITE HEAVY CHECK MARK}"
+    cancel_emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
+    emojis = [done_emoji, cancel_emoji]
+    import asyncio
+    task = asyncio.create_task(add_reaction(message, emojis))
+
+    try:
+        while True:
+            from redbot.core.utils.predicates import ReactionPredicate
+            from redbot.core.utils.mod import is_mod_or_superior
+            (r, u) = await bot.wait_for(
+                "reaction_add",
+                check=ReactionPredicate.with_emojis(emojis, message),
+                timeout=86400  # 1 天
+            )
+            if await is_mod_or_superior(bot, u):
+                if u != message.author or await bot.is_owner(u):
+                    break
+    except asyncio.TimeoutError:
+        await message.remove_reaction(done_emoji)
+        return False
+
+    if task is not None:
+        task.cancel()
+    if r.emoji == done_emoji:
+        await message.remove_reaction(cancel_emoji, bot.user)
+        return True
+    await message.remove_reaction(done_emoji, bot.user)
+    return False
 
 class MemberConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, member_name: str) -> "Member":
