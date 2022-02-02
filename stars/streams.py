@@ -159,6 +159,7 @@ class GuildStream:
         if need_embed:
             embed = discord.Embed(title=stream.title, url=stream.url)
             embed.set_author(name=stream._channel.name, url=stream._channel.url)
+            # embed.set_footer(text="start time: ")
             
             if stream._start_actual:
                 embed.timestamp = stream._start_actual

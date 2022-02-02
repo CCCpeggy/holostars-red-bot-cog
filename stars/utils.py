@@ -99,6 +99,40 @@ def get_textchannel_id(textchannel: discord.TextChannel):
     else:
         raise Exception
 
+def getEmoji(guild_emojis, ori_emoji):
+    # check guild
+    for e in guild_emojis:
+        if ori_emoji == e.name:
+            return e
+    # check emoji dictionary
+    import emoji
+    if ori_emoji in emoji.UNICODE_EMOJI['en']:
+        return ori_emoji
+    return None
+
+class EmojiConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, arg_emoji: str) -> str:
+        emoji = getEmoji(ctx.guild.emojis, arg_emoji)
+        if emoji:
+            return emoji
+        else:
+            raise commands.BadArgument(arg_emoji + "is bad emoji!!")
+        
+
+class ColorChannelonverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, arg: str) -> int:
+        try:
+            num = 0
+            if arg[:2] == "0x":
+                num = int(arg, base=16)
+            else:
+                num = int(arg)
+            if num >= 0 and num <= 255:
+                return num
+            raise commands.BadArgument(num + "need to between 0 to 255.")
+        except:
+            raise commands.BadArgument(arg + "is invaild integer.")
+
 def get_url_rnd(url):
     """Appends a random parameter to the url to avoid Discord's caching"""
     from string import ascii_letters
