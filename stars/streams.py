@@ -106,6 +106,7 @@ class GuildStream:
 
     def __init__(self, **kwargs):
         self._bot: Red = kwargs.pop("bot")
+        self._guild: discord.Guild = kwargs.pop("guild")
         self.stream_id: str = kwargs.pop("stream_id", {})
         self._stream: "Stream" = kwargs.pop("stream", None)
         self.id: str = self._stream.id
@@ -135,6 +136,13 @@ class GuildStream:
         if self.is_valid():
             if self._stream._info_update:
                 self._info_update = True
+    
+    def get_collab_notify_msg(self, message_format: str, chat_channel: discord.TextChannel) -> str:
+        stream = self._stream
+        # make message
+        message_format = message_format.replace("{mention}", get_roles_str(self._guild, self._member.mention_roles))
+        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
+        return message_format
                 
     def get_notify_msg(self, message_format: str, need_embed: bool, chat_channel: discord.TextChannel) -> Tuple[str, discord.Embed]:
         stream = self._stream
@@ -142,7 +150,7 @@ class GuildStream:
         message_format = message_format.replace("{title}", stream.title)
         message_format = message_format.replace("{channel_name}", stream._channel.name)
         message_format = message_format.replace("{url}", f"<{stream.url}>")
-        message_format = message_format.replace("{mention}", "")
+        message_format = message_format.replace("{mention}", get_roles_str(self._guild, self._member.mention_roles))
         message_format = message_format.replace("{description}", stream.topic if stream.topic else stream.title)
         message_format = message_format.replace("{new_line}", "\n")
         message_format = message_format.replace("{chat_channel}", chat_channel.mention)
@@ -182,6 +190,7 @@ class GuildCollabStream:
 
     def __init__(self, **kwargs):
         self._bot: Red = kwargs.pop("bot")
+        self._guild: discord.Guild = kwargs.pop("guild")
         self.id: str = kwargs.pop("id", create_id())
         self.guild_stream_ids: List[str] = kwargs.pop("guild_stream_ids", [])
         self._guild_streams: List[str] = kwargs.pop("guild_streams", {})
@@ -239,22 +248,20 @@ class GuildCollabStream:
             return get_title(self)
         def get_channel_name(self):
             return "\n".join([guild_stream._stream._channel.name for guild_stream in self._guild_streams.values()])
-                
+        
+        # get all mention role in collab stream
+        mention_roles = []
+        for guild_stream in self._guild_streams.values():
+            if guild_stream._member.mention_roles :
+                mention_roles += guild_stream._member.mention_roles 
+        mention_roles = list(set(mention_roles))
         message_format = message_format.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
         message_format = message_format.replace("{title}", get_title(self))
         message_format = message_format.replace("{channel_name}", get_channel_name(self))
         message_format = message_format.replace("{url}", get_url(self))
-        message_format = message_format.replace("{mention}", "")
+        message_format = message_format.replace("{mention}", get_roles_str(self._guild, mention_roles))
         message_format = message_format.replace("{description}", get_description(self))
         message_format = message_format.replace("{new_line}", "\n")
-        return message_format
-    
-                
-    def get_notify_msg(self, message_format: str, chat_channel: discord.TextChannel) -> str:
-        stream = self._stream
-        # make message
-        message_format = message_format.replace("{mention}", "")
-        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
         return message_format
 
     def __repr__(self):
@@ -343,6 +350,7 @@ class GuildStreamsManager():
         notify_text_channel = kwargs.pop("notify_text_channel", member.notify_text_channel)
         guild_stream = GuildStream(
             bot=self.bot,
+            guild=self.guild,
             stream_id=stream_id,
             stream=stream,
             notify_text_channel=get_textchannel_id(notify_text_channel),
@@ -377,6 +385,7 @@ class GuildStreamsManager():
         chat_text_channel = kwargs.pop("standby_text_channel", member.chat_text_channel)
         guild_collab_stream = GuildCollabStream(
             bot=self.bot,
+            guild=self.guild,
             guild_stream_ids=guild_stream_ids,
             guild_streams=guild_streams,
             standby_text_channel=get_textchannel_id(chat_text_channel),

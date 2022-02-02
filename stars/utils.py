@@ -72,6 +72,21 @@ async def get_message(channel: discord.TextChannel, message_id: int) -> "Message
     else:
         return message
     
+def get_role(guild: discord.Guild, id: int) -> discord.Role:
+    from discord.utils import get
+    return get(guild.roles, id=id)
+    
+def get_roles_str(guild: discord.Guild, ids: List[int]) -> str:
+    if get_roles_str:
+        role_mentions = []
+        for id in ids:
+            role = get_role(guild, id)
+            if role:
+                role_mentions.append(role.mention)
+        if len(role_mentions) > 0:
+            return " ".join(role_mentions)
+    return ""
+        
 def get_textchannel_id(textchannel: discord.TextChannel):
     if textchannel == None:
         return None
@@ -141,7 +156,7 @@ class Send:
     async def set_up_completed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**已設定完成")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**已設定為 {obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -150,7 +165,7 @@ class Send:
     async def add_completed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**已新增一筆資料")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**已新增一筆：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -159,7 +174,7 @@ class Send:
     async def update_completed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**已更新一筆資料")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**已更新一筆：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -168,7 +183,7 @@ class Send:
     async def remove_completed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**已刪除一筆資料")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**已刪除一筆：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -177,7 +192,7 @@ class Send:
     async def already_existed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**已經存在")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**已經存在：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -186,7 +201,7 @@ class Send:
     async def not_existed(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**不存在")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**不存在：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -195,7 +210,7 @@ class Send:
     async def data_error(send_place: SendPlaceType, name:str, obj=None):
         if obj == None:
             await send_place.send(f"**{name}**資料或格式錯誤")
-        elif isinstance(obj, discord.TextChannel):
+        elif isinstance(obj, (discord.TextChannel, discord.Role)):
             await send_place.send(f"**{name}**資料或格式錯誤：{obj.mention}",
                 allowed_mentions=discord.AllowedMentions.none())
         else:

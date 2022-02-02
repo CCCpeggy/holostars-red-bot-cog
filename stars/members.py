@@ -162,39 +162,56 @@ class MembersManager(commands.Cog):
 
     @memberset_group.command(name="notify_channel")
     async def set_notify_channel(
-        self, ctx: commands.Context, name: str, notify_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member_name: str, notify_text_channel: discord.TextChannel):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(name, None)
+        member = guild_members_manager.members.get(member_name, None)
         if member:
             member.notify_text_channel = notify_text_channel
             await member._save_func()
-            await Send.set_up_completed(ctx, f"{name} 的通知文字頻道", notify_text_channel)
+            await Send.set_up_completed(ctx, f"{member_name} 的通知文字頻道", notify_text_channel)
         else:
-            await Send.not_existed(ctx, "成員頻道", name)
+            await Send.not_existed(ctx, "成員頻道", member_name)
 
     @memberset_group.command(name="chat_channel")
     async def set_chat_channel(
-        self, ctx: commands.Context, name: str, chat_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member_name: str, chat_text_channel: discord.TextChannel):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(name, None)
+        member = guild_members_manager.members.get(member_name, None)
         if member:
             member.chat_text_channel = chat_text_channel
             await member._save_func()
-            await Send.set_up_completed(ctx, f"{name} 的討論文字頻道", chat_text_channel)
+            await Send.set_up_completed(ctx, f"{member_name} 的討論文字頻道", chat_text_channel)
         else:
-            await Send.not_existed(ctx, "成員頻道", name)
+            await Send.not_existed(ctx, "成員頻道", member_name)
 
     @memberset_group.command(name="member_channel")
     async def set_member_channel(
-        self, ctx: commands.Context, name: str, memeber_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member_name: str, memeber_text_channel: discord.TextChannel):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(name, None)
+        member = guild_members_manager.members.get(member_name, None)
         if member:
             member.memeber_text_channel = memeber_text_channel
             await member._save_func()
-            await Send.set_up_completed(ctx, f"{name} 的會員文字頻道", memeber_text_channel)
+            await Send.set_up_completed(ctx, f"{member_name} 的會員文字頻道", memeber_text_channel)
         else:
-            await Send.not_existed(ctx, "成員頻道", name)
+            await Send.not_existed(ctx, "成員頻道", member_name)
+
+    @memberset_group.group(name="mention_role")
+    async def mentionrole_group(self, ctx: commands.Context):
+        pass
+
+    @mentionrole_group.command(name="add")
+    async def add_mention_role(self, ctx: commands.Context, member_name: str, role: discord.Role):
+        guild_members_manager = await self.get_guild_manager(ctx.guild)
+        member = guild_members_manager.members.get(member_name, None)
+        if not member:
+            await Send.not_existed(ctx, "成員頻道", member_name)
+        elif role.id in member.mention_roles:
+            await Send.already_existed(ctx, "mention role", role.mention)
+        else:
+            member.mention_roles.append(role.id)
+            await member._save_func()
+            await Send.add_completed(ctx, f"{member_name} 的 mention role", role)
 
     # async def get_start_channel(self, guild:discord.Guild):
     #     return await self.config.guild(guild).stream_start_message_format.get()
@@ -208,6 +225,7 @@ class Member:
         self.name: str = kwargs.pop("name")
         self.emoji: str = kwargs.pop("emoji", None)
         self.color: int = kwargs.pop("color", 0x9255A5)
+        self.mention_roles: List[int] = kwargs.pop("mention_roles", [])
         self.channel_ids: List[str] = kwargs.pop("channel_ids", [])
         if not isinstance(self.channel_ids, list):
             raise Exception

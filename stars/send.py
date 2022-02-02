@@ -89,7 +89,9 @@ class SendManager(commands.Cog):
         if standby_msg:
             await standby_msg.edit(content=msg)
         else:
-            standby_msg_id = await standby_text_channel.send(content=msg)
+            standby_msg_id = await standby_text_channel.send(
+                content=msg, allowed_mentions=discord.AllowedMentions(roles=True)
+            )
             guild_collab_stream.standby_msg_id = standby_msg_id
             await guild_collab_stream._saved_func()
         # elif not guild_collab_stream.standby_msg_id:
@@ -117,13 +119,15 @@ class SendManager(commands.Cog):
             if guild_stream._stream._status == StreamStatus.LIVE:
                 msg, embed = guild_stream.get_notify_msg(stream_start_msg_format, need_embed, standby_text_channel)
             else:
-                msg = guild_collab_stream.get_notify_msg(collab_start_msg_format, standby_text_channel)
+                msg = guild_stream.get_collab_notify_msg(collab_start_msg_format, standby_text_channel)
                 embed = None
 
             if notify_msg:
                 await notify_msg.edit(content=msg, embed=embed)
             else:
-                notify_msg_id = await notify_text_channel.send(content=msg, embed=embed)
+                notify_msg_id = await notify_text_channel.send(
+                    content=msg, embed=embed, allowed_mentions=discord.AllowedMentions(roles=True)
+                )
                 guild_stream.notify_msg_id = notify_msg_id
                 saved_func = guild_stream._saved_func
             # elif not guild_collab_stream.standby_msg_id:

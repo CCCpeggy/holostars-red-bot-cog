@@ -103,11 +103,14 @@ class Manager(commands.Cog):
         log.debug("-------------------test_holodex---------------------")
         member_name = "aruran"
         channel_id = "UCKeAhJvy8zgXWbh9duVjIaQ"
-        await self.members_manager.remove_member(ctx=ctx, name=member_name)
+        await self.members_manager.remove_member(ctx, member_name)
         await self.check()
 
         # add member
-        await self.members_manager.add_member(ctx=ctx, name=member_name)
+        await self.members_manager.add_member(ctx, member_name)
+        await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 879027799204188190))
+        await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 879027799204188190))
+        await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 886496543320989756))
         await self.members_manager.set_notify_channel(ctx, member_name, await get_text_channel(ctx.guild, 884066848822427708))
         await self.members_manager.set_chat_channel(ctx, member_name, await get_text_channel(ctx.guild, 884066992762523649))
         await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
