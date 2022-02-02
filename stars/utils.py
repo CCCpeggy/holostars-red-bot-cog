@@ -71,6 +71,18 @@ async def get_message(channel: discord.TextChannel, message_id: int) -> "Message
         return None
     else:
         return message
+    
+def get_textchannel_id(textchannel: discord.TextChannel):
+    if textchannel == None:
+        return None
+    elif isinstance(textchannel, int):
+        return textchannel
+    elif isinstance(textchannel, str):
+        return int(textchannel)
+    elif isinstance(textchannel, discord.TextChannel):
+        return textchannel.id
+    else:
+        raise Exception
 
 class Youtube:
     @staticmethod

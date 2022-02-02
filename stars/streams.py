@@ -24,6 +24,8 @@ class StreamStatus(str, Enum):
     UPCOMING = "upcoming"
     LIVE = "live"
     MISSING = "missing"
+    PAST = "past"
+    NEW = "new"
 
 class Stream:
 
@@ -61,7 +63,13 @@ class Stream:
         return "\n".join(data)
     
     def is_valid(self):
-        return self._channel and self._status != StreamStatus.MISSING
+        if not self._channel:
+            return False
+        if self._status == StreamStatus.MISSING:
+            return False
+        if self._status == StreamStatus.PAST:
+            return False
+        return True
 
     def update_info(self, **kwargs):
         time = Time.to_datetime(kwargs.pop("time"))
@@ -113,7 +121,7 @@ class GuildStream:
         self.is_init = True
     
     def is_valid(self):
-        return self._stream
+        return self._stream and self._stream.is_valid()
 
     def set_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream"):
         self.guild_collab_stream_id = guild_collab_stream.id
@@ -282,38 +290,43 @@ class GuildStreamsManager():
         return self.guild_collab_streams.get(id, None)
 
     async def add_guild_stream(self, stream_id, save=True, **kwargs) -> "GuildStream":
-        if stream_id not in self.guild_streams:
-            # get member
-            member_name = kwargs.pop("member_name", None)
-            member = None
-            if member_name:
-                member = await self.get_member_by_name(member_name)
-            else:
-                member = await self.get_stream_belong_member(stream_id)
-            if member == None:
-                log.debug("找不到 member，沒有新增 guild_stream 成功：" + stream_id)
-                return None
-            log.debug("add_guild_stream: " + str(member))
-            notify_text_channel = kwargs.pop("notify_text_channel", member.notify_text_channel)
-            guild_stream = GuildStream(
-                bot=self.bot,
-                stream_id=stream_id,
-                stream=self.get_stream(stream_id),
-                notify_text_channel=notify_text_channel.id if notify_text_channel else None,
-                saved_func=self.save_guild_streams,
-                member=member,
-                **kwargs
-            )
-            await guild_stream.initial()
-            if True or guild_stream.is_valid():
-                self.guild_streams[stream_id] = guild_stream
-                if save:
-                    await self.save_guild_streams()
-                log.debug("已新增 guild_stream：" + str(guild_stream))
-                log.info("已新增 guild_stream：" + guild_stream.id)
-                return guild_stream
-        log.debug("已存在，所以沒有新增 guild_stream：" + stream_id)
-        return None
+        if stream_id in self.guild_streams:
+            log.debug("已存在，所以沒有新增 guild_stream：" + stream_id)
+            return None
+            
+        stream = self.get_stream(stream_id)
+        if stream == None:
+            log.debug("stream is none，所以沒有新增 guild_stream：" + stream_id)
+            return None
+            
+        # get member
+        member_name = kwargs.pop("member_name", None)
+        member = None
+        if member_name:
+            member = await self.get_member_by_name(member_name)
+        else:
+            member = await self.get_stream_belong_member(stream_id)
+        if member == None:
+            log.debug("找不到 member，沒有新增 guild_stream 成功：" + stream_id)
+            return None
+        notify_text_channel = kwargs.pop("notify_text_channel", member.notify_text_channel)
+        guild_stream = GuildStream(
+            bot=self.bot,
+            stream_id=stream_id,
+            stream=stream,
+            notify_text_channel=get_textchannel_id(notify_text_channel),
+            saved_func=self.save_guild_streams,
+            member=member,
+            **kwargs
+        )
+        await guild_stream.initial()
+        if guild_stream.is_valid():
+            self.guild_streams[stream_id] = guild_stream
+            if save:
+                await self.save_guild_streams()
+            log.debug("已新增 guild_stream：" + str(guild_stream))
+            log.info("已新增 guild_stream：" + guild_stream.id)
+            return guild_stream
 
     async def add_guild_collab_stream(self, guild_stream_ids: List[str], save=True, **kwargs) -> "GuildCollabStream":
         if len(guild_stream_ids) == 0:
@@ -335,7 +348,7 @@ class GuildStreamsManager():
             bot=self.bot,
             guild_stream_ids=guild_stream_ids,
             guild_streams=guild_streams,
-            standby_text_channel=chat_text_channel.id if chat_text_channel else None,
+            standby_text_channel=get_textchannel_id(chat_text_channel),
             saved_func=self.save_guild_collab_streams,
             **kwargs
         )
@@ -442,14 +455,14 @@ class StreamsManager(commands.Cog):
                 channel=self.manager.channels_manager.channels.get(channel_id, None),
                 **kwargs
             )
-            if True or stream.is_valid():
+            if stream.is_valid():
                 self.streams[id] = stream
                 if save:
                     await self.save_streams()
                 log.debug("已新增 stream：" + str(stream))
                 log.info("已新增 stream：" + id)
                 return stream
-            log.debug("沒有新增 stream 成功：" + id)
+        log.debug("沒有新增 stream 成功：" + id)
         return None
 
     async def update_stream(self, id: str, save=True, **kwargs) -> "Stream":
