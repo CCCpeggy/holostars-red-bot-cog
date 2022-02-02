@@ -120,10 +120,10 @@ class SendManager(commands.Cog):
         if standby_msg:
             await standby_msg.edit(content=msg)
         else:
-            standby_msg_id = await standby_text_channel.send(
-                content=msg, allowed_mentions=discord.AllowedMentions(roles=True)
+            standby_msg = await standby_text_channel.send(
+                content=str(guild_collab_stream.standby_msg_id) + "\n" + str(guild_collab_stream.id) + "\n" + msg, allowed_mentions=discord.AllowedMentions(roles=True)
             )
-            guild_collab_stream.standby_msg_id = standby_msg_id
+            guild_collab_stream.standby_msg_id = standby_msg.id
             await guild_collab_stream._saved_func()
         # elif not guild_collab_stream.standby_msg_id:
         #     await self.update_standby_msg(guild_collab_stream)
@@ -156,10 +156,10 @@ class SendManager(commands.Cog):
             if notify_msg:
                 await notify_msg.edit(content=msg, embed=embed)
             else:
-                notify_msg_id = await notify_text_channel.send(
+                notify_msg = await notify_text_channel.send(
                     content=msg, embed=embed, allowed_mentions=discord.AllowedMentions(roles=True)
                 )
-                guild_stream.notify_msg_id = notify_msg_id
+                guild_stream.notify_msg_id = notify_msg.id
                 saved_func = guild_stream._saved_func
             # elif not guild_collab_stream.standby_msg_id:
             #     await self.update_standby_msg(guild_collab_stream)

@@ -307,7 +307,7 @@ class GuildCollabStream:
                 f"> 資料更新：{self._info_update}",
                 f"> 狀態：{self._status}",
                 f"> members：{self.member_names}",
-                f"> guild_stream{self.guild_stream_ids}",
+                f"> check: {list(self._guild_streams.values())[0]._guild_collab_stream.id}",
             ]
         else:
             data = [

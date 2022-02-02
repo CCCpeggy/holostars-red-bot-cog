@@ -147,8 +147,9 @@ class Manager(commands.Cog):
     @test.command(name="collab")
     async def test_holodex(self, ctx):
         log.debug("-------------------test_collab---------------------")
-        member_name = "Oga"
-        channel_id = "UCwL7dgTxKo8Y4RFIKWaf8gA"
+
+        member_name = "Anya"
+        channel_id = "UC727SQYUvx5pDDGQpTICNWg"
         await self.members_manager.remove_member(ctx, member_name)
         await self.check()
 
@@ -180,6 +181,6 @@ class Manager(commands.Cog):
         channel = self.channels_manager.channels[channel_id]
 
         await self.check()
-        await self.streams_manager.add_collab(ctx, "KaIS3y6pONU,mayyqWvsCG8")
+        await self.streams_manager.add_collab(ctx, "KYGJX6is71M,mayyqWvsCG8")
         await self.check()
         # await self.streams_manager.add_collab(ctx, "IwqcjU5V2Xg")
