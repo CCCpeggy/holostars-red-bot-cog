@@ -29,7 +29,6 @@ class ChannelsManager(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
         self.channels: Dict[str, Channel] = {}
-        self.is_init = False
 
     async def initial(self):
         async def load_channels():
@@ -37,7 +36,6 @@ class ChannelsManager(commands.Cog):
                 _class = Channel.get_class(raw_data["type"])
                 self.channels[id] = _class(bot=self.bot, **raw_data)
         await load_channels()
-        self.is_init = True
 
     async def remove_channel(self, channel_id: str) -> "Channel":
         if channel_id in channel_id:

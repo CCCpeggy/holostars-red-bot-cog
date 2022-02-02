@@ -114,11 +114,9 @@ class GuildStream:
 
         self.notify_text_channel: discord.TextChannel = None
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
-        self.is_init = False
 
     async def initial(self):
         self.notify_text_channel: discord.TextChannel = await get_text_channel(self._bot, self._notify_text_channel_id)
-        self.is_init = True
     
     def is_valid(self):
         return self._stream and self._stream.is_valid()
@@ -166,12 +164,10 @@ class GuildCollabStream:
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
 
         self.standby_text_channel: discord.TextChannel = None
-        self.is_init = False
         self._standby_text_channel_id = kwargs.pop("standby_text_channel", None)
 
     async def initial(self):
         self.standby_text_channel = await get_text_channel(self._bot, self._standby_text_channel_id)
-        self.is_init = True
     
     def is_valid(self) -> bool:
         not_valid_guild_stream_ids = []
@@ -251,8 +247,6 @@ class GuildStreamsManager():
         self.guild_streams: Dict[str, "GuildStream"] = {}
         self.guild_collab_streams: Dict[str, "GuildCollabStream"] = {}
 
-        self.is_init = False
-
     async def initial(self):
         async def load_guild_streams():
             for id, raw_data in (await self.config.guild_streams()).items():
@@ -263,7 +257,6 @@ class GuildStreamsManager():
             for id, raw_data in (await self.config.guild_collab_streams()).items():
                 await self.add_guild_collab_stream(save=False, **raw_data)
         await load_collab_guild_streams()
-        self.is_init = True
 
     def get_stream(self, stream_id) -> "Stream":
         return self.manager.streams_manager.streams.get(stream_id, None)
@@ -425,7 +418,6 @@ class StreamsManager(commands.Cog):
         self.streams: Dict[str, "Stream"] = {}
         self.guild_managers: Dict[int, "GuildStreamsManager"] = {}
 
-        self.is_init = False
 
     async def initial(self):
         async def load_streams():
@@ -437,7 +429,6 @@ class StreamsManager(commands.Cog):
             for guild_id, config in (await self.config.all_guilds()).items():
                 await self.get_guild_manager(int(guild_id))
         await load_guild()
-        self.is_init = True
             
     async def get_guild_manager(self, guild: Union[int, discord.Guild]) -> "GuildStreamsManager":
         guild = guild if isinstance(guild, discord.Guild) else self.bot.get_guild(guild)

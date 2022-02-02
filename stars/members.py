@@ -18,14 +18,12 @@ class GuildMembersManager():
         self.manager: "Manager" = manager
         self.guild: discord.Guild = guild
         self.members: Dict[str, "Member"] = {}
-        self.is_init = False
         
     async def initial(self):
         async def load_members():
             for key, value in (await self.config.members()).items():
                 await self.add_member(saved=False, **value)
         await load_members()
-        self.is_init = True
 
     async def save_memebers(self) -> None:
         await self.config.members.set(ConvertToRawData.dict(self.members))
@@ -84,14 +82,12 @@ class MembersManager(commands.Cog):
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
         self.guild_managers: Dict[int, "GuildMembersManager"] = {}
-        self.is_init = False
 
     async def initial(self):
         async def load_guild():
             for guild_id, config in (await self.config.all_guilds()).items():
                 await self.get_guild_manager(int(guild_id))
         await load_guild()
-        self.is_init = True
             
     def get_all_member(self) -> list:
         members = []
@@ -219,7 +215,6 @@ class Member:
         self.notify_text_channel: discord.TextChannel = None
         self.chat_text_channel: discord.TextChannel = None
         self.memeber_channel: discord.TextChannel = None
-        self.is_init = False
 
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self._chat_text_channel_id: int = kwargs.pop("chat_text_channel", None)
@@ -230,7 +225,6 @@ class Member:
             self.notify_text_channel = await get_text_channel(self._bot, self._notify_text_channel_id)
             self.chat_text_channel = await get_text_channel(self._bot, self._chat_text_channel_id)
             self.memeber_text_channel = await get_text_channel(self._bot, self._memeber_channel_id)
-        self.is_init = True
 
     def __repr__(self):
         data = [
