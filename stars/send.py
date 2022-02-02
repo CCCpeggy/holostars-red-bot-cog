@@ -25,7 +25,7 @@ class SendManager(commands.Cog):
     }
 
     guild_defaults = {
-        "standby_message_format": "{Time}\n{title}\n{url}",
+        "standby_message_format": "{time}\n{title}\n{url}",
         "notify_message_format": "{url} is start, {chat_channel}",
         "collab_notify_message_format": "someone is start, {chat_channel}",
         "notify_embed_enable": True
@@ -47,15 +47,48 @@ class SendManager(commands.Cog):
     @starsset_group.group(name="message")
     async def message_group(self, ctx: commands.Context):
         pass
+    
+    @message_group.command(name="list")
+    async def get_message_list(self,  ctx: commands.Context):
+        standby_message_format = await self.config.guild(ctx.guild).standby_message_format()
+        notify_message_format = await self.config.guild(ctx.guild).notify_message_format()
+        notify_tmp_message_format = await self.config.guild(ctx.guild).collab_notify_message_format()
+        notify_embed_enable = await self.config.guild(ctx.guild).notify_embed_enable()
+        data = [
+            f"**standby message format**: {standby_message_format}",
+            f"**notify message format**: {notify_message_format}",
+            f"**notify(tmp) message format**: {notify_tmp_message_format}",
+            f"**notify embed enable**: {notify_embed_enable}",
+        ]
+        await Send.send(ctx, "\n".join(data))
 
-    @message_group.command(name="start")
-    async def set_message_start(self,  ctx: commands.Context, message_format: str):
+    @message_group.command(name="standby")
+    async def set_standby_string_format(self,  ctx: commands.Context, message_format: str):
         """
         {time}, {title}, {channel_name}, {member_name}, {url}, {mention},
         {description}, {new_line}, {new_message}
         """
         await self.config.guild(ctx.guild).standby_message_format.set(message_format)
         await Send.set_up_completed(ctx, "待機台訊息格式", message_format)
+
+    @message_group.command(name="notify")
+    async def set_notify_string_format(self,  ctx: commands.Context, message_format: str, need_embed: bool=True):
+        """
+        {title}, {channel_name}, {url}, {mention}, {description}, 
+        {new_line}, {chat_channel}
+        """
+        await self.config.guild(ctx.guild).notify_message_format.set(message_format)
+        await self.config.guild(ctx.guild).notify_embed_enable.set(need_embed)
+        await Send.set_up_completed(ctx, "notify 訊息格式", message_format)
+
+    @message_group.command(name="notify_tmp")
+    async def set_notify_string_format(self,  ctx: commands.Context, message_format: str):
+        """
+        {mention}, {chat_channel}
+        """
+        await self.config.guild(ctx.guild).collab_notify_message_format.set(message_format)
+        await Send.set_up_completed(ctx, "notify 訊息格式", message_format)
+
 
     # async def get_start_channel(self, guild:discord.Guild):
     #     return await self.config.guild(guild).stream_start_message_format.get()
