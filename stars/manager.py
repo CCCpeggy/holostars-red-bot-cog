@@ -143,3 +143,43 @@ class Manager(commands.Cog):
         channel = self.channels_manager.channels[channel_id]
 
         await self.check()
+
+    @test.command(name="collab")
+    async def test_holodex(self, ctx):
+        log.debug("-------------------test_collab---------------------")
+        member_name = "Oga"
+        channel_id = "UCwL7dgTxKo8Y4RFIKWaf8gA"
+        await self.members_manager.remove_member(ctx, member_name)
+        await self.check()
+
+        # add member
+        await self.members_manager.add_member(ctx, member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.members_manager.set_emoji(ctx, member, "🆗")
+        await self.members_manager.set_notify_channel(ctx, member, await get_text_channel(ctx.guild, 884066848822427708))
+        await self.members_manager.set_chat_channel(ctx, member, await get_text_channel(ctx.guild, 884066992762523649))
+        
+        # add channel
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
+        channel = self.channels_manager.channels[channel_id]
+        
+        member_name = "aruran"
+        channel_id = "UCKeAhJvy8zgXWbh9duVjIaQ"
+        await self.members_manager.remove_member(ctx, member_name)
+        await self.check()
+
+        # add member
+        await self.members_manager.add_member(ctx, member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.members_manager.set_emoji(ctx, member, "🍕")
+        await self.members_manager.set_notify_channel(ctx, member, await get_text_channel(ctx.guild, 884066848822427708))
+        await self.members_manager.set_chat_channel(ctx, member, await get_text_channel(ctx.guild, 884066992762523649))
+        
+        # add channel
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
+        channel = self.channels_manager.channels[channel_id]
+
+        await self.check()
+        await self.streams_manager.add_collab(ctx, "KaIS3y6pONU,mayyqWvsCG8")
+        await self.check()
+        # await self.streams_manager.add_collab(ctx, "IwqcjU5V2Xg")

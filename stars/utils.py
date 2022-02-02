@@ -77,7 +77,7 @@ def get_role(guild: discord.Guild, id: int) -> discord.Role:
     return get(guild.roles, id=id)
     
 def get_roles_str(guild: discord.Guild, ids: List[int]) -> str:
-    if get_roles_str:
+    if ids:
         role_mentions = []
         for id in ids:
             role = get_role(guild, id)
@@ -102,7 +102,7 @@ def get_textchannel_id(textchannel: discord.TextChannel):
 def getEmoji(guild_emojis, ori_emoji):
     # check guild
     for e in guild_emojis:
-        if e.id in ori_emoji and e.name in ori_emoji:
+        if str(e.id) in ori_emoji and e.name in ori_emoji:
             return e
     # check emoji dictionary
     import emoji
@@ -131,7 +131,6 @@ async def add_waiting_reaction(bot, user: discord.User, message: discord.Message
                 from redbot.core.utils.predicates import ReactionPredicate
                 r, u = await bot.wait_for(
                     event, check=ReactionPredicate.with_emojis(emojis, message, user))
-                await message.channel.send(str(r.emoji))
                 if r.emoji == done_emoji:
                     break
                 elif r.emoji == cancel_emoji:

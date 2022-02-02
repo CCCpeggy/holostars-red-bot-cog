@@ -200,6 +200,8 @@ class GuildCollabStream:
         self._info_update: bool = kwargs.pop("info_update", True)
         self.description: str = kwargs.pop("description", None)
         self.time: datetime = Time.to_datetime(kwargs.pop("time", None))
+        self._members: List["Member"] = kwargs.pop("members")
+        self.member_names: List[str] = [member.name for member in self._members]
         self._saved_func = kwargs.pop("saved_func", None)
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
 
@@ -212,10 +214,24 @@ class GuildCollabStream:
     def is_valid(self) -> bool:
         not_valid_guild_stream_ids = []
         for id, guild_stream in self._guild_streams.items():
-            if not guild_stream or not guild_stream.is_valid():
-                not_valid_guild_stream_ids.append(id)
-        if len(not_valid_guild_stream_ids) == len(self._guild_streams) \
-            and not Time.is_time_in_future_range(self.time, days=7):
+            if not guild_stream:
+                log.debug(f"reason 1: {id}")
+                pass
+            elif not guild_stream.is_valid():
+                log.debug(f"reason 2: {id}")
+                pass
+            elif not guild_stream._guild_collab_stream:
+                log.debug(f"reason 3: {id}")
+                pass
+            elif guild_stream._guild_collab_stream.id != self.id:
+                log.debug(f"reason 4: {id}")
+                pass
+            else:
+                continue
+            not_valid_guild_stream_ids.append(id)
+        if len(not_valid_guild_stream_ids) == len(self._guild_streams):
+            return False
+        if not Time.is_time_in_future_range(self.time, days=7):
             return False
         # for guild_stream_id in not_valid_guild_stream_ids:
         #     self.guild_stream_ids.remove(guild_stream_id)
@@ -264,6 +280,21 @@ class GuildCollabStream:
         message_format = message_format.replace("{description}", get_description(self))
         message_format = message_format.replace("{new_line}", "\n")
         return message_format
+    
+    def add_guild_stream(self, guild_stream: "GuildStream"):
+        if guild_stream.id not in self.guild_stream_ids:
+            self.guild_stream_ids.append(guild_stream.id)
+            self._guild_streams[guild_stream.id] = guild_stream
+            guild_stream._guild_collab_stream = self
+            guild_stream.guild_collab_stream_id = self.id
+            self.add_member(guild_stream._member)
+            self._info_update = True
+    
+    def add_member(self, member: "Member"):
+        if member.name not in self.member_names:
+            self.member_names.append(member.name)
+            self._members.append(member)
+            self._info_update = True
 
     def __repr__(self):
         if self.is_valid():
@@ -275,6 +306,8 @@ class GuildCollabStream:
                 f"> 待機台時間：{self.time}",
                 f"> 資料更新：{self._info_update}",
                 f"> 狀態：{self._status}",
+                f"> members：{self.member_names}",
+                f"> guild_stream{self.guild_stream_ids}",
             ]
         else:
             data = [
@@ -322,11 +355,37 @@ class GuildStreamsManager():
         guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
         return guild_members_manager.members.get(member_name, None)
     
+    async def add_guild_stream_to_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream", stream_ids: List[str]):
+        for id in stream_ids:
+            guild_stream = self.get_guild_stream(id)
+            if guild_stream:
+                guild_collab_stream.add_guild_stream(guild_stream)
+            else:
+                log.error(f"not found guild stream by {id}")
+        await list(guild_collab_stream._guild_streams.values())[0]._saved_func()
+        await guild_collab_stream._saved_func()
+    
+    async def add_member_to_guild_collab_stream(self, guild_collab_stream: "GuildCollabStream", member_names: List[str]):
+        guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
+        for name in member_names:
+            if name not in guild_members_manager.members:
+                log.error(f"{name} not in members")
+            if name in guild_collab_stream.member_names:
+                continue
+            member = guild_members_manager.members[name]
+            guild_collab_stream.add_member(member)
+        await guild_collab_stream._saved_func()
+    
     def get_guild_stream(self, id: str)  -> "GuildStream":
         return self.guild_streams.get(id, None)
     
     def get_guild_collab_stream(self, id: str)  -> "GuildCollabStream":
         return self.guild_collab_streams.get(id, None)
+
+    def get_guild_collab_stream_by_stream_id(self, id: str)  -> "GuildCollabStream":
+        if id not in self.guild_streams:
+            return None
+        return self.guild_streams[id]._guild_collab_stream
 
     async def add_guild_stream(self, stream_id, save=True, **kwargs) -> "GuildStream":
         if stream_id in self.guild_streams:
@@ -373,32 +432,44 @@ class GuildStreamsManager():
             log.debug("guild_stream_ids 長度為 0，沒有新增 guild_collab_stream 成功")
             return None
 
+        # get guild streams
         guild_streams = {}
         for guild_stream_id in guild_stream_ids:
             guild_stream = self.get_guild_stream(guild_stream_id)
             if guild_stream:
                 guild_streams[guild_stream_id] = guild_stream
-                if not guild_stream.guild_collab_stream_id:
-                    continue
-            log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
-            return None
-        member: "Member" = await self.get_stream_belong_member(guild_stream_id)
-        chat_text_channel = kwargs.pop("standby_text_channel", member.chat_text_channel)
+            #     if not guild_stream.guild_collab_stream_id:
+            #         continue
+            # log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
+            # return None
+        
+        # get members
+        member_names = kwargs.pop("member_names", None)
+        members = [guild_stream._member for guild_stream in guild_streams.values()]
+        if member_names:
+            guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
+            members += [guild_members_manager.members[name] for name in member_names if name in guild_members_manager.members]
+        members = list(set(members))
+            
+        chat_text_channel = kwargs.pop("standby_text_channel", members[0].chat_text_channel)
+        
+        # create guild_collab_stream
         guild_collab_stream = GuildCollabStream(
             bot=self.bot,
             guild=self.guild,
-            guild_stream_ids=guild_stream_ids,
+            members=members,
+            guild_stream_ids=list(guild_streams.keys()),
             guild_streams=guild_streams,
             standby_text_channel=get_textchannel_id(chat_text_channel),
             saved_func=self.save_guild_collab_streams,
             **kwargs
         )
         await guild_collab_stream.initial()
-        if False and not guild_collab_stream.is_valid():
-            log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
-            return None
         for guild_stream in guild_streams.values():
             guild_stream.set_guild_collab_stream(guild_collab_stream)
+        if not guild_collab_stream.is_valid():
+            log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
+            return None
         self.guild_collab_streams[guild_collab_stream.id] = guild_collab_stream
         if save:
             await self.save_guild_collab_streams()
@@ -426,18 +497,18 @@ class GuildStreamsManager():
         remove_guild_stream_ids = []
         for id, guild_stream in self.guild_streams.items():
             if not guild_stream.is_valid():
+                self.guild_streams[id]._guild_collab_stream = None
                 remove_guild_stream_ids.append(id)
         for id in remove_guild_stream_ids:
             del self.guild_streams[id]
 
-        def delete_not_valid_guild_collab_stream(self) -> None:
-            remove_guild_collab_stream_ids = []
-            for id, guild_collab_stream in self.guild_collab_streams.items():
-                if not guild_collab_stream.is_valid():
-                    remove_guild_collab_stream_ids.append(id)
-            for id in remove_guild_collab_stream_ids:
-                self.guild_collab_streams.pop(id)
-        delete_not_valid_guild_collab_stream(self)
+        # delete not valid guild collab stream
+        remove_guild_collab_stream_ids = []
+        for id, guild_collab_stream in self.guild_collab_streams.items():
+            if not guild_collab_stream.is_valid():
+                remove_guild_collab_stream_ids.append(id)
+        for id in remove_guild_collab_stream_ids:
+            del self.guild_collab_streams[id]
 
         for guild_stream in self.guild_streams.values():
             guild_stream._info_update = False
@@ -551,27 +622,79 @@ class StreamsManager(commands.Cog):
         pass
 
     # set specify channel to textchannel
+    @stream_group.command(name="notify_textchannel")
+    async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+        guild_streams_manager = self.get_guild_manager(self.guild)
+        guild_stream = guild_streams_manager.get_guild_stream(stream_id)
+        guild_stream.notify_text_channel = text_channel
+        await self.save_streams()
+        await Send.send(ctx, str(guild_stream))
+    
+    @stream_group.command(name="standby_textchannel")
+    async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+        guild_streams_manager = self.get_guild_manager(self.guild)
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id[stream_id]
+        guild_collab_stream.standby_text_channel = text_channel
+        await self.save_streams()
+        await Send.send(ctx, str(guild_collab_stream))
     
     # set collab - by channel, video (exist channel or not exist)
+    
+    @stream_group.group(name="collab")
+    async def collab_group(self, ctx: commands.Context):
+        pass
+    
+    @collab_group.command(name="create")
+    async def add_collab(self, ctx: commands.Context, stream_ids: str, chat_channel: discord.TextChannel=None):
+        guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        member_names = [guild_stream._member.name for guild_stream in guild_streams_manager.guild_streams.values() if guild_stream.id in stream_ids]
+        
+        # get member by reaction
+        emoji_member_name = {}
+        for member in guild_members_manager.members.values():
+            if member.emoji and member.name not in member_names:
+                emoji_member_name[member.emoji] = member.name
+        emojis = await add_waiting_reaction(self.bot, ctx.author, ctx.message, list(emoji_member_name.keys()))
+        member_names += [v for k, v in emoji_member_name.items() if k in emojis]
+        
+        # get host guild collab stream
+        stream_ids = stream_ids.split(",")
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_ids[0])
+        
+        if guild_collab_stream:
+            await guild_streams_manager.add_guild_stream_to_guild_collab_stream(guild_collab_stream, stream_ids)
+            await guild_streams_manager.add_member_to_guild_collab_stream(guild_collab_stream, member_names)
+            await Send.update_completed(ctx, "guild_collab_stream", guild_collab_stream)
+        else:
+            data = {}
+            if chat_channel:
+                data["standby_text_channel"] = chat_channel
+            data["member_names"] = member_names
+            data["time"] = guild_streams_manager.get_guild_stream(stream_ids[0])._stream.time
+            guild_collab_stream = await guild_streams_manager.add_guild_collab_stream(stream_ids, **data)
+            if guild_collab_stream:
+                await Send.add_completed(ctx, "guild_collab_stream", guild_collab_stream)
+            else:
+                await Send.data_error(ctx, "guild_collab_stream")
+
     # set no send
     @stream_group.command(name="notify_status")
     async def set_notify_status(self, ctx: commands.Context, stream_id: str, status: bool):
         guild_streams_manager = self.get_guild_manager(self.guild)
-        for guild_stream in guild_streams_manager.guild_streams.values():
-            if guild_stream.id == stream_id:
-                guild_stream.notify_msg_enable = status
-                await Send.send(ctx, str(guild_stream))
-                return
+        guild_stream = guild_streams_manager.get_guild_stream(stream_id)
+        guild_stream.notify_msg_enable = status
+        await self.save_streams()
+        await Send.send(ctx, str(guild_stream))
     
     @stream_group.command(name="standby_status")
     async def set_standby_status(self, ctx: commands.Context, stream_id: str, status: bool):
         guild_streams_manager = self.get_guild_manager(self.guild)
-        for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
-            for guild_stream in guild_collab_stream._guild_streams.values():
-                if guild_stream.id == stream_id:
-                    guild_collab_stream.standby_msg_enable = status
-                    await Send.send(ctx, str(guild_collab_stream ))
-                    return
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id[stream_id]
+        guild_collab_stream.standby_msg_enable = status
+        await self.save_streams()
+        await Send.send(ctx, str(guild_collab_stream ))
+
     # list
     @stream_group.command(name="list")
     async def set_standby_status(self, ctx: commands.Context, member: MemberConverter=None):
@@ -583,7 +706,9 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, "\n".join(data))
         data = []
         for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
-            if not member or member in [g._member for g in guild_collab_stream._guild_streams.values()]:                data.append(str(guild_collab_stream))
+            if not member or member in [g._member for g in guild_collab_stream._guild_streams.values()]:
+                data.append(str(guild_collab_stream))
+        await self.save_streams()
         await Send.send(ctx, "\n".join(data))
 
     # resend
@@ -591,14 +716,10 @@ class StreamsManager(commands.Cog):
     @stream_group.command(name="update")
     async def update_message(self, ctx: commands.Context, member: MemberConverter):
         update_guild_streams_manager = []
-        guild_streams_manager = self.get_guild_manager(self.guild)
-        for guild_collab_stream in guild_streams_manager.guild_collab_streams.values():
-            if guild_collab_stream._info_update:
-                update_guild_streams_manager.append(str(guild_collab_stream))
-                continue
-            for guild_stream in guild_collab_stream._guild_streams.values():
-                if guild_stream._member.name == member.name:
-                    guild_collab_stream._info_update = True
-                    update_guild_streams_manager.append(str(guild_collab_stream))
-                    break
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        for guild_stream in guild_streams_manager._guild_streams.values():
+            if guild_stream._member.name == member.name:
+                guild_stream._guild_collab_stream._info_update = True
+                update_guild_streams_manager.append(str(guild_stream._guild_collab_stream))
+        await self.save_streams()
         await Send.send(ctx, "all need update: " + ", ".join(update_guild_streams_manager))

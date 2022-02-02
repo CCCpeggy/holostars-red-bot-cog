@@ -70,16 +70,12 @@ class ChannelsManager(commands.Cog):
         pass
 
     @channel_group.command(name="add")
-    async def _add_channel(self, ctx: commands.Context, name: str, channel_type_name: str, channel_id: str):
+    async def _add_channel(self, ctx: commands.Context, member: MemberConverter, channel_type_name: str, channel_id: str):
         ChannelType = Channel.get_class_by_name(channel_type_name)
         if not ChannelType:
             await Send.data_error(ctx, "頻道類型錯誤", channel_type_name)
         if not ChannelType.check_channel_id(channel_id):
             await Send.data_error(ctx, "頻道 ID", channel_id)
-            return
-        member = await self.manager.members_manager.get_member(ctx.guild, name)
-        if member == None:
-            await Send.not_existed(ctx, "成員資料", name)
             return
         channel, successful = await self.add_channel(ChannelType, channel_id, True)            
         if successful:
@@ -87,9 +83,9 @@ class ChannelsManager(commands.Cog):
         else:
             await Send.already_existed(ctx, "頻道資料", channel)
         if await member.add_channel(channel_id):
-            await Send.add_completed(ctx, f"{name} 成員資料對於此頻道", channel)
+            await Send.add_completed(ctx, f"{member} 成員資料對於此頻道", channel)
         else:
-            await Send.already_existed(ctx, f"{name} 成員資料對於此頻道", channel)
+            await Send.already_existed(ctx, f"{member} 成員資料對於此頻道", channel)
 
     @channel_group.command(name="list")
     async def _list_channel(self, ctx: commands.Context, id: str=None, output_member: bool=False):
