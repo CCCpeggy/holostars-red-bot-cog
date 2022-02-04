@@ -15,12 +15,6 @@ class Channel:
         self.source_url: str = kwargs.pop("source_url", None)
         self.type = "Channel"
 
-        # async def async_load():
-        #     return
-        #     self.notify_text_channel: discord.TextChannel = await get_text_channel(self.bot, kwargs.pop("notify_text_channel", None))
-        #     self.chat_text_channel: discord.TextChannel = await get_text_channel(self.bot, kwargs.pop("chat_text_channel", None))
-        #     self.memeber_channel: discord.TextChannel = await get_text_channel(self.bot, kwargs.pop("memeber_channel", None))
-
     def __repr__(self):
         data = [
             f"{self.type}",

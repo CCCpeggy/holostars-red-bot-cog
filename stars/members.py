@@ -42,7 +42,6 @@ class GuildMembersManager():
                 channels=channels,
                 **kwargs
             )
-            await member.initial()
             self.members[name] = member
             if save:
                 await self.save_memebers()
@@ -242,20 +241,13 @@ class Member:
         self._channels: Dict[str, "Channel"] = kwargs.pop("channels", {})
         self._save_func = kwargs.pop("save_func", None)
 
-        self.notify_text_channel: discord.TextChannel = None
-        self.chat_text_channel: discord.TextChannel = None
-        self.memeber_text_channel: discord.TextChannel = None
-
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
         self._chat_text_channel_id: int = kwargs.pop("chat_text_channel", None)
         self._memeber_text_channel_id: int = kwargs.pop("memeber_text_channel", None)
 
-    async def initial(self):
-        async def load_channels():
-            self.notify_text_channel = await get_text_channel(self._bot, self._notify_text_channel_id)
-            self.chat_text_channel = await get_text_channel(self._bot, self._chat_text_channel_id)
-            self.memeber_text_channel = await get_text_channel(self._bot, self._memeber_text_channel_id)
-        await load_channels()
+        self.notify_text_channel = get_text_channel(self._bot, self._notify_text_channel_id)
+        self.chat_text_channel = get_text_channel(self._bot, self._chat_text_channel_id)
+        self.memeber_text_channel = get_text_channel(self._bot, self._memeber_text_channel_id)
 
     def __repr__(self):
         data = [

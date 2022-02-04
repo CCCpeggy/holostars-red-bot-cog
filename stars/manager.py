@@ -133,8 +133,8 @@ class Manager(commands.Cog):
         await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 886496543320989756))
         await self.members_manager.set_color(ctx, member_name, 0x00, 0x47, 0xAB)
         await self.members_manager.set_emoji(ctx, member_name, ":performing_arts:")
-        await self.members_manager.set_notify_channel(ctx, member_name, await get_text_channel(ctx.guild, 884066848822427708))
-        await self.members_manager.set_chat_channel(ctx, member_name, await get_text_channel(ctx.guild, 884066992762523649))
+        await self.members_manager.set_notify_channel(ctx, member_name, get_text_channel(ctx.guild, 884066848822427708))
+        await self.members_manager.set_chat_channel(ctx, member_name, get_text_channel(ctx.guild, 884066992762523649))
         await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
         member = await self.members_manager.get_member(ctx.guild, member_name)
         
@@ -147,40 +147,60 @@ class Manager(commands.Cog):
     @test.command(name="collab")
     async def test_holodex(self, ctx):
         log.debug("-------------------test_collab---------------------")
-
-        member_name = "Anya"
-        channel_id = "UC727SQYUvx5pDDGQpTICNWg"
-        await self.members_manager.remove_member(ctx, member_name)
+        await self.send_manager.set_info_channel(ctx, get_text_channel(ctx.guild, 884066992762523649))
+        member_name1 = "Anya"
+        channel_id1 = "UC727SQYUvx5pDDGQpTICNWg"
+        
+        # remove member 1
+        await self.members_manager.remove_member(ctx, member_name1)
         await self.check()
-
-        # add member
-        await self.members_manager.add_member(ctx, member_name)
-        member = await self.members_manager.get_member(ctx.guild, member_name)
+        
+        # add member 1
+        await self.members_manager.add_member(ctx, member_name1)
+        member = await self.members_manager.get_member(ctx.guild, member_name1)
         await self.members_manager.set_emoji(ctx, member, "🆗")
-        await self.members_manager.set_notify_channel(ctx, member, await get_text_channel(ctx.guild, 884066848822427708))
-        await self.members_manager.set_chat_channel(ctx, member, await get_text_channel(ctx.guild, 884066992762523649))
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 884066848822427708))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 884066992762523649))
         
-        # add channel
-        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
-        channel = self.channels_manager.channels[channel_id]
+        # add channel 1
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id1)
+        channel = self.channels_manager.channels[channel_id1]
         
-        member_name = "aruran"
-        channel_id = "UCKeAhJvy8zgXWbh9duVjIaQ"
-        await self.members_manager.remove_member(ctx, member_name)
-        await self.check()
+        # set collab
+        from datetime import datetime
+        time = datetime(2022,2,4,17)
+        time = Time.add_timezone(time, 'Asia/Taipei')
+        await self.streams_manager.create_collab(ctx, time, get_text_channel(ctx.guild, 884066992762523649))
+        # member_name2 = "aruran"
+        # channel_id2 = "UCKeAhJvy8zgXWbh9duVjIaQ"
+        # await self.members_manager.remove_member(ctx, member_name2)
+        
+        # await self.check()
 
-        # add member
-        await self.members_manager.add_member(ctx, member_name)
-        member = await self.members_manager.get_member(ctx.guild, member_name)
-        await self.members_manager.set_emoji(ctx, member, "🍕")
-        await self.members_manager.set_notify_channel(ctx, member, await get_text_channel(ctx.guild, 884066848822427708))
-        await self.members_manager.set_chat_channel(ctx, member, await get_text_channel(ctx.guild, 884066992762523649))
+        # # add member 1
+        # await self.members_manager.add_member(ctx, member_name1)
+        # member = await self.members_manager.get_member(ctx.guild, member_name1)
+        # await self.members_manager.set_emoji(ctx, member, "🆗")
+        # await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 884066848822427708))
+        # await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 884066992762523649))
         
-        # add channel
-        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
-        channel = self.channels_manager.channels[channel_id]
+        # # add channel 1
+        # await self.channels_manager._add_channel(ctx, member, "holodex", channel_id1)
+        # channel = self.channels_manager.channels[channel_id1]
+        
+        # await self.check()
 
-        await self.check()
-        await self.streams_manager.add_collab(ctx, "KYGJX6is71M,mayyqWvsCG8")
-        await self.check()
-        # await self.streams_manager.add_collab(ctx, "IwqcjU5V2Xg")
+        # # add member 2
+        # await self.members_manager.add_member(ctx, member_name2)
+        # member = await self.members_manager.get_member(ctx.guild, member_name2)
+        # await self.members_manager.set_emoji(ctx, member, "🍕")
+        # await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 884066848822427708))
+        # await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 884066992762523649))
+        
+        # # add channel 2
+        # await self.channels_manager._add_channel(ctx, member, "holodex", channel_id2)
+        # channel = self.channels_manager.channels[channel_id2]
+
+        # await self.streams_manager.add_collab(ctx, "KYGJX6is71M")
+        # await self.check()
+        # # await self.streams_manager.add_collab(ctx, "IwqcjU5V2Xg")

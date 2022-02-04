@@ -17,7 +17,7 @@ def get_logger(level: int=logging.DEBUG)->logging.Logger:
     return _, log
 _, log = get_logger()
 
-async def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
+def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
     if isinstance(channel, int) or isinstance(channel, str):
         return place.get_channel(channel)
     return channel
@@ -109,6 +109,19 @@ def getEmoji(guild_emojis, ori_emoji):
     if ori_emoji in emoji.UNICODE_EMOJI['en']:
         return ori_emoji
     return None
+
+def do_event_in_time(bot, func, time: int, timeout_func=None, async_timeout_func=None):
+    import asyncio
+    async def event():
+        try:
+            await asyncio.wait_for(func(), timeout=time)
+        except asyncio.TimeoutError:
+            log.debug(f'{func} timeout!')
+            if timeout_func:
+                timeout_func()
+            if async_timeout_func:
+                await async_timeout_func()
+    bot.loop.create_task(event())
 
 async def add_reaction(message: discord.Message, emojis: List[str]):
     import contextlib
@@ -222,6 +235,19 @@ class ColorChannelonverter(commands.Converter):
             raise commands.BadArgument(num + " need to between 0 to 255.")
         except:
             raise commands.BadArgument(arg + " is invaild integer.")
+        
+
+class FutureDatetimeConverter(commands.Converter):
+    from datetime import datetime
+    async def convert(self, ctx: commands.Context, arg_time: str) -> datetime:
+        try:
+            time = Time.to_datetime(arg_time)
+        except:
+            raise commands.BadArgument(arg_time + " is invalid time!!")
+        Time.add_timezone(time, "Asia/Taipei")
+        if Time.get_diff_from_now_total_sec(time) <= 0:
+            raise commands.BadArgument(arg_time + " is pass time!!")
+        return time
 
 def get_url_rnd(url):
     """Appends a random parameter to the url to avoid Discord's caching"""
@@ -364,8 +390,10 @@ class GetSendStr:
 from datetime import datetime
 class Time:
     @staticmethod
-    def add_timezone(time: datetime) -> datetime:
+    def add_timezone(time: datetime, zone: str=None) -> datetime:
         import pytz
+        if zone:
+            return pytz.timezone(zone).localize(time)
         return pytz.utc.localize(time)
 
     @staticmethod
@@ -426,4 +454,3 @@ class Time:
         from dateutil.relativedelta import relativedelta
         delta_time = relativedelta(months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
         return (Time.get_now() + delta_time) > time
-

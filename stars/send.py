@@ -26,7 +26,8 @@ class SendManager(commands.Cog):
         "standby_message_format": "{time}\n{title}\n{url}",
         "notify_message_format": "{url} is start, {chat_channel}",
         "collab_notify_message_format": "someone is start, {chat_channel}",
-        "notify_embed_enable": True
+        "notify_embed_enable": True,
+        "info_text_channel": None
     }
 
     def __init__(self, bot: Red, manager: "Manager"):
@@ -86,8 +87,17 @@ class SendManager(commands.Cog):
         """
         await self.config.guild(ctx.guild).collab_notify_message_format.set(message_format)
         await Send.set_up_completed(ctx, "notify 訊息格式", message_format)
+        
+    @message_group.command(name="info_channel")
+    async def set_info_channel(self,  ctx: commands.Context, text_channel: discord.TextChannel):
+        await self.config.guild(ctx.guild).info_text_channel.set(text_channel.id)
+        await Send.set_up_completed(ctx, "info channel ", text_channel)
 
 
+    async def get_info_channel(self, guild):
+        info_text_channel_id = await self.config.guild(guild).info_text_channel()
+        return get_text_channel(guild, info_text_channel_id)
+        
     # async def get_start_channel(self, guild:discord.Guild):
     #     return await self.config.guild(guild).stream_start_message_format.get()
 
