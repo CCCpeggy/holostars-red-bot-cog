@@ -728,7 +728,6 @@ class StreamsManager(commands.Cog):
             if guild_collab_stream.check_guild_stream_fit(guild_stream):
                 await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, ctx, guild_stream, guild_collab_stream, False)
                 
-    
     @collab_group.command(name="create")
     async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: discord.TextChannel):
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
@@ -759,6 +758,26 @@ class StreamsManager(commands.Cog):
             if guild_collab_stream.check_guild_stream_fit(guild_stream):
                 await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, ctx, guild_stream, guild_collab_stream, False)
 
+    @collab_group.command(name="remove_stream")
+    async def remove_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
+        if guild_stream not in guild_collab_stream._guild_streams:
+            await Send.not_existed(ctx, "guild_collab_stream", guild_stream)
+        else:
+            guild_collab_stream.remove_guild_stream(guild_stream)
+            await guild_stream._saved_func()
+            await guild_collab_stream._saved_func()
+            await Send.remove_completed(ctx, "guild_stream", guild_collab_stream)
+    
+    @collab_group.command(name="add_stream")
+    async def remove_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
+        if guild_stream in guild_collab_stream._guild_streams:
+            await Send.already_existed(ctx, "guild_collab_stream", guild_stream)
+        else:
+            guild_collab_stream.add_guild_stream(guild_stream)
+            await guild_stream._saved_func()
+            await guild_collab_stream._saved_func()
+            await Send.add_completed(ctx, "guild_stream", guild_collab_stream)
+    
     # set no send
     @stream_group.command(name="notify_status")
     async def set_notify_status(self, ctx: commands.Context, stream_id: str, status: bool):

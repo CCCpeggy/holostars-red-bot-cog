@@ -248,6 +248,27 @@ class FutureDatetimeConverter(commands.Converter):
         if Time.get_diff_from_now_total_sec(time) <= 0:
             raise commands.BadArgument(arg_time + " is pass time!!")
         return time
+    
+class GuildCollabStreamConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, arg_id: str) -> "GuildCollabStream":
+        from .manager import streams_manager
+        guild_streams_manager = await streams_manager.get_guild_manager(ctx.guild)
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream(arg_id)
+        if guild_collab_stream:
+            return guild_collab_stream
+        else:
+            raise commands.BadArgument(arg_id + " is not found")
+ 
+class GuildStreamConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, arg_id: str) -> "GuildStream":
+        from .manager import streams_manager
+        guild_streams_manager = await streams_manager.get_guild_manager(ctx.guild)
+        guild_stream = guild_streams_manager.get_guild_stream(arg_id)
+        if guild_stream:
+            return guild_stream
+        else:
+            raise commands.BadArgument(arg_id + " is not found")
+               
 
 def get_url_rnd(url):
     """Appends a random parameter to the url to avoid Discord's caching"""
