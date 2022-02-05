@@ -27,9 +27,10 @@ class User():
         self.roles: Dict[int, UserRole] = {}
 
         roles = kwargs.pop("roles", {})
-        for role_id, user_role in roles.items():
-            self.add_role(role=role_id, **user_role)
-            pass
+        if roles:
+            for role_id, user_role in roles.items():
+                self.add_role(role=role_id, **user_role)
+                pass
         self._save_func = _save_func
         self._bot.loop.create_task(_save_func())
     
@@ -42,6 +43,13 @@ class User():
                 **kwargs
             )
             self.roles[role_id] = user_role
+            return user_role
+        return None
+        
+    def remove_role(self, role: Union[discord.Role, int, str]):
+        role_id = to_role_id(role)
+        user_role = self.roles.pop(role_id, None)
+ 
         
     def export(self):
         raw_data = {}

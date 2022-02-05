@@ -124,7 +124,7 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
                             "author": comment.get('authorText', {}).get('simpleText', ''),
                             "photo": comment['authorThumbnail']['thumbnails'][-1]['url'],
                         }
-                    return False
+                    return None
     return None
             # print()
             # print(''.join([c['text'] for c in comment['contentText'].get('runs', [])]))

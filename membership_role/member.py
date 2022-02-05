@@ -18,13 +18,15 @@ _ = Translator("StarsStreams", __file__)
 log = logging.getLogger("red.core.cogs.Temprole")
 log.setLevel(logging.DEBUG)
 
-class Member(commands.Converter):
+class Member():
     
     def __init__(self, bot, _save_func, **kwargs):
         self._bot: str = bot
         self.channel_id: str = kwargs.pop("channel_id")
         self.names: str = kwargs.pop("names")
         self.membership_type: Dict[str, int] = {} # type_name, role_id
+        self.text_channel_id: int = kwargs.pop("text_channel_id", None)
+        self._text_channel: int = get_text_channel(self._bot, self.text_channel_id)
         
         membership_type = kwargs.pop("membership_type", {})
         for type_name, role in membership_type.items():

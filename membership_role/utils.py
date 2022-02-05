@@ -2,18 +2,23 @@
 import discord
 
 # redbot
-from dis import disco
-from xmlrpc.client import DateTime
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 
 # other
 import logging
 from typing import *
+from .errors import *
 
 # get logger
 _ = Translator("StarsStreams", __file__)
 log = logging.getLogger("red.core.cogs.Temprole")
 log.setLevel(logging.DEBUG)
+
+def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
+    if isinstance(channel, int) or isinstance(channel, str):
+        return place.get_channel(channel)
+    return channel
 
 def to_user_id(user: Union[discord.Member, discord.User, int, str]) -> int:
     if isinstance(user, (discord.User, discord.Member)):
@@ -131,17 +136,25 @@ class Time:
         if zone:
             return pytz.timezone(zone).localize(time)
         return pytz.utc.localize(time)
+    
+    @staticmethod
+    def get_now():
+        from datetime import timezone
+        return datetime.now(timezone.utc)
 
     @staticmethod
-    def to_datetime(time: Union[str, datetime, None]) -> datetime:
+    def to_datetime(time: Union[str, datetime, None]) -> Optional[datetime]:
         if isinstance(time, datetime):
             return time
         elif isinstance(time, str):
             from dateutil.parser import parse as parse_time
-            time = parse_time(time)
-            if time.tzinfo == None:
-                time = Time.add_timezone(time)
-            return time
+            try:
+                time = parse_time(time)
+                if time.tzinfo == None:
+                    time = Time.add_timezone(time)
+                return time
+            except:
+                pass
         return None
 
     @staticmethod
@@ -149,7 +162,7 @@ class Time:
         return time.isoformat()
 
     @staticmethod
-    def is_future(time: DateTime) -> bool:
+    def is_future(time: datetime) -> bool:
         if time.tzinfo == None:
             time = Time.add_timezone(time)
         return time > Time.get_now()
@@ -162,6 +175,13 @@ class Time:
         delta_time = relativedelta(months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
         return Time.get_now() + delta_time
 
+    @staticmethod
+    def is_time_in_future_range(time: datetime, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0) -> bool:
+        if time.tzinfo == None:
+            time = Time.add_timezone(time)
+        from dateutil.relativedelta import relativedelta
+        delta_time = relativedelta(months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
+        return (Time.get_now() + delta_time) > time
 
 from redbot.core import commands
 class UserConverter(commands.Converter):
@@ -182,3 +202,108 @@ class MemberConverter(commands.Converter):
             if argment in member.names:
                 return member
         raise commands.BadArgument(argment + " not found.")
+    
+async def add_reaction(message: discord.Message, emojis: List[str]):
+    import contextlib
+    with contextlib.suppress(discord.NotFound):
+        for emoji in emojis:
+            await message.add_reaction(emoji)
+
+async def add_bool_reaction(bot, message: discord.Message) -> Tuple[bool, discord.Member]:
+    done_emoji = "\N{WHITE HEAVY CHECK MARK}"
+    cancel_emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
+    emojis = [done_emoji, cancel_emoji]
+    import asyncio
+    task = asyncio.create_task(add_reaction(message, emojis))
+
+    try:
+        while True:
+            from redbot.core.utils.predicates import ReactionPredicate
+            from redbot.core.utils.mod import is_mod_or_superior
+            (r, u) = await bot.wait_for(
+                "reaction_add",
+                check=ReactionPredicate.with_emojis(emojis, message),
+                timeout=86400  # 1 天
+            )
+            if await is_mod_or_superior(bot, u):
+                if u != message.author or await bot.is_owner(u):
+                    break
+    except asyncio.TimeoutError:
+        await message.remove_reaction(done_emoji)
+        raise ReactionTimeout
+
+    if task is not None:
+        task.cancel()
+    if r.emoji == done_emoji:
+        await message.remove_reaction(cancel_emoji, bot.user)
+        return True, u
+    await message.remove_reaction(done_emoji, bot.user)
+    return False, u
+
+def is_specify_text_channel(ctx: commands.Context, text_channel_id: discord.TextChannel):
+    return ctx.channel.id == text_channel_id
+
+def is_bot(ctx: commands.Context):
+    return ctx.author.bot
+
+def get_member_by_name(name: str):
+    from .membership_role import members
+    for member in members.values():
+        if name in member.names:
+            return member
+    return None
+
+def get_youtube_channel_id(text: str):
+    import re
+    result = re.search(r"UC[-_0-9A-Za-z]{21}[AQgw]", text)
+    if result:
+        return result.group()
+    return None
+
+def get_youtube_video_id(text: str):
+    import re
+    result = re.search(r"(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)(?P<video_id>[\w\-_]+)\&?", text)
+    if result:
+        return result.groupdict()["video_id"]
+    result = re.search(r"[\w\-_]+", text)
+    if result:
+        return result.group()
+    return None
+
+def parse_audit_str(content: str):
+    date = None
+    member = None
+    channel_id = None
+    video_id = None
+    content = convert_to_half(content)
+    content = replace_redundant_char(content)
+    for s in content.split('\n'):
+        tmp = s.split(':')
+        if len(tmp) != 2:
+            continue
+        key, value = tmp
+        if key == "頻道":
+            value = value.lower()
+            member = get_member_by_name(value)
+            if not member:
+                raise WrongChannelName
+        elif key == "日期":
+            date = Time.to_datetime(value)
+            if not date:
+                raise WrongDateFormat
+        elif key == "YT":
+            channel_id = get_youtube_channel_id(value)
+        elif key == "影片":
+            video_id = get_youtube_video_id(value)
+    if not date:
+        raise NoDate
+    if not member:
+        raise NoChannelName
+    return {
+        "date": date,
+        "member": member,
+        "channel_id": channel_id,
+        "video_id": video_id,
+    }
+    
+

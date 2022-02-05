@@ -1,6 +1,7 @@
 
 # redbot
 from datetime import datetime
+from distutils.log import debug
 from operator import imod
 from redbot.core.i18n import Translator
 from redbot.core.bot import Red
@@ -23,18 +24,37 @@ class UserRole():
         self.video_id: str = kwargs.pop("video_id", None)
         self.comment_id: str = kwargs.pop("comment_id", None)
         self.end_time: datetime = Time.to_datetime(kwargs.pop("end_time"))
+        self.is_valid: bool = kwargs.pop("is_valid", False)
     
-    def check(self) -> bool:
+    async def check(self) -> bool:
+        if not self.is_valid:
+            return False
         if Time.is_future(self.end_time):
             return True
         if self.channel_id == None:
             return False
-        data = get_comment_info(self.video_id, channel_id=self.channel_id, comment_id=self.comment_id)
+        data = await get_comment_info(self.video_id, channel_id=self.channel_id, comment_id=self.comment_id)
         if data == None:
-            return None
+            data = await get_comment_info(self.video_id, channel_id=self.channel_id)
+            if data == None:
+                return None
         self.comment_id = data["comment_id"]
         self.end_time = Time.add_time(self.end_time, months=1)
+        return True
+    
+    async def first_check(self) -> bool:
+        if not Time.is_future(self.end_time):
+            return False
+        if self.channel_id == None and self.video_id == None :
+            return True
+        data = await get_comment_info(self.video_id, channel_id=self.channel_id)
+        if not data:
+            return None
+        self.comment_id = data["comment_id"]
         return data
+    
+    def valid(self):
+        self.is_valid = True
 
     def __repr__(self) -> str:
         return str(ConvertToRawData.export_class(self))
