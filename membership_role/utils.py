@@ -164,7 +164,7 @@ class Time:
             time = Time.add_timezone(time)
         from dateutil.relativedelta import relativedelta
         delta_time = relativedelta(months=months, weeks=weeks, days=days, hours=hours, minutes=minutes, seconds=seconds) 
-        return Time.get_now() + delta_time
+        return time + delta_time
 
     @staticmethod
     def is_time_in_future_range(time: datetime, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0) -> bool:
@@ -276,8 +276,9 @@ def is_bot(ctx: commands.Context):
 def get_member_by_name(name: str):
     from .membership_role import members
     for member in members.values():
-        if name in member.names:
-            return member
+        for n in member.names:
+            if n in name:
+                return member
     return None
 
 def get_youtube_channel_id(text: str):

@@ -35,9 +35,9 @@ class MembershipRoleManger(commands.Cog):
         "members": {}, # channel_id, member
         "users": {}, # user_id, user
         
-        "membership_input_channel_id": 864755730677497876,
-        "membership_result_channel_id": 884066848822427708,
-        "membership_command_channel_id": 884066992762523649,
+        "membership_input_channel_id": None,
+        "membership_result_channel_id": None,
+        "membership_command_channel_id": None,
     }
 
     guild_defaults = {
@@ -121,7 +121,7 @@ class MembershipRoleManger(commands.Cog):
                 log.debug(f"remove user {user_id}")
                 self.remove_user(user_id)
             await self.save_users()
-            await asyncio.sleep(5)
+            await asyncio.sleep(3600)
     
     def add_member(self, channel_id: str, **kwargs) -> Optional[Member]:
         if channel_id in self.members:
@@ -221,7 +221,7 @@ class MembershipRoleManger(commands.Cog):
             await ctx.send("failed")
             
     
-    @commands.group(name="member_type")
+    @role_group.group(name="member_type")
     async def member_type_group(self, ctx: commands.Context):
         pass
 
@@ -249,6 +249,30 @@ class MembershipRoleManger(commands.Cog):
         await self.add_membership_type(ctx, member, "アランファミリー役員会", papa_3)
         log.debug("----------------end------------------")
         
+    @role_group.command(name='input')
+    async def set_input(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
+        """設定使用者輸入會員資料的文字頻道"""
+        guild = ctx.guild
+        self.input_channel = text_channel
+        await self.config.membership_input_channel_id.set(text_channel.id)
+        await ctx.send(_(f"已設定"))
+
+    @role_group.command(name='result')
+    async def _set_result(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
+        """設定回覆使用者審核結果的文字頻道"""
+        guild = ctx.guild
+        self.result_channel = text_channel
+        await self.config.membership_result_channel_id.set(text_channel.id)
+        await ctx.send(_(f"已設定"))
+
+    @role_group.command(name='command')
+    async def set_command(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
+        """設定下會員設定指令的文字頻道"""
+        guild = ctx.guild
+        self.command_channel = text_channel
+        await self.config.membership_command_channel_id.set(text_channel.id)
+        await ctx.send(_(f"已設定"))    
+    
     @role_group.command(name="test")
     async def test(self, ctx: commands.Context):
         log.debug("----------------start------------------")
@@ -296,6 +320,10 @@ class MembershipRoleManger(commands.Cog):
     @commands.guild_only()
     async def on_message(self, message: discord.Message):
         ctx = await self.bot.get_context(message)
+        if message.content.startswith("-"):
+            return
+        if not (self.result_channel and self.command_channel and self.result_channel):
+            return
         if not is_specify_text_channel(ctx, text_channel_id=self.input_channel.id):
             return
         if is_bot(ctx):
@@ -320,7 +348,7 @@ class MembershipRoleManger(commands.Cog):
         try:
             info = parse_audit_str(message.content)
             print(info)
-            if not Time.is_future(info["date"]):
+            if not Time.is_future(Time.add_time(info["date"], hours=16)):
                 raise PassDate
             if not Time.is_time_in_future_range(info["date"], months=1):
                 raise FutureDate
@@ -328,6 +356,7 @@ class MembershipRoleManger(commands.Cog):
             member: Member = info["member"]
             
             embed=None
+            comment_data=None
             if info["video_id"]:
                 # valid channel
                 if not await check_video_owner(member.channel_id, info["video_id"]):

@@ -29,9 +29,10 @@ class UserRole():
     async def check(self) -> bool:
         if not self.is_valid:
             return False
+        log.debug(str(Time.add_time(self.end_time, hours=16)) + "/" + str(Time.is_future(Time.add_time(self.end_time, hours=16))))
         if Time.is_future(Time.add_time(self.end_time, hours=16)):
             return True
-        if self.channel_id == None and self.video_id == None:
+        if self.channel_id == None or self.video_id == None:
             return False
         data = await get_comment_info(self.video_id, channel_id=self.channel_id, comment_id=self.comment_id)
         if data == None:
