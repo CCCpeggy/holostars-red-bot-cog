@@ -94,19 +94,18 @@ async def check_video_owner(channel_id: str, video_id: str) -> bool:
         "channel_id": channel_id,
         "id": video_id
     }
-    data = get_http_data("https://holodex.net/api/v2/videos", params)
-    return len(data) > 0
+    log.debug(params)
+    data = await get_http_data("https://holodex.net/api/v2/videos", params)
+    log.debug(data)
+    return data and len(data) > 0
 
 async def get_http_data(url, params={}):
     import aiohttp
-    from .errors import MException
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as r:
             data = await r.json()
             try:
                 check_api_errors(data)
-            except MException as e:
-                log.error(e.get_message())
             except Exception as e:
                 log.error(e)
             else:
@@ -114,17 +113,9 @@ async def get_http_data(url, params={}):
     return None
 
 def check_api_errors(data: dict):
-    from .errors import APIError, InvalidYoutubeCredentials, YoutubeQuotaExceeded
+    from .errors import APIError
     if "error" in data:
         error_code = data["error"]["code"]
-        if error_code == 400 and data["error"]["errors"][0]["reason"] == "keyInvalid":
-            raise InvalidYoutubeCredentials()
-        elif error_code == 403 and data["error"]["errors"][0]["reason"] in (
-            "dailyLimitExceeded",
-            "quotaExceeded",
-            "rateLimitExceeded",
-        ):
-            raise YoutubeQuotaExceeded()
         raise APIError(error_code, data)
 
 from datetime import datetime
@@ -226,8 +217,7 @@ async def add_bool_reaction(bot, message: discord.Message) -> Tuple[bool, discor
                 timeout=86400  # 1 天
             )
             if await is_mod_or_superior(bot, u):
-                if u != message.author or await bot.is_owner(u):
-                    break
+                break
     except asyncio.TimeoutError:
         await message.remove_reaction(done_emoji)
         raise ReactionTimeout
@@ -239,6 +229,43 @@ async def add_bool_reaction(bot, message: discord.Message) -> Tuple[bool, discor
         return True, u
     await message.remove_reaction(done_emoji, bot.user)
     return False, u
+
+def getEmoji(guild_emojis, ori_emoji):
+    # check guild
+    for e in guild_emojis:
+        if str(e.id) in ori_emoji and e.name in ori_emoji:
+            return e
+    # check emoji dictionary
+    import emoji
+    if ori_emoji in emoji.UNICODE_EMOJI['en']:
+        return ori_emoji
+    return None
+
+async def add_waiting_reaction(bot, message: discord.Message, emojis: List[str]):
+    import asyncio
+    task = asyncio.create_task(add_reaction(message, emojis))
+    emojis = [getEmoji(message.guild.emojis, e) for e in emojis]
+    try:
+        while True:
+            from redbot.core.utils.predicates import ReactionPredicate
+            from redbot.core.utils.mod import is_mod_or_superior
+            (r, u) = await bot.wait_for(
+                "reaction_add",
+                check=ReactionPredicate.with_emojis(emojis, message),
+                timeout=3600  # 1 hour
+            )
+            if await is_mod_or_superior(bot, u):
+                break
+    except asyncio.TimeoutError:
+        await message.clear_reactions()
+        raise ReactionTimeout
+
+    if task is not None:
+        task.cancel()
+    
+    await message.clear_reactions()
+    await add_reaction(message, [r])
+    return emojis.index(r.emoji)
 
 def is_specify_text_channel(ctx: commands.Context, text_channel_id: discord.TextChannel):
     return ctx.channel.id == text_channel_id

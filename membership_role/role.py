@@ -29,9 +29,9 @@ class UserRole():
     async def check(self) -> bool:
         if not self.is_valid:
             return False
-        if Time.is_future(self.end_time):
+        if Time.is_future(Time.add_time(self.end_time, hours=16)):
             return True
-        if self.channel_id == None:
+        if self.channel_id == None and self.video_id == None:
             return False
         data = await get_comment_info(self.video_id, channel_id=self.channel_id, comment_id=self.comment_id)
         if data == None:
@@ -41,18 +41,7 @@ class UserRole():
         self.comment_id = data["comment_id"]
         self.end_time = Time.add_time(self.end_time, months=1)
         return True
-    
-    async def first_check(self) -> bool:
-        if not Time.is_future(self.end_time):
-            return False
-        if self.channel_id == None and self.video_id == None :
-            return True
-        data = await get_comment_info(self.video_id, channel_id=self.channel_id)
-        if not data:
-            return None
-        self.comment_id = data["comment_id"]
-        return data
-    
+
     def valid(self):
         self.is_valid = True
 

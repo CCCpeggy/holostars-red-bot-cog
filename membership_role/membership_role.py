@@ -11,6 +11,7 @@ from redbot.core.i18n import cog_i18n, Translator
 # other
 import logging
 from typing import *
+import asyncio
 
 # local
 from .member import Member
@@ -35,8 +36,8 @@ class MembershipRoleManger(commands.Cog):
         "users": {}, # user_id, user
         
         "membership_input_channel_id": 864755730677497876,
-        "membership_result_channel_id": 864755730677497876,
-        "membership_command_channel_id": 864755730677497876,
+        "membership_result_channel_id": 884066848822427708,
+        "membership_command_channel_id": 884066992762523649,
     }
 
     guild_defaults = {
@@ -83,17 +84,49 @@ class MembershipRoleManger(commands.Cog):
             self.command_channel = get_text_channel(self.bot, command_channel_id)
             self.result_channel = get_text_channel(self.bot, result_channel_id)
             
+            await self.check()
+            
 
-        self.bot.loop.create_task(initial())
+        self.task: asyncio.Task = self.bot.loop.create_task(initial())
         
+
+    def cog_unload(self):
+        if self.task:
+            self.task.cancel()
+
     async def check(self):
-        pass
+        while True:
+            log.debug("--------check----------")
+            remove_user_ids = []
+            for user in self.users.values():
+                guild: discord.Guild = self.input_channel.guild
+                dc_user: discord.Member = guild.get_member(user.id)
+                if not dc_user:
+                    remove_user_ids.append(user.id)
+                
+                invalid_role_ids = []
+                for role_id, user_role in user.roles.items():
+                    if not await user_role.check():
+                        role: discord.Role = guild.get_role(int(role_id))
+                        await dc_user.remove_roles(role, reason=f"expiration date: {user_role.end_time}")
+                        if role not in dc_user.roles:
+                            invalid_role_ids.append(role_id)
+                
+                for role_id in invalid_role_ids:
+                    user.remove_role(role_id)
+                if len(user.roles) == 0:
+                    remove_user_ids.append(user.id)
+                await self.save_users()
+            for user_id in remove_user_ids:
+                log.debug(f"remove user {user_id}")
+                self.remove_user(user_id)
+            await self.save_users()
+            await asyncio.sleep(5)
     
     def add_member(self, channel_id: str, **kwargs) -> Optional[Member]:
-        # try:
         if channel_id in self.members:
             log.info(f"{channel_id} already exists")
-            raise Exception
+            return
         member = Member(
             bot=self.bot,
             channel_id=channel_id, 
@@ -102,27 +135,21 @@ class MembershipRoleManger(commands.Cog):
         )
         self.members[channel_id] = member
         return member
-        # except:
-        #     return None
     
     def remove_member(self, channel_id: str, **kwargs) -> None:
-        # try:
         if channel_id not in self.members:
             log.info(f"{channel_id} is not exists")
-            raise Exception
+            return
         del self.members[channel_id]
-        # except:
-        #     return
     
     async def save_members(self):
         await self.config.members.set(ConvertToRawData.dict(self.members))
    
     def add_user(self, id: Union[discord.Member, discord.User, int, str], **kwargs) -> Optional[User]:
-    # try:
         id = to_user_id(id)
         if id in self.users:
             log.info(f"{id} already exists")
-            # raise Exception
+            return None
         user = User(
             bot=self.bot,
             id=id, 
@@ -131,8 +158,6 @@ class MembershipRoleManger(commands.Cog):
         )
         self.users[id] = user
         return user
-    # except:
-    #     return None
     
     def remove_user(self, id: Union[discord.Member, discord.User, int, str], **kwargs) -> Optional[User]:
         id = to_user_id(id)
@@ -145,7 +170,7 @@ class MembershipRoleManger(commands.Cog):
         id = to_user_id(id)
         user = self.users.get(id, None)
         if not user:
-            log.info(f"{id} not exists")
+            log.info(f"___{id} not exists")
             return
         role = member.membership_type.get(type_name, None)
         if not role:
@@ -207,6 +232,22 @@ class MembershipRoleManger(commands.Cog):
             await ctx.send(f"add member type: {member}")
         else:
             await ctx.send(f"already exist: {type_name}")
+            
+    @role_group.command(name="init")
+    async def test_init(self, ctx: commands.Context):
+        log.debug("----------------start------------------")
+        from discord.utils import get
+        papa_1 = get(ctx.guild.roles, id=939752456299118612)
+        papa_2 = get(ctx.guild.roles, id=939752597886238780)
+        papa_3 = get(ctx.guild.roles, id=939752634607358002)
+        # add member
+        self.remove_member("UCKeAhJvy8zgXWbh9duVjIaQ")
+        await self._add_member(ctx, "UCKeAhJvy8zgXWbh9duVjIaQ", "aruran,アルランディス", self.input_channel)
+        member: Member = await MemberConverter.convert(_, ctx, "aruran")
+        await self.add_membership_type(ctx, member, "アランファミリー集会", papa_1)
+        await self.add_membership_type(ctx, member, "アランファミリー幹部会", papa_2)
+        await self.add_membership_type(ctx, member, "アランファミリー役員会", papa_3)
+        log.debug("----------------end------------------")
         
     @role_group.command(name="test")
     async def test(self, ctx: commands.Context):
@@ -259,15 +300,20 @@ class MembershipRoleManger(commands.Cog):
             return
         if is_bot(ctx):
             return
+        image_url = [a.url for a in message.attachments]
+        if len(image_url):
+            await self.command_channel.send("\n".join(image_url))
+        if message.content == "":
+            return
         await self.audit_membership(message)
 
     async def audit_membership(self, message):
         error_name = None
         handler_msg = "此為機器人自動偵測。"
-        err_msg = \
-"""請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。
-有任何疑問請至 <#863343338933059594>。
-{}"""
+        err_msg="\n".join([
+            "請重新檢查**__YT、頻道、日期、截圖__**後重新傳送審核資料。",
+            "有任何疑問請至 <#863343338933059594>",
+            "處理人：{}"])
 
         color=0xff0000,
         title=_("❌會員頻道權限審核未通過")
@@ -280,50 +326,90 @@ class MembershipRoleManger(commands.Cog):
                 raise FutureDate
             
             member: Member = info["member"]
+            
+            embed=None
+            if info["video_id"]:
+                # valid channel
+                if not await check_video_owner(member.channel_id, info["video_id"]):
+                    raise CommentFailure
+                
+                # valid comment
+                comment_data = await get_comment_info(info["video_id"], channel_id=info["channel_id"])
+                if not comment_data:
+                    raise CommentFailure
+                
+                # make embed
+                embed = discord.Embed(
+                    color=0xFF0000,
+                    title=f"https://www.youtube.com/watch?v={info['video_id']}&lc={comment_data['comment_id']}",
+                    description=comment_data["text"]
+                )
+                embed.set_author(
+                    name=comment_data["author"], 
+                    url=f"https://www.youtube.com/channel/{info['channel_id']}", 
+                    icon_url=comment_data["photo"]
+                )
+                
+
+            # mod check
+            mod_check_msg = await self.command_channel.send(f"ID: {message.author}\n" + message.content, embed=embed)
+            if not mod_check_msg:
+                raise ServerError
+            
+            mod_check_valid, mod_user = await add_bool_reaction(self.bot, mod_check_msg)
+            if not mod_check_valid:
+                raise ModRefused
+            
+            # get type name
+            type_names = list(member.membership_type.keys())
+            if len(type_names) == 0:
+                raise ServerError
+            elif len(type_names) == 1:
+                type_name = type_names[0]
+            else:
+                msg = []
+                emoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"]
+                for i in range(len(type_names)):
+                    msg.append(f"{emoji[i]}: {type_names[i]}")
+                msg = "\n".join(msg)
+                msg = await self.input_channel.send(msg)
+                index = await add_waiting_reaction(self.bot, msg, emoji[:len(type_names)])
+                type_name = type_names[index]
+            role_id = member.membership_type.get(type_name, None)
+            role = get(message.guild.roles, id=role_id)
+            
             user = self.add_user(message.author)
-            type_name = "test"
             user_role: UserRole = self.add_user_role(
                 message.author, 
                 member,
                 info["date"], 
                 type_name,
                 video_id=info["video_id"],
-                channel_id=info["channel_id"]
+                channel_id=info["channel_id"],
+                comment_id=comment_data["comment_id"] if comment_data else None
             )
-            log.debug(user_role)
-            role_id = member.membership_type.get(type_name, None)
-            role = get(message.guild.roles, id=role_id)
             
-            if not (await user_role.first_check()):
-                raise ValidFailure
-
-            mod_check_valid, mod_user = await add_bool_reaction(self.bot, message)
-            
-            if not mod_check_valid:
-                raise ModRefused
-            
-            if mod_check_valid:
-                user_role.valid()
-                # role = get(message.guild.roles, id=info["role"])
-                description="\n".join([
-                    f"增加身分組：{role.mention}",
-                    f"請確認看得見會員頻道：{member._text_channel.mention}",
-                    f"處理人：{mod_user.mention}"])
-                embed=discord.Embed(
-                    color=0x77b255,
-                    title=_("✅會員頻道權限審核通過"),
-                    description=description
-                )
-                await self.result_channel.send(
-                    content=f"{message.author.mention}",
-                    embed=embed,
-                    allowed_mentions=discord.AllowedMentions(roles=True)
-                )
-                await self.save_users()
-                # TODO: add role
-                return
-        except ValidFailure:
-            error_name = "#### TODO" 
+            user_role.valid()
+            description="\n".join([
+                f"增加身分組：{role.mention}",
+                f"請確認看得見會員頻道：{member._text_channel.mention}",
+                f"處理人：{mod_user.mention}"])
+            embed=discord.Embed(
+                color=0x77b255,
+                title=_("✅會員頻道權限審核通過"),
+                description=description
+            )
+            await self.result_channel.send(
+                content=f"{message.author.mention}",
+                embed=embed,
+                allowed_mentions=discord.AllowedMentions(roles=True)
+            )
+            await self.save_users()
+            await message.author.add_roles(role,
+                    reason=f"mod: {message.author}, expiration date: {info['date']}")
+            return
+        except CommentFailure:
+            error_name = "驗證錯誤" 
         except WrongDateFormat:
             error_name = "日期格式錯誤"
         except WrongChannelName:
@@ -357,8 +443,6 @@ class MembershipRoleManger(commands.Cog):
             )
             return
         
-        self.remove_user_role(message.author, role)
-        await self.save_users()
         err_msg = err_msg.format(handler_msg)
         if error_name:
             err_msg = f"**{error_name}**，{err_msg}"

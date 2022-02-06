@@ -49,7 +49,6 @@ class User():
     def remove_role(self, role: Union[discord.Role, int, str]):
         role_id = to_role_id(role)
         user_role = self.roles.pop(role_id, None)
- 
         
     def export(self):
         raw_data = {}
