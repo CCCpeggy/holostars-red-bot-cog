@@ -1,5 +1,6 @@
 # discord
 from distutils.log import debug
+from msilib.schema import Error
 import discord
 from discord.utils import get
 
@@ -118,15 +119,16 @@ class MembershipRoleManger(commands.Cog):
                     remove_user_ids.append(user.id)
                 await self.save_users()
             for user_id in remove_user_ids:
-                log.debug(f"remove user {user_id}")
+                log.debug(f"check: remove user {user_id}")
                 self.remove_user(user_id)
             await self.save_users()
+            log.debug("--------check end----------")
             await asyncio.sleep(3600)
     
     def add_member(self, channel_id: str, **kwargs) -> Optional[Member]:
         if channel_id in self.members:
-            log.info(f"{channel_id} already exists")
-            return
+            log.debug(f"add_member: {channel_id} already exists")
+            raise AlreadyExists
         member = Member(
             bot=self.bot,
             channel_id=channel_id, 
@@ -138,8 +140,8 @@ class MembershipRoleManger(commands.Cog):
     
     def remove_member(self, channel_id: str, **kwargs) -> None:
         if channel_id not in self.members:
-            log.info(f"{channel_id} is not exists")
-            return
+            log.debug(f"remove_member: {channel_id} is not exists")
+            raise NotExists
         del self.members[channel_id]
     
     async def save_members(self):
@@ -148,8 +150,8 @@ class MembershipRoleManger(commands.Cog):
     def add_user(self, id: Union[discord.Member, discord.User, int, str], **kwargs) -> Optional[User]:
         id = to_user_id(id)
         if id in self.users:
-            log.info(f"{id} already exists")
-            return None
+            log.debug(f"add_user: {id} already exists")
+            raise AlreadyExists
         user = User(
             bot=self.bot,
             id=id, 
@@ -162,21 +164,21 @@ class MembershipRoleManger(commands.Cog):
     def remove_user(self, id: Union[discord.Member, discord.User, int, str], **kwargs) -> Optional[User]:
         id = to_user_id(id)
         if id not in self.users:
-            log.info(f"{id} not exists")
+            log.debug(f"remove_user: {id} not exists")
             return
         del self.users[id]
     
-    def add_user_role(self, id: Union[discord.Member, discord.User, int, str], member: Member, end_time: Union[str, datetime], type_name: str, **kwargs) -> Optional[User]:
+    def add_user_role(self, id: Union[discord.Member, discord.User, int, str], member: Member, end_time: Union[str, datetime], type_name: str, tmp: bool=False, **kwargs) -> Optional[User]:
         id = to_user_id(id)
         user = self.users.get(id, None)
         if not user:
-            log.info(f"___{id} not exists")
-            return
+            log.debug(f"add_user_role: {id} not exists")
+            raise NotExists
         role = member.membership_type.get(type_name, None)
         if not role:
-            log.info(f"{type_name} not exists")
-            return
-        return user.add_role(role, end_time=end_time, **kwargs)
+            log.debug(f"add_user_role: {type_name} not exists")
+            raise NotExists
+        return user.add_role(role, end_time=end_time, tmp=tmp, **kwargs)
     
     async def save_users(self):
         await self.config.users.set(ConvertToRawData.dict(self.users))
@@ -185,74 +187,146 @@ class MembershipRoleManger(commands.Cog):
         user_id = to_user_id(user_id)
         user = self.users.get(user_id, None)
         if not user:
-            log.info(f"{user_id} not exists")
-            return
+            log.debug(f"remove_user_role: {user_id} not exists")
+            raise NotExists
         user.remove_role(role_id)
         if len(user.roles) == 0:
             self.remove_user(user_id)
+    
+    async def get_member_by_name(self, name: str) -> Member:
+        try:
+            return await MemberConverter.convert(_, None, name)
+        except commands.BadArgument:
+            return None
     
     @commands.group(name="role")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def role_group(self, ctx: commands.Context):
+        """管理會員身分組
+        """
         pass
     
     @role_group.group(name="member")
     async def member_group(self, ctx: commands.Context):
+        """會員成員管理
+        """
         pass
 
     @member_group.command(name="add")
-    async def _add_member(self, ctx: commands.Context, channel_id: str, names: str, text_channel: discord.TextChannel):
+    async def _add_member(self, ctx: commands.Context, channel_id: str, names: str, text_channel: discord.TextChannel, voice_channel: discord.VoiceChannel=None):
+        """加入會員成員
+
+        channel_id (字串): YouTube 頻道 ID。
+        names (字串): 成員名稱，無視大小寫，多個可用 `,` 隔開，例如：`name1,name2,name3`。
+        text_channel (文字頻道): 所屬的文字頻道。
+        voice_channel (語音頻道, 可選): 所屬的文字頻道。
+        """
         names = names.lower().split(",")
         try:
             if len(names) == 0:
-                raise Exception
+                raise WrongMemberNameStr
             member = self.add_member(
                 channel_id=channel_id,
                 names=names,
                 text_channel_id=text_channel.id
             )
             log.debug(member)
-            if member == None:
-                raise Exception
             await self.save_members()
-            await ctx.send(f"successful: {member}")
+            await ctx.send(f"成功加入會員成員: `{member.names[0]}`")
+        except WrongMemberNameStr:
+            await ctx.send("沒有加入會員成員，錯誤的 names 格式")
+        except AlreadyExists:
+            await ctx.send("沒有加入會員成員，`{channel_id}` 已經存在")
+        except Exception as e:
+            await ctx.send("沒有加入會員成員，發生未知錯誤")
+            log.error(f"_add_member: {e}")
+    
+    @member_group.command(name="list")
+    async def _list_member(self, ctx: commands.Context, member: MemberConverter=None):
+        """列出會員成員
+
+        member (字串, 可選): 會員成員名稱。
+        """
+        if member:
+            await ctx.send(f"{member}")
+        else:
+            for member in self.members.values():
+                await ctx.send(f"{member}")
+
+    @member_group.command(name="remove")
+    async def _remove_member(self, ctx: commands.Context, member: MemberConverter):
+        """刪除會員成員
+
+        member (字串): 成員名稱
+        """
+        try:
+            self.remove_member(member.channel_id)
+            await self.save_members()
+            await ctx.send(f"成功刪除會員成員 {member.names[0]}")
         except:
-            await ctx.send("failed")
-            
+            await ctx.send("沒有成功刪除會員成員，發生未知錯誤")
     
     @role_group.group(name="member_type")
     async def member_type_group(self, ctx: commands.Context):
+        """會員身分組管理
+        """
         pass
 
     @member_type_group.command(name="add")
     async def add_membership_type(self, ctx: commands.Context, member: MemberConverter, type_name: str, role: discord.Role):
+        """新增會員成員所屬的身分組
+
+        member (字串): 成員名稱
+        type_name (字串): 身分組名稱
+        role (身分組): 對應的身分組
+        """
         if member.add_membership_type(type_name, role):
             await self.save_members()
-            await ctx.send(f"add member type: {member}")
+            await ctx.send(f"已加入身分組 `{type_name}`")
         else:
-            await ctx.send(f"already exist: {type_name}")
-            
-    @role_group.command(name="init")
+            await ctx.send(f"沒有加入 member，`{type_name}` 已經存在")
+
+    @role_group.group(name="user")
+    async def user_group(self, ctx: commands.Context):
+        """管理使用者
+        """
+        pass
+
+    @user_group.command(name="change_level")
+    async def change_level(self, ctx: commands.Context, ):
+        """變更使用者的會員身分
+        """
+        # TODO
+        pass
+    
+    @role_group.command(name="stars")
     async def test_init(self, ctx: commands.Context):
-        log.debug("----------------start------------------")
+        """自動設定 stars 的身分組 (寫死的)
+        """
+        # TODO
+        log.debug("----------------stars setting------------------")
         from discord.utils import get
         papa_1 = get(ctx.guild.roles, id=939752456299118612)
         papa_2 = get(ctx.guild.roles, id=939752597886238780)
         papa_3 = get(ctx.guild.roles, id=939752634607358002)
-        # add member
-        self.remove_member("UCKeAhJvy8zgXWbh9duVjIaQ")
-        await self._add_member(ctx, "UCKeAhJvy8zgXWbh9duVjIaQ", "aruran,アルランディス", self.input_channel)
-        member: Member = await MemberConverter.convert(_, ctx, "aruran")
+        papa_text_channel  = get_text_channel(self.bot, 864755730677497876)
+        log.debug("----------------stars add member------------------")
+        member: Member = await self.get_member_by_name("aruran")
+        if member:
+            await self._remove_member(ctx, member)
+        await self._add_member(ctx, "UCKeAhJvy8zgXWbh9duVjIaQ", "aruran,アルランディス", papa_text_channel)
+        member: Member = await self.get_member_by_name("aruran")
+        log.debug("----------------stars add member type------------------")
         await self.add_membership_type(ctx, member, "アランファミリー集会", papa_1)
         await self.add_membership_type(ctx, member, "アランファミリー幹部会", papa_2)
         await self.add_membership_type(ctx, member, "アランファミリー役員会", papa_3)
-        log.debug("----------------end------------------")
+        await ctx.send(f"完成加入 aruran: \n{member}")
+        log.debug("----------------stars setting end------------------")
         
     @role_group.command(name='input')
     async def set_input(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定使用者輸入會員資料的文字頻道"""
-        guild = ctx.guild
         self.input_channel = text_channel
         await self.config.membership_input_channel_id.set(text_channel.id)
         await ctx.send(_(f"已設定"))
@@ -260,7 +334,6 @@ class MembershipRoleManger(commands.Cog):
     @role_group.command(name='result')
     async def _set_result(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定回覆使用者審核結果的文字頻道"""
-        guild = ctx.guild
         self.result_channel = text_channel
         await self.config.membership_result_channel_id.set(text_channel.id)
         await ctx.send(_(f"已設定"))
@@ -268,22 +341,34 @@ class MembershipRoleManger(commands.Cog):
     @role_group.command(name='command')
     async def set_command(self, ctx: commands.Context, text_channel: discord.TextChannel = None):
         """設定下會員設定指令的文字頻道"""
-        guild = ctx.guild
         self.command_channel = text_channel
         await self.config.membership_command_channel_id.set(text_channel.id)
         await ctx.send(_(f"已設定"))    
     
     @role_group.command(name="test")
     async def test(self, ctx: commands.Context):
-        log.debug("----------------start------------------")
+        log.debug("----------------test------------------")
         from discord.utils import get
         dc_role = get(ctx.guild.roles, id=879027799204188190)
+        text_channel  = get_text_channel(self.bot, 864755730677497876)
         # add member
-        self.remove_member("UCNVEsYbiZjH5QLmGeSgTSzg")
-        await self._add_member(ctx, "UCNVEsYbiZjH5QLmGeSgTSzg", "astel,アステル", self.input_channel)
-        member: Member = await MemberConverter.convert(_, ctx, "astel")
+        member: Member = await self.get_member_by_name("astel")
+        if member:
+            await self._remove_member(ctx, member)
+        await self._add_member(ctx, "UCNVEsYbiZjH5QLmGeSgTSzg", "astel,アステル", text_channel)
+        member: Member = await self.get_member_by_name("astel")
         await self.add_membership_type(ctx, member, "test", dc_role)
         
+        
+        message = """
+頻道：astel
+日期：2022/4/01
+影片：RzIWjDoBH1E
+YT：UC6wTWzIJiKoKvtoPdbGE07w
+        """
+        ctx.message.content = message
+        await self.audit_membership(ctx.message)
+        return
         # add user
         user = self.add_user(ctx.author)
         user_role: UserRole = self.add_user_role(
@@ -313,7 +398,7 @@ class MembershipRoleManger(commands.Cog):
             await self.save_users()
             
             # check
-            log.debug("----------------end------------------")
+            log.debug("----------------test end------------------")
             
     
     @commands.Cog.listener()
@@ -407,16 +492,30 @@ class MembershipRoleManger(commands.Cog):
             role_id = member.membership_type.get(type_name, None)
             role = get(message.guild.roles, id=role_id)
             
-            user = self.add_user(message.author)
-            user_role: UserRole = self.add_user_role(
-                message.author, 
-                member,
-                info["date"], 
-                type_name,
-                video_id=info["video_id"],
-                channel_id=info["channel_id"],
-                comment_id=comment_data["comment_id"] if comment_data else None
-            )
+            try:
+                user = self.add_user(message.author)
+            except AlreadyExists:
+                user = self.users[message.author.id]
+            except Exception as e:
+                await self.command_channel.send("發生不明錯誤")
+                log.error(f"on_message: {e}")
+                return
+
+            try:
+                user_role: UserRole = self.add_user_role(
+                    message.author, 
+                    member,
+                    info["date"], 
+                    type_name,
+                    video_id=info["video_id"],
+                    channel_id=info["channel_id"],
+                    comment_id=comment_data["comment_id"] if comment_data else None,
+                    tmp=True
+                )
+            except Exception as e:
+                await self.command_channel.send("發生不明錯誤")
+                log.error(f"on_message: {e}")
+                return
             
             user_role.valid()
             description="\n".join([
@@ -433,6 +532,7 @@ class MembershipRoleManger(commands.Cog):
                 embed=embed,
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
+            user.set_role(role_id, user_role)
             await self.save_users()
             await message.author.add_roles(role,
                     reason=f"mod: {message.author}, expiration date: {info['date']}")

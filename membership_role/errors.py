@@ -1,3 +1,11 @@
+class AlreadyExists(Exception):
+    pass
+
+class NotExists(Exception):
+    pass
+
+class WrongMemberNameStr(Exception):
+    pass
 
 class TempMembershipRole(Exception):
     pass

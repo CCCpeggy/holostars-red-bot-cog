@@ -192,7 +192,7 @@ class MemberConverter(commands.Converter):
         for member in members.values():
             if argment in member.names:
                 return member
-        raise commands.BadArgument(argment + " not found.")
+        raise commands.BadArgument(f"不存在會員名稱 {argment}")
     
 async def add_reaction(message: discord.Message, emojis: List[str]):
     import contextlib
