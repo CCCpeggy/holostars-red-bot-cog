@@ -1,3 +1,11 @@
+class AlreadyExists(Exception):
+    pass
+
+class NotExists(Exception):
+    pass
+
+class WrongMemberNameStr(Exception):
+    pass
 
 class TempMembershipRole(Exception):
     pass
@@ -15,6 +23,9 @@ class NoChannelName(TempMembershipRole):
     pass
 
 class FutureDate(TempMembershipRole):
+    pass
+
+class VideoOwnChannelNotFit(TempMembershipRole):
     pass
 
 class CommentFailure(TempMembershipRole):

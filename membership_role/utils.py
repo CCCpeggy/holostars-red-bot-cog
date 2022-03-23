@@ -15,6 +15,10 @@ _ = Translator("StarsStreams", __file__)
 log = logging.getLogger("red.core.cogs.Temprole")
 log.setLevel(logging.DEBUG)
 
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
+
 def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
     if isinstance(channel, int) or isinstance(channel, str):
         return place.get_channel(channel)
@@ -31,7 +35,7 @@ def to_role_id(role: Union[discord.Role, int, str]) -> int:
     if isinstance(role, discord.Role):
         return role.id
     elif isinstance(role, str):
-        return str(role)
+        return int(role)
     return role
 
 class ConvertToRawData:
@@ -94,9 +98,9 @@ async def check_video_owner(channel_id: str, video_id: str) -> bool:
         "channel_id": channel_id,
         "id": video_id
     }
-    log.debug(params)
+    # log.debug(params)
     data = await get_http_data("https://holodex.net/api/v2/videos", params)
-    log.debug(data)
+    # log.debug(data)
     return data and len(data) > 0
 
 async def get_http_data(url, params={}):
@@ -192,7 +196,7 @@ class MemberConverter(commands.Converter):
         for member in members.values():
             if argment in member.names:
                 return member
-        raise commands.BadArgument(argment + " not found.")
+        raise commands.BadArgument(f"不存在會員名稱 {argment}")
     
 async def add_reaction(message: discord.Message, emojis: List[str]):
     import contextlib
@@ -307,9 +311,10 @@ def parse_audit_str(content: str):
     content = replace_redundant_char(content)
     for s in content.split('\n'):
         tmp = s.split(':')
-        if len(tmp) != 2:
+        if len(tmp) < 2:
             continue
-        key, value = tmp
+        key = tmp[0]
+        value = ":".join(tmp[1:])
         if key == "頻道":
             value = value.lower()
             member = get_member_by_name(value)

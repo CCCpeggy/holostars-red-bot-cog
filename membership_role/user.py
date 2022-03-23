@@ -13,6 +13,7 @@ from typing import *
 # local
 from .utils import *
 from .role import UserRole
+from .errors import *
 
 # get logger
 _ = Translator("StarsStreams", __file__)
@@ -34,17 +35,21 @@ class User():
         self._save_func = _save_func
         self._bot.loop.create_task(_save_func())
     
-    def add_role(self, role: Union[discord.Role, int, str], **kwargs):
+    def add_role(self, role: Union[discord.Role, int, str], tmp: bool=False, **kwargs):
         role_id = to_role_id(role)
-           
-        if role_id not in self.roles:
-            user_role = UserRole(
-                bot=self._bot,
-                **kwargs
-            )
+        if role_id in self.roles and not tmp:
+            raise AlreadyExists
+        user_role = UserRole(
+            bot=self._bot,
+            **kwargs
+        )
+        if not tmp:
             self.roles[role_id] = user_role
-            return user_role
-        return None
+        return user_role
+    
+    def set_role(self, role: Union[discord.Role, int, str], user_role: UserRole):
+        role_id = to_role_id(role)
+        self.roles[role_id] = user_role
         
     def remove_role(self, role: Union[discord.Role, int, str]):
         role_id = to_role_id(role)
@@ -67,6 +72,10 @@ class User():
             else:
                 raw_data[k] = v.id
         return raw_data
-
+    
     def __repr__(self) -> str:
-        return str(ConvertToRawData.export_class(self))
+        info = {
+            "ID": self.id,
+            "身分組": "\n- ".join([""]+[f"{k}：{v}" for k, v in self.roles.items()]),
+        }
+        return "\n".join([f"{k}：{v}" for k, v in info.items()])
