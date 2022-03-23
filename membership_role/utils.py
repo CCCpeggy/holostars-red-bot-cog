@@ -31,7 +31,7 @@ def to_role_id(role: Union[discord.Role, int, str]) -> int:
     if isinstance(role, discord.Role):
         return role.id
     elif isinstance(role, str):
-        return str(role)
+        return int(role)
     return role
 
 class ConvertToRawData:

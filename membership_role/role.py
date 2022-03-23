@@ -26,10 +26,13 @@ class UserRole():
         self.end_time: datetime = Time.to_datetime(kwargs.pop("end_time"))
         self.is_valid: bool = kwargs.pop("is_valid", False)
     
+    def is_expired(self) -> bool:
+        return not Time.is_future(Time.add_time(self.end_time, hours=16))
+    
     async def check(self) -> bool:
         if not self.is_valid:
             return False
-        if Time.is_future(Time.add_time(self.end_time, hours=16)):
+        if not self.is_expired():
             return True
         if self.channel_id == None or self.video_id == None:
             return False

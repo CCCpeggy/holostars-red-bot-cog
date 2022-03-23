@@ -97,32 +97,53 @@ class MembershipRoleManger(commands.Cog):
 
     async def check(self):
         while True:
-            log.debug("--------check----------")
-            remove_user_ids = []
-            for user in self.users.values():
-                guild: discord.Guild = self.input_channel.guild
-                dc_user: discord.Member = guild.get_member(user.id)
-                if not dc_user:
-                    remove_user_ids.append(user.id)
-                
-                invalid_role_ids = []
-                for role_id, user_role in user.roles.items():
-                    if not await user_role.check():
-                        role: discord.Role = guild.get_role(int(role_id))
-                        await dc_user.remove_roles(role, reason=f"expiration date: {user_role.end_time}")
+            log.info("--------check----------")
+            try:
+                remove_user_ids = []
+                for user in self.users.values():
+                    guild: discord.Guild = self.input_channel.guild
+                    dc_user: discord.Member = guild.get_member(user.id)
+                    if not dc_user:
+                        remove_user_ids.append(user.id)
+                    
+                    invalid_role_ids = []
+                    for role_id, user_role in user.roles.items():
+                        role_id = to_role_id(role_id)
+                        role: discord.Role = guild.get_role(role_id)
+                        member = [member for member in self.members.values() if role_id in member.membership_type.values()]
+                        if len(member) != 1:
+                            log.error(f"check: not found member by role id: {role_id}")
+                            continue
+                        member = member[0]
+                        if not user_role.is_expired():
+                            continue
+                        elif not await user_role.check():
+                            await dc_user.remove_roles(role, reason=f"身分組到期: {user_role.end_time}")
+                            await dc_user.send(f"您的 {member.names[0]} 會員身分組已到期，請再次發送驗證資料")
+                        else:
+                            log.info("in")
+                            default_role_id = member.membership_type[member.default_type_name]
+                            if default_role_id == role_id:
+                                default_role = get(guild.roles, id=default_role_id)
+                                await dc_user.send(f"您的新一個月的 {member.names[0]} 會員身分組驗證成功，但因無法驗證等級，所以自動降為 {member.default_type_name}，如需提高等級請重新發送驗證資料")
+                                await dc_user.remove_roles(role, reason=f"身分組到期 ({user_role.end_time})，更換成預設身分組")
+                                await dc_user.add_roles(default_role, reason=f"身分組到期 ({user_role.end_time})，更換成預設身分組")
+                                user.roles[default_role_id] = user.roles[role_id]
                         if role not in dc_user.roles:
-                            invalid_role_ids.append(role_id)
-                
-                for role_id in invalid_role_ids:
-                    user.remove_role(role_id)
-                if len(user.roles) == 0:
-                    remove_user_ids.append(user.id)
+                            invalid_role_ids.append(str(role_id))
+                    
+                    for role_id in invalid_role_ids:
+                        user.remove_role(role_id)
+                    if len(user.roles) == 0:
+                        remove_user_ids.append(user.id)
+                    await self.save_users()
+                for user_id in remove_user_ids:
+                    log.info(f"check: remove user {user_id}")
+                    self.remove_user(user_id)
                 await self.save_users()
-            for user_id in remove_user_ids:
-                log.debug(f"check: remove user {user_id}")
-                self.remove_user(user_id)
-            await self.save_users()
-            log.debug("--------check end----------")
+            except Exception as e:
+                log.error(e)
+            log.info("--------check end----------")
             await asyncio.sleep(3600)
     
     def add_member(self, channel_id: str, **kwargs) -> Optional[Member]:
@@ -193,6 +214,15 @@ class MembershipRoleManger(commands.Cog):
         if len(user.roles) == 0:
             self.remove_user(user_id)
     
+    def change_role(self, user_id: Union[discord.Member, discord.User, int, str], old_role_id: Union[discord.Role, int, str], new_role_id: Union[discord.Role, int, str]):
+        # TODO 未完成
+        # await dc_user.remove_roles(role, reason=f"expiration date: {user_role.end_time}")
+        # old_role_id = to_user_id(old_role_id)
+        # new_role_id = to_user_id(new_role_id)
+        # self.remove_user_role(user_id, old_role_id)
+        # self.add_user_role(user_id, old_role_id)
+        pass
+    
     async def get_member_by_name(self, name: str) -> Member:
         try:
             return await MemberConverter.convert(_, None, name)
@@ -214,14 +244,16 @@ class MembershipRoleManger(commands.Cog):
         pass
 
     @member_group.command(name="add")
-    async def _add_member(self, ctx: commands.Context, channel_id: str, names: str, text_channel: discord.TextChannel, voice_channel: discord.VoiceChannel=None):
+    async def _add_member(self, ctx: commands.Context, channel_id: str, names: str, type_name: str, role: discord.Role, text_channel: discord.TextChannel, voice_channel: discord.VoiceChannel=None):
         """加入會員成員
 
         channel_id (字串): YouTube 頻道 ID。
         names (字串): 成員名稱，無視大小寫，多個可用 `,` 隔開，例如：`name1,name2,name3`。
+        type_name (字串): 預設的身分組名稱
+        role (身分組): 預設的身分組
         text_channel (文字頻道): 所屬的文字頻道。
-        voice_channel (語音頻道, 可選): 所屬的文字頻道。
         """
+        # voice_channel (語音頻道, 可選): 所屬的文字頻道。
         names = names.lower().split(",")
         try:
             if len(names) == 0:
@@ -231,6 +263,7 @@ class MembershipRoleManger(commands.Cog):
                 names=names,
                 text_channel_id=text_channel.id
             )
+            member.add_membership_type(type_name, role, True)
             log.debug(member)
             await self.save_members()
             await ctx.send(f"成功加入會員成員: `{member.names[0]}`")
@@ -294,11 +327,25 @@ class MembershipRoleManger(commands.Cog):
         pass
 
     @user_group.command(name="change_level")
-    async def change_level(self, ctx: commands.Context, ):
+    async def change_level(self, ctx: commands.Context):
         """變更使用者的會員身分
         """
         # TODO
         pass
+
+    @user_group.command(name="list")
+    async def _user_list(self, ctx: commands.Context):
+        """列出使用者
+        """
+        info = []
+        for user in self.users.values():
+            guild: discord.Guild = self.input_channel.guild
+            dc_user: discord.Member = guild.get_member(user.id)
+            role_info = []
+            for role_id, user_role in user.roles.items():
+                role_info += get(guild.roles, id=role_id).mention
+            info += f"{dc_user.mention} 有身分組 {', '.join(role_info)}"
+        await ctx.send("\n".join(info)[:2000])
     
     @role_group.command(name="stars")
     async def test_init(self, ctx: commands.Context):
@@ -476,6 +523,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             
             # get type name
             type_names = list(member.membership_type.keys())
+            # TODO: 檢查是否有同會員成員不同身分組
             if len(type_names) == 0:
                 raise ServerError
             elif len(type_names) == 1:

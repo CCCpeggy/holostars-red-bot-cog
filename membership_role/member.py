@@ -31,14 +31,18 @@ class Member():
         membership_type = kwargs.pop("membership_type", {})
         for type_name, role in membership_type.items():
             self.add_membership_type(type_name, role)
+
+        self.default_type_name: str = kwargs.pop("default_type_name", list(self.membership_type.keys())[0])
         
         self._save_func = _save_func
         self._bot.loop.create_task(_save_func())
         
-    def add_membership_type(self, type_name: str, role: Union[discord.Role, int, str]) -> bool:
+    def add_membership_type(self, type_name: str, role: Union[discord.Role, int, str], default: bool=False) -> bool:
         role_id = to_role_id(role)
         if (type_name not in self.membership_type):
             self.membership_type[type_name] = role_id
+            if default:
+                self.default_type_name = type_name
             return True
         return False
     
