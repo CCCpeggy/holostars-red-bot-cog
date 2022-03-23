@@ -1,7 +1,6 @@
 # discord
 from dis import dis
 from distutils.log import debug
-from msilib.schema import Error
 import discord
 from discord.utils import get
 
