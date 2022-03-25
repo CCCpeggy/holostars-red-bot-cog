@@ -93,7 +93,6 @@ class YouTubeStream():
             async with aiohttp.ClientSession() as session:
                 async with session.get(HOLODEX_API_VIDEOS, params=params) as r:
                     for video in await r.json():
-                        print(video)
                         videos.append(video["id"])
         except StreamNotFound:
             log.info(f"{self.id} StreamNotFound")
