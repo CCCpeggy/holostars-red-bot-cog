@@ -28,7 +28,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_time
-from membership_role.errors import *
+# from membership_role.errors import *
 
 import discord
 from redbot.core import checks, commands, Config
@@ -70,8 +70,8 @@ class TempRole(commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_member)
         
-        from membership_role.membership_role import MembershipRoleManger
-        self.membership_role: MembershipRoleManger = MembershipRoleManger(self.bot)
+        # from membership_role.membership_role import MembershipRoleManger
+        # self.membership_role: MembershipRoleManger = MembershipRoleManger(self.bot)
 
         self.tr_handler_task = self.bot.loop.create_task(self._tr_handler())
 
@@ -422,57 +422,57 @@ class TempRole(commands.Cog):
                         f"TempRole {role.mention} for {member.mention} was unable to be removed due to a lack of permissions."
                     )
     
-    @commands.admin_or_permissions(manage_roles=True)
-    @_temp_role.command(name='convert')
-    async def _convert_data(self, ctx: commands.GuildContext):
-        """將目前會員資料轉存去新的 cog"""
-        def to_datetime(time: str) -> datetime:
-            from dateutil.parser import parse as parse_time
-            try:
-                time = parse_time(time)
-                import pytz
-                if time.tzinfo == None:
-                    time = pytz.utc.localize(time)
-                return time
-            except:
-                pass
-        if self.membership_role == None:
-            await ctx.send(f"未啟用 membership_role")
-            return
-        allowed = await self.config.guild(ctx.guild).allowed()
-        role_to_member = {}
-        role_to_type_name = {}
-        for member_name, member in self.membership_role.members.items():
-            for type_name, role_id in member.membership_type.items():
-                role_to_member[role_id] = member
-                role_to_type_name[role_id] = type_name
+    # @commands.admin_or_permissions(manage_roles=True)
+    # @_temp_role.command(name='convert')
+    # async def _convert_data(self, ctx: commands.GuildContext):
+    #     """將目前會員資料轉存去新的 cog"""
+    #     def to_datetime(time: str) -> datetime:
+    #         from dateutil.parser import parse as parse_time
+    #         try:
+    #             time = parse_time(time)
+    #             import pytz
+    #             if time.tzinfo == None:
+    #                 time = pytz.utc.localize(time)
+    #             return time
+    #         except:
+    #             pass
+    #     if self.membership_role == None:
+    #         await ctx.send(f"未啟用 membership_role")
+    #         return
+    #     allowed = await self.config.guild(ctx.guild).allowed()
+    #     role_to_member = {}
+    #     role_to_type_name = {}
+    #     for member_name, member in self.membership_role.members.items():
+    #         for type_name, role_id in member.membership_type.items():
+    #             role_to_member[role_id] = member
+    #             role_to_type_name[role_id] = type_name
                 
-        count = 0
-        for r in allowed:
-            if role := ctx.guild.get_role(r):
-                for member in role.members:
-                    user_tr = await self.config.member(member).temp_roles()
-                    try:
-                        self.membership_role.add_user(member.id)
-                    except AlreadyExists:
-                        pass
-                    except Exception as e:
-                        log.error(e)
-                        continue
-                    if str(role.id) in user_tr:
-                        member_name = role_to_member[role.id]
-                        type_name = role_to_type_name[role.id]
-                        d = datetime.fromtimestamp(user_tr[str(role.id)])
-                        d = to_datetime(f"{d.year}/{d.month}/{d.day}")
-                        try:
-                            user_role = self.membership_role.add_user_role(member.id, member_name, d, type_name)
-                            user_role.valid()
-                        except AlreadyExists:
-                            pass
-                        except Exception as e:
-                            log.error(e)
-                if count > 50:
-                    count = 0
-                    await self.membership_role.save_users()
-        await self.membership_role.save_users()
-        await ctx.send(f"結束")
+    #     count = 0
+    #     for r in allowed:
+    #         if role := ctx.guild.get_role(r):
+    #             for member in role.members:
+    #                 user_tr = await self.config.member(member).temp_roles()
+    #                 try:
+    #                     self.membership_role.add_user(member.id)
+    #                 except AlreadyExists:
+    #                     pass
+    #                 except Exception as e:
+    #                     log.error(e)
+    #                     continue
+    #                 if str(role.id) in user_tr:
+    #                     member_name = role_to_member[role.id]
+    #                     type_name = role_to_type_name[role.id]
+    #                     d = datetime.fromtimestamp(user_tr[str(role.id)])
+    #                     d = to_datetime(f"{d.year}/{d.month}/{d.day}")
+    #                     try:
+    #                         user_role = self.membership_role.add_user_role(member.id, member_name, d, type_name)
+    #                         user_role.valid()
+    #                     except AlreadyExists:
+    #                         pass
+    #                     except Exception as e:
+    #                         log.error(e)
+    #             if count > 50:
+    #                 count = 0
+    #                 await self.membership_role.save_users()
+    #     await self.membership_role.save_users()
+    #     await ctx.send(f"結束")

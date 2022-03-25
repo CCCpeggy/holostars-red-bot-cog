@@ -27,6 +27,7 @@ YOUTUBE_SEARCH_ENDPOINT = YOUTUBE_BASE_URL + "/search"
 YOUTUBE_VIDEOS_ENDPOINT = YOUTUBE_BASE_URL + "/videos"
 YOUTUBE_CHANNEL_RSS = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
+HOLODEX_API_VIDEOS = "https://holodex.net/api/v2/live"
 youtube_url_format_1 = "https://youtube.com/watch?v={}"
 
 _ = Translator("StarStreams", __file__)
@@ -85,13 +86,15 @@ class YouTubeStream():
         videos = []
 
         try:
+            params = {
+                "channel_id": self.id,
+                "max_upcoming_hours": 7 * 24
+            }
             async with aiohttp.ClientSession() as session:
-                async with session.get(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id)) as r:
-                    if r.status == 404:
-                        log.warning(YOUTUBE_CHANNEL_RSS.format(channel_id=self.id))
-                        raise StreamNotFound()
-                    rssdata = await r.text()
-                    videos += list(self.get_video_ids_from_feed(rssdata))
+                async with session.get(HOLODEX_API_VIDEOS, params=params) as r:
+                    for video in await r.json():
+                        print(video)
+                        videos.append(video["id"])
         except StreamNotFound:
             log.info(f"{self.id} StreamNotFound")
 
