@@ -371,7 +371,6 @@ class MembershipRoleManger(commands.Cog):
     async def _user_list(self, ctx: commands.Context):
         """列出使用者
         """
-        # TODO
         info = []
         for user in self.users.values():
             guild: discord.Guild = self.input_channel.guild
@@ -380,8 +379,9 @@ class MembershipRoleManger(commands.Cog):
             for role_id, user_role in user.roles.items():
                 role_info.append(get(guild.roles, id=role_id).mention)
             info.append(f"{dc_user.mention} 有身分組 {', '.join(role_info)}")
-        await ctx.send("\n".join(info)[:2000],
-                allowed_mentions=discord.AllowedMentions.none())
+        msg = "\n".join(info)
+        for i in range(0, len(msg), 2000):
+            await ctx.send(msg[i:i + 2000], allowed_mentions=discord.AllowedMentions.none())
     
     @role_group.command(name="stars")
     async def test_init(self, ctx: commands.Context):
