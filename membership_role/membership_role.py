@@ -70,12 +70,10 @@ class MembershipRoleManger(commands.Cog):
                 for key, value in (await self.config.members()).items():
                     self.add_member(**value)
             await load_members()
-            log.debug(self.members)
             async def load_users():
                 for key, value in (await self.config.users()).items():
                     self.add_user(**value)
             await load_users()
-            log.debug(self.users)
         
             # channel
             input_channel_id = await self.config.membership_input_channel_id()
