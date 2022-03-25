@@ -393,7 +393,7 @@ class MembershipRoleManger(commands.Cog):
                 return message
 
         if ctx.message.reference:
-            msg = await get_message(self.input_channel, ctx.message.reference.message_id)
+            msg = await get_message(ctx.channel, ctx.message.reference.message_id)
             if msg:
                 await self.audit_membership(msg)
             else:
