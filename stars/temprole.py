@@ -76,7 +76,6 @@ class TempRole(commands.Cog):
         self.tr_handler_task = self.bot.loop.create_task(self._tr_handler())
 
     def cog_unload(self):
-        self.membership_role.cog_unload()
         self.tr_handler_task.cancel()
 
     @commands.guild_only()
