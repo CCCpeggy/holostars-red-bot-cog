@@ -465,7 +465,7 @@ class TempRole(commands.Cog):
                         d = datetime.fromtimestamp(user_tr[str(role.id)])
                         d = to_datetime(f"{d.year}/{d.month}/{d.day}")
                         try:
-                            user_role = self.membership_role.add_user_role(role.id, member_name, d, type_name)
+                            user_role = self.membership_role.add_user_role(member.id, member_name, d, type_name)
                             user_role.valid()
                         except AlreadyExists:
                             pass
