@@ -379,6 +379,27 @@ class MembershipRoleManger(commands.Cog):
         msg = "\n".join(info)
         for i in range(0, len(msg), 2000):
             await ctx.send(msg[i:i + 2000], allowed_mentions=discord.AllowedMentions.none())
+
+    @role_group.command(name="audit")
+    async def _audit_membership(self, ctx: commands.Context):
+        """補驗證訊息
+        """
+        async def get_message(channel, message_id):
+            try:
+                message = await channel.fetch_message(message_id)
+            except:
+                return False
+            else:
+                return message
+
+        if ctx.message.reference:
+            msg = await get_message(self.input_channel, ctx.message.reference.message_id)
+            if msg:
+                await self.audit_membership(msg)
+            else:
+                await ctx.send(f"找不到原始訊息")
+        else:
+            await ctx.send(f"請回覆要驗證的訊息")
     
     @role_group.command(name="stars")
     async def test_init(self, ctx: commands.Context):
