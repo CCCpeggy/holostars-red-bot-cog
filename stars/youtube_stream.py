@@ -40,7 +40,6 @@ class YouTubeStream():
         self.id = kwargs.pop("id", None)
         self._token = kwargs.pop("token", None)
         self._config = kwargs.pop("config")
-        self.not_livestreams: List[str] = kwargs.pop("not_livestreams", [])
         self.livestreams: List[str] = kwargs.pop("livestreams", [])
         self.mention: List[int] = kwargs.pop("mention", [])
         self.update = kwargs.pop("update", False)
@@ -97,15 +96,11 @@ class YouTubeStream():
         except StreamNotFound:
             log.info(f"{self.id} StreamNotFound")
 
-        if self.not_livestreams:
-            self.not_livestreams = list(dict.fromkeys(self.not_livestreams))
-
         if self.livestreams:
             self.livestreams = list(dict.fromkeys(self.livestreams))
 
         streaming_data = None
         scheduled_datas = []
-        this_not_livestreams = []
         def insert_scheduled_data(scheduled_data):
             for i in range(len(scheduled_datas)):
                 time1 = self.get_info(scheduled_datas[i])["time"]
@@ -115,10 +110,6 @@ class YouTubeStream():
                     return
             scheduled_datas.append(scheduled_data)
         for video_id in set(videos + self.livestreams):
-            if video_id in self.not_livestreams:
-                this_not_livestreams.append(video_id)
-                log.debug(f"video_id in not_livestreams: {video_id}")
-                continue
             log.info(video_id)
             params = {
                 "key": self._token["api_key"],
@@ -167,10 +158,6 @@ class YouTubeStream():
                             insert_scheduled_data(data)
                     elif video_id in self.livestreams:
                         self.livestreams.remove(video_id)
-                        this_not_livestreams.append(video_id)
-                    else:
-                        this_not_livestreams.append(video_id)
-        self.not_livestreams = this_not_livestreams
         if len(scheduled_datas) > 0:
             return scheduled_datas, streaming_data
             # return await self.make_embed(embed_data)
