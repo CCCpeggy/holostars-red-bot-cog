@@ -225,7 +225,7 @@ class MembershipRoleManger(commands.Cog):
             return None
         if len(role_id) > 1:
             log.error(f"more than one fit: {role_id}")
-            raise Exception
+            # raise Exception
         return role_id[0]
     
     async def change_role_level(self, user_id: Union[discord.Member, discord.User, int, str], new_role_id: Union[discord.Role, int, str], reason: str=None):
@@ -554,7 +554,15 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
                 
 
             # mod check
-            mod_check_msg = await self.command_channel.send(f"ID: {message.author}\n" + message.content, embed=embed)
+            msg = []
+            msg.append(f"ID: {message.author.mention}")
+            if info["channel_id"]:
+                msg.append(f"頻道連結: <https://www.youtube.com/channel/{info['channel_id']}>")
+            if info["video_id"]:
+                msg.append(f"影片連結: <https://youtu.be/{info['video_id']}>")
+            msg.append(message.content.replace("https", "~~https~~"))
+            mod_check_msg = await self.command_channel.send("\n".join(msg), embed=embed,
+                allowed_mentions=discord.AllowedMentions(users=False))
             if not mod_check_msg:
                 raise ServerError
             
@@ -574,7 +582,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
                 for i in range(len(type_names)):
                     msg.append(f"{emoji[i]}: {type_names[i]}")
                 msg = "\n".join(msg)
-                msg = await self.command_channel.send(msg)
+                msg = await mod_check_msg.reply(msg)
                 index = await add_waiting_reaction(self.bot, msg, emoji[:len(type_names)])
                 type_name = type_names[index]
             role_id = member.membership_type.get(type_name, None)
@@ -585,7 +593,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             except AlreadyExists:
                 user = self.users[message.author.id]
             except Exception as e:
-                await self.command_channel.send("發生不明錯誤")
+                await mod_check_msg.reply("發生不明錯誤")
                 log.error(f"on_message: {e}")
                 return
 

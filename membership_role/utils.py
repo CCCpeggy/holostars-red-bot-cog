@@ -328,6 +328,8 @@ def parse_audit_str(content: str):
             channel_id = get_youtube_channel_id(value)
         elif key == "影片":
             video_id = get_youtube_video_id(value)
+            if not video_id:
+                raise CommentFailure
     if not date:
         raise NoDate
     if not member:
