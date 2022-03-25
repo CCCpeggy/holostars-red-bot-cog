@@ -124,21 +124,11 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
                             "author": comment.get('authorText', {}).get('simpleText', ''),
                             "photo": comment['authorThumbnail']['thumbnails'][-1]['url'],
                         }
-                    return None
     return None
             # print()
             # print(''.join([c['text'] for c in comment['contentText'].get('runs', [])]))
 
 
 if __name__ == "__main__":
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCAe4Mp23H_Mc3w1yZOCR-uA")
+    data = get_comment_info("7tak2v5X-7Y", channel_id="UCVUx8Nedmg1gsXDnoHsDjgQ")
     print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCsR4jiCU0tPEk8-jRv02aVg")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCqoW8wtwI20rmtr69UItpvw")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCqoW8wtwI20rmtr69UItpvw", comment_id="UgxdD71L8GQ-eLLC4y94AaABAg")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", comment_id="UgxdD71L8GQ-eLLC4y94AaABAg")
-    print(data)
-    
