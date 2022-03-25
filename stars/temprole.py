@@ -452,9 +452,8 @@ class TempRole(commands.Cog):
             if role := ctx.guild.get_role(r):
                 for member in role.members:
                     user_tr = await self.config.member(member).temp_roles()
-                    user_id = int(list(user_tr.keys())[0])
                     try:
-                        self.membership_role.add_user(user_id)
+                        self.membership_role.add_user(member.id)
                     except AlreadyExists:
                         pass
                     except Exception as e:
