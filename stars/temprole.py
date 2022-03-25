@@ -459,7 +459,7 @@ class TempRole(commands.Cog):
                     except Exception as e:
                         log.error(e)
                         continue
-                    if str(role.id) in user_tr or datetime.now(timezone.utc).timestamp() <= user_tr[str(role.id)]:
+                    if str(role.id) in user_tr:
                         member_name = role_to_member[role.id]
                         type_name = role_to_type_name[role.id]
                         d = datetime.fromtimestamp(user_tr[str(role.id)])
