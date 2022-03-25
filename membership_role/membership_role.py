@@ -289,7 +289,6 @@ class MembershipRoleManger(commands.Cog):
                 text_channel_id=text_channel.id
             )
             member.add_membership_type(type_name, role, True)
-            log.debug(member)
             await self.save_members()
             await ctx.send(f"成功加入會員成員: `{member.names[0]}`")
         except WrongMemberNameStr:
