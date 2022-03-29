@@ -534,7 +534,7 @@ class StarStream(commands.Cog):
                 return
 
     @_stars_stream.command(name="remove")
-    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
+    async def _stream_remove(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
         """ 刪除已加入的影片
         video_id: 要加入的連結
         """
