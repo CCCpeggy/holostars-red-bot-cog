@@ -93,6 +93,7 @@ class YouTubeStream():
                 async with session.get(HOLODEX_API_VIDEOS, params=params) as r:
                     for video in await r.json():
                         if video["channel"]["id"] == self.id:
+                            break
                             videos.append(video["id"])
         except StreamNotFound:
             log.info(f"{self.id} StreamNotFound")
