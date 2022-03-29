@@ -533,6 +533,20 @@ class StarStream(commands.Cog):
                 await ctx.send(f"{chat_channel.mention} 沒有設定的直播")
                 return
 
+    @_stars_stream.command(name="remove")
+    async def _stream_add(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
+        """ 刪除已加入的影片
+        video_id: 要加入的連結
+        """
+        for stream in self.streams:
+            if video_id in stream.livestreams:
+                stream.livestreams.pop(video_id)
+                await ctx.send(f"已從 {stream.id} 刪除 {video_id}")
+                await self.save_scheduled_streams()
+                break
+            else:
+                await ctx.send("沒有找到影片")
+
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
         """ 重新發送通知
