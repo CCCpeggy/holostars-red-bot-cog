@@ -540,9 +540,9 @@ class StarStream(commands.Cog):
         """
         for stream in self.streams:
             if video_id in stream.livestreams:
-                del stream.livestreams[video_id]
+                stream.livestreams.remove(video_id)
                 await ctx.send(f"已從 {stream.id} 刪除 {video_id}")
-                await self.save_scheduled_streams()
+                await self.save_streams()
                 break
         else:
             await ctx.send("沒有找到影片")
