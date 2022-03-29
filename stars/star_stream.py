@@ -540,12 +540,12 @@ class StarStream(commands.Cog):
         """
         for stream in self.streams:
             if video_id in stream.livestreams:
-                stream.livestreams.pop(video_id)
+                del stream.livestreams[video_id]
                 await ctx.send(f"已從 {stream.id} 刪除 {video_id}")
                 await self.save_scheduled_streams()
                 break
-            else:
-                await ctx.send("沒有找到影片")
+        else:
+            await ctx.send("沒有找到影片")
 
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
