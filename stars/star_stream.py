@@ -534,18 +534,37 @@ class StarStream(commands.Cog):
                 return
 
     @_stars_stream.command(name="remove")
-    async def _stream_remove(self, ctx: commands.Context, video_id: str, chat_channel: discord.TextChannel = None):
+    async def _stream_remove(self, ctx: commands.Context, video_id: str):
         """ 刪除已加入的影片
         video_id: 要加入的連結
         """
         for stream in self.streams:
             if video_id in stream.livestreams:
                 stream.livestreams.remove(video_id)
+                stream.scheduled_sent.pop(video_id, None)
+                if video_id in stream.streaming_sent:
+                    stream.streaming_sent.remove(video_id)
                 await ctx.send(f"已從 {stream.id} 刪除 {video_id}")
                 await self.save_streams()
                 break
         else:
-            await ctx.send("沒有找到影片")
+            await ctx.send(f"沒有找到 {video_id}")
+
+    @_stars_stream.command(name="clean")
+    async def _stream_clean(self, ctx: commands.Context, channel_id: str):
+        """ 清除指定頻道所有已加入的影片
+        channel_id: 要刪除的頻道 ID
+        """
+        for stream in self.streams:
+            if stream.id == channel_id:
+                stream.livestreams.clear()
+                stream.scheduled_sent.clear()
+                stream.streaming_sent.clear()
+                await ctx.send(f"已從 {stream.id} 的影片清單已清空")
+                await self.save_streams()
+                break
+        else:
+            await ctx.send(f"沒有找到 {channel_id}")
 
     @_stars_stream.command(name="resend")
     async def _stream_resend(self, ctx: commands.Context, video_id: str):
@@ -595,9 +614,24 @@ class StarStream(commands.Cog):
                 await ctx.send(f"`{video_id}` 個人不會再發待機台")
         elif not scheduled_stream:
             await ctx.send(f"沒有找到 `{video_id}`.")
-
+            
     @_stars_stream.command(name="list")
-    async def _stream_list(self, ctx: commands.Context, past: bool=True):
+    async def _stream_list(self, ctx: commands.Context, channel_id: str):
+        """ 列出頻道已抓取到的影片
+        channel_id: 要刪除的頻道 ID
+        """
+        for stream in self.streams:
+            if stream.id == channel_id:
+                if len(stream.livestreams):
+                    await ctx.send("\n".join(stream.livestreams))
+                else:
+                    await ctx.send("目前沒有抓取到任何影片")
+                break
+        else:
+            await ctx.send(f"沒有找到 {channel_id}")
+
+    @_stars_stream.command(name="set_list")
+    async def _stream_set_list(self, ctx: commands.Context, past: bool=True):
         """ 列出目前所有預定地待機台
         """
         msg = "預定直播列表：\n"
