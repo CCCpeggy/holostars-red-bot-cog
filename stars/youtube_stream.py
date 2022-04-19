@@ -137,9 +137,9 @@ class YouTubeStream():
                         )
                         continue
                     video_data = data.get("items", [{}])
-                    if len(video_data) > 0:
-                        stream_data = video_data[0].get("liveStreamingDetails", None)
-                        log.debug(f"stream_data for {video_id}: {stream_data}")
+                    if len(video_data) == 0:
+                        continue
+                    stream_data = video_data[0].get("liveStreamingDetails", None)
                     if data["items"][0]["snippet"]["channelId"] != self.id:
                         log.warning("error video: " + video_id)
                         continue
