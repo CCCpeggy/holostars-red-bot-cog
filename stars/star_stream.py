@@ -12,7 +12,7 @@ from redbot.core.utils.mod import is_mod_or_superior
 from redbot.core.utils import AsyncIter
 from .youtube_stream import YouTubeStream, get_video_belong_channel
 from .scheduled_stream import ScheduledStream
-from .temprole import TempRole
+# from .temprole import TempRole
 
 from .errors import (
     APIError,
@@ -99,7 +99,7 @@ class StarStream(commands.Cog):
         "membership_enable": False,
     }
 
-    def __init__(self, bot: Red, temp_role: TempRole = None):
+    def __init__(self, bot: Red):
         super().__init__()
         self.config: Config = Config.get_conf(self, 27272727)
         self.config.register_global(**self.global_defaults)
