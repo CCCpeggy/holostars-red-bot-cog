@@ -104,7 +104,6 @@ class StarStream(commands.Cog):
         self.config: Config = Config.get_conf(self, 27272727)
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
-        self.temp_role = temp_role
 
         self.bot: Red = bot
 
