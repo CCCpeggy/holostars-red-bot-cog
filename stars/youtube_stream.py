@@ -137,30 +137,28 @@ class YouTubeStream():
                         )
                         continue
                     video_data = data.get("items", [{}])
-                    if len(video_data) == 0:
-                        continue
-                    stream_data = video_data[0].get("liveStreamingDetails", None)
-                    if data["items"][0]["snippet"]["channelId"] != self.id:
-                        log.warning("error video: " + video_id)
-                        continue
-                    if (
-                        len(video_data) > 0
-                        and stream_data
-                        and stream_data != "None"
-                        and stream_data.get("actualEndTime", None) is None
-                    ):
-                        scheduled = stream_data.get("scheduledStartTime", None)
-                        if stream_data.get("actualStartTime", None) is not None:
-                            if video_id not in self.livestreams:
-                                self.livestreams.append(video_id)
-                            streaming_data = data
-                            insert_scheduled_data(data)
-                        elif (parse_time(scheduled) - datetime.now(timezone.utc)).total_seconds() < 86400 * 7:
-                            if video_id not in self.livestreams:
-                                self.livestreams.append(video_id)
-                            # if not scheduled_data or parse_time(scheduled) < self.get_info(scheduled_data)["time"]:
-                            insert_scheduled_data(data)
-                    elif video_id in self.livestreams:
+                    if len(video_data) != 0:
+                        stream_data = video_data[0].get("liveStreamingDetails", None)
+                        if data["items"][0]["snippet"]["channelId"] != self.id:
+                            log.warning("error video: " + video_id)
+                        elif (
+                            len(video_data) > 0 and stream_data and stream_data != "None"
+                            and stream_data.get("actualEndTime", None) is None
+                        ):
+                            scheduled = stream_data.get("scheduledStartTime", None)
+                            if stream_data.get("actualStartTime", None) is not None:
+                                if video_id not in self.livestreams:
+                                    self.livestreams.append(video_id)
+                                streaming_data = data
+                                insert_scheduled_data(data)
+                            elif (parse_time(scheduled) - datetime.now(timezone.utc)).total_seconds() < 86400 * 7:
+                                if video_id not in self.livestreams:
+                                    self.livestreams.append(video_id)
+                                # if not scheduled_data or parse_time(scheduled) < self.get_info(scheduled_data)["time"]:
+                                insert_scheduled_data(data)
+                            continue
+                    if video_id in self.livestreams:
+                        log.info("remove: " + video_id)
                         self.livestreams.remove(video_id)
         if len(scheduled_datas) > 0:
             return scheduled_datas, streaming_data
