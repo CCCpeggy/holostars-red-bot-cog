@@ -66,6 +66,7 @@ class MembershipRoleManger(commands.Cog):
         self.result_channel: discord.TextChannel = None
         
         async def initial():
+            await self.bot.wait_until_ready()
             async def load_members():
                 for key, value in (await self.config.members()).items():
                     self.add_member(**value)
