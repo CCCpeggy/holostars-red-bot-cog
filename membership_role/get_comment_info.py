@@ -87,7 +87,7 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
 
     data = json.loads(regex_search(html, YT_INITIAL_DATA_RE, default=''))
 
-    section = next(search_dict(data, 'itemSectionRenderer'), None)
+    section = next(search_dict(data['contents'], 'itemSectionRenderer'), None)
     renderer = next(search_dict(section, 'continuationItemRenderer'), None) if section else None
     if not renderer:
         # Comments disabled?
@@ -130,5 +130,5 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
 
 
 if __name__ == "__main__":
-    data = get_comment_info("7tak2v5X-7Y", channel_id="UCVUx8Nedmg1gsXDnoHsDjgQ")
+    data = get_comment_info("OITs4Q6QpdM", channel_id="UCWzjVXPq20fB3-e_v2eZLMg")
     print(data)
