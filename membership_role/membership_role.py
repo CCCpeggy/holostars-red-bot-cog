@@ -277,13 +277,21 @@ class MembershipRoleManger(commands.Cog):
     
     @role_group.command(name="add")
     async def _add_role(
-        self, ctx: commands.Context, dc_member: discord.Member, member: MemberConverter, date: str):
+        self, ctx: commands.Context, dc_member: discord.Member, member: MemberConverter, date: str
+        , channel_id: str = None, video_id: str = None):
         """對使用者加入暫時身分組
         
         dc_member: 要增加身分組的使用者
         member (字串): 成員名稱
         date: 到期日期
         """
+        comment_id = None
+        if video_id != None:
+            comment_data = await get_comment_info(video_id, channel_id=channel_id)
+            if comment_data == None:
+                await ctx.send("找不到留言")
+                return
+            comment_id = comment_data["comment_id"]
         try:
             user = self.add_user(dc_member)
         except AlreadyExists:
@@ -311,7 +319,10 @@ class MembershipRoleManger(commands.Cog):
         
         try:
             user_role: UserRole = self.add_user_role(
-                dc_member, member, date, type_name,tmp=True
+                dc_member, member, date, type_name,tmp=True,
+                video_id=video_id,
+                channel_id=channel_id,
+                comment_id=comment_id,
             )
         except Exception as e:
             await self.command_channel.send("發生不明錯誤")
