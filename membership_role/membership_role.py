@@ -347,7 +347,7 @@ class MembershipRoleManger(commands.Cog):
             role = get(ctx.guild.roles, id=role_id)
             for member in role.members:
                 user = self.users.get(member.id, None)
-                if not user or role_id not in user.roles:
+                if not user or role_id not in user.roles or not user.roles[role_id].is_expired():
                     if len(non_temp_list) >= 50:
                         await ctx.send(f"{role.mention} 名單：{', '.join(non_temp_list)}",
                         allowed_mentions=discord.AllowedMentions.none())
