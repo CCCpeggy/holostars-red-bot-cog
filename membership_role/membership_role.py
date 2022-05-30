@@ -335,6 +335,8 @@ class MembershipRoleManger(commands.Cog):
         role = get(ctx.guild.roles, id=role_id)
         await dc_member.add_roles(role, reason=f"mod: {dc_member}, expiration date: {date}")
         
+        await ctx.send("{dc_member.mention} 已新增身分組 {role.mention}", allowed_mentions=discord.AllowedMentions.none())
+        
     @role_group.command(name="check")
     async def _check_role(
         self, ctx: commands.Context, member: MemberConverter):
@@ -347,12 +349,12 @@ class MembershipRoleManger(commands.Cog):
                 user = self.users.get(member.id, None)
                 if not user or role_id not in user.roles:
                     if len(non_temp_list) >= 50:
-                        await ctx.send(f"{type_name} 名單：{', '.join(non_temp_list)}",
+                        await ctx.send(f"{role.mention} 名單：{', '.join(non_temp_list)}",
                         allowed_mentions=discord.AllowedMentions.none())
                         non_temp_list = []
                     non_temp_list.append(member.mention)
             if len(non_temp_list) > 0:
-                await ctx.send(f"{type_name} 名單：{', '.join(non_temp_list)}",
+                await ctx.send(f"{role.mention} 名單：{', '.join(non_temp_list)}",
                 allowed_mentions=discord.AllowedMentions.none())
         await ctx.send("檢查結束")
             
