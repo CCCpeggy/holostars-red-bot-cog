@@ -352,7 +352,7 @@ class MembershipRoleManger(commands.Cog):
                         await ctx.send(f"{role.mention} 名單：{', '.join(non_temp_list)}",
                         allowed_mentions=discord.AllowedMentions.none())
                         non_temp_list = []
-                    non_temp_list.append(member.mention)
+                    non_temp_list.append(f"{member.mention} ({member.id})")
             if len(non_temp_list) > 0:
                 await ctx.send(f"{role.mention} 名單：{', '.join(non_temp_list)}",
                 allowed_mentions=discord.AllowedMentions.none())
