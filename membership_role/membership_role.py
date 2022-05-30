@@ -335,7 +335,7 @@ class MembershipRoleManger(commands.Cog):
         role = get(ctx.guild.roles, id=role_id)
         await dc_member.add_roles(role, reason=f"mod: {dc_member}, expiration date: {date}")
         
-        await ctx.send("{dc_member.mention} 已新增身分組 {role.mention}", allowed_mentions=discord.AllowedMentions.none())
+        await ctx.send(f"{dc_member.mention} 已新增身分組 {role.mention}", allowed_mentions=discord.AllowedMentions.none())
         
     @role_group.command(name="check")
     async def _check_role(
