@@ -477,7 +477,7 @@ class MembershipRoleManger(commands.Cog):
             await ctx.send(msg[i:i + 2000], allowed_mentions=discord.AllowedMentions.none())
 
     @role_group.command(name="audit")
-    async def _audit_membership(self, ctx: commands.Context):
+    async def _audit_membership(self, ctx: commands.Context, send_result: bool=True):
         """補驗證訊息
         """
         async def get_message(channel, message_id):
@@ -491,7 +491,7 @@ class MembershipRoleManger(commands.Cog):
         if ctx.message.reference:
             msg = await get_message(ctx.channel, ctx.message.reference.message_id)
             if msg:
-                await self.audit_membership(msg)
+                await self.audit_membership(msg, send_result)
             else:
                 await ctx.send(f"找不到原始訊息")
         else:
@@ -622,7 +622,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             return
         await self.audit_membership(message)
 
-    async def audit_membership(self, message):
+    async def audit_membership(self, message, send_result=True):
         error_name = None
         handler_msg = "此為機器人自動偵測。"
         err_msg="\n".join([
@@ -738,11 +738,12 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
                 title=_("✅會員頻道權限審核通過"),
                 description=description
             )
-            await self.result_channel.send(
-                content=f"{message.author.mention}",
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions(roles=True)
-            )
+            if send_result:
+                await self.result_channel.send(
+                    content=f"{message.author.mention}",
+                    embed=embed,
+                    allowed_mentions=discord.AllowedMentions(roles=True)
+                )
             old_role_id = self.get_role_by_member(member, user)
             if old_role_id:
                 if not user_role.video_id:
@@ -789,11 +790,12 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
                 title=_("伺服器錯誤"),
                 description="""伺服器錯誤，請稍後一下""",
             )
-            await self.result_channel.send(
-                content=f"{message.author.mention}",
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions(roles=True)
-            )
+            if send_result:
+                await self.result_channel.send(
+                    content=f"{message.author.mention}",
+                    embed=embed,
+                    allowed_mentions=discord.AllowedMentions(roles=True)
+                )
             return
         
         err_msg = err_msg.format(handler_msg)
@@ -804,8 +806,9 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             title=_("❌會員頻道權限審核未通過"),
             description= err_msg,
         )
-        await self.result_channel.send(
-            content=f"{message.author.mention}",
-            embed=embed,
-            allowed_mentions=discord.AllowedMentions(roles=True)
-        )
+        if send_result:
+            await self.result_channel.send(
+                content=f"{message.author.mention}",
+                embed=embed,
+                allowed_mentions=discord.AllowedMentions(roles=True)
+            )
