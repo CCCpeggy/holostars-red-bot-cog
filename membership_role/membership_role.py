@@ -97,6 +97,7 @@ class MembershipRoleManger(commands.Cog):
     async def check(self):
         while True:
             log.info("--------check----------")
+            tmp_channel = get_text_channel(self.bot, 875001908350316544)
             try:
                 remove_user_ids = []
                 for user in self.users.values():
@@ -119,11 +120,15 @@ class MembershipRoleManger(commands.Cog):
                         elif not await user_role.check():
                             await dc_user.remove_roles(role, reason=f"身分組到期: {user_role.end_time}")
                             deleted = True
+                            await tmp_channel.send(f"Debug 中：{dc_user.mention} 的 {member.names[0]} 會員身分組已到期，請再次發送驗證資料", 
+                                    allowed_mentions=discord.AllowedMentions.none())
                             # await dc_user.send(f"您的 {member.names[0]} 會員身分組已到期，請再次發送驗證資料")
                         elif member.default_type_name:
                             default_role_id = member.membership_type[member.default_type_name]
                             if default_role_id != role_id:
                                 default_role = get(guild.roles, id=default_role_id)
+                                await tmp_channel.send(f"Debug 中：{dc_user.mention} 的新一個月的 {member.names[0]} 會員身分組驗證成功，但因無法驗證等級，所以自動降為 {member.default_type_name}，如需提高等級請重新發送驗證資料", 
+                                    allowed_mentions=discord.AllowedMentions.none())
                                 # await dc_user.send(f"您的新一個月的 {member.names[0]} 會員身分組驗證成功，但因無法驗證等級，所以自動降為 {member.default_type_name}，如需提高等級請重新發送驗證資料")
                                 await dc_user.remove_roles(role, reason=f"身分組到期 ({user_role.end_time})，更換成預設身分組")
                                 deleted = True
