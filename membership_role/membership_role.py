@@ -331,7 +331,7 @@ class MembershipRoleManger(commands.Cog):
         await dc_member.add_roles(role, reason=f"mod: {dc_member}, expiration date: {date}")
         
     @role_group.command(name="check")
-    async def _add_role(
+    async def _check_role(
         self, ctx: commands.Context, member: MemberConverter):
         """對成員下的身分組做檢查
         """
