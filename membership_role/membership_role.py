@@ -339,8 +339,8 @@ class MembershipRoleManger(commands.Cog):
         for type_name, role_id in member.membership_type.items():
             role = get(ctx.guild.roles, id=role_id)
             for member in role.members:
-                user_tr = await self.config.member(member).temp_roles()
-                if str(role.id) not in user_tr:
+                user = self.users.get(member.id, None)
+                if not user or role_id not in user.roles:
                     if len(non_temp_list) >= 50:
                         await ctx.send(f"{type_name} 名單：{', '.join(non_temp_list)}",
                         allowed_mentions=discord.AllowedMentions.none())
