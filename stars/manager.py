@@ -59,7 +59,7 @@ class Manager(commands.Cog):
         await self.send_manager.check()
         log.debug("---------check end---------")
         if ctx:
-            await Send.send(ctx, "check end")
+            await Send.send(ctx, "檢查結束")
 
     @commands.group(name="test")
     @commands.guild_only()
@@ -76,9 +76,9 @@ class Manager(commands.Cog):
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
         
-        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
-        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
-        await self.members_manager.set_member_channel(ctx, member, 1000064221817618562)
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
+        await self.members_manager.set_member_channel(ctx, member, get_text_channel(ctx.guild, 1000064221817618562))
         await self.check(None)
 
     @test.command(name="astel")
@@ -134,9 +134,9 @@ class Manager(commands.Cog):
         await self.members_manager.add_mention_role(ctx, member, get_role(ctx.guild, 1000066661426151505))
         await self.members_manager.set_color(ctx, member, 0x00, 0x47, 0xAB)
         await self.members_manager.set_emoji(ctx, member, ":performing_arts:")
-        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
-        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
-        await self.members_manager.set_member_channel(ctx, member, 1000064221817618562)
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
+        await self.members_manager.set_member_channel(ctx, member, get_text_channel(ctx.guild, 1000064221817618562))
         await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
         member = await self.members_manager.get_member(ctx.guild, member)
         
@@ -161,8 +161,8 @@ class Manager(commands.Cog):
         await self.members_manager.add_member(ctx, member_name1)
         member = await self.members_manager.get_member(ctx.guild, member_name1)
         await self.members_manager.set_emoji(ctx, member, "🆗")
-        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
-        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
         
         # add channel 1
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id1)

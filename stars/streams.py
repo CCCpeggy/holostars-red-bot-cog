@@ -172,10 +172,11 @@ class GuildStream:
                 f"GuildStream",
                 f"> id：{self.id}",
                 f"> 通知啟用狀態：{self.notify_msg_enable}",
+                f"> 待機台發送頻道：{self.notify_text_channel.name if self.notify_text_channel else '空'}",
                 f"> 通知訊息的 ID：{self.notify_msg_id}",
                 f"> 所屬待機 ID：{self.guild_collab_stream_id}",
                 f"> 資料更新：{self._info_update}",
-                f"> member name：{self.member_name}",
+                f"> 成員名稱：{self.member_name}",
             ]
         else:
             data = [
@@ -305,6 +306,15 @@ class GuildCollabStream:
             self._members.append(member)
             self._info_update = True
     
+    def remove_member(self, member: "Member"):
+        if member.name in self.member_names:
+            for guild_stream in list(self._guild_streams.values()):
+                if guild_stream.member_name == member.name:
+                    self.remove_guild_stream(guild_stream)
+            self.member_names.remove(member.name)
+            self._members.remove(member)
+            self._info_update = True
+    
     def check_guild_stream_fit(self, guild_stream: "GuildStream") -> bool:
         if not Time.is_diff_in_range(guild_stream._stream.time, self.time, days=5, minutes=15):
             # time is not in range
@@ -326,11 +336,12 @@ class GuildCollabStream:
                 f"GuildCollabStream",
                 f"> id：{self.id}",
                 f"> 待機台啟用狀態：{self.standby_msg_enable}",
+                f"> 待機台發送頻道：{self.standby_text_channel.name if self.standby_text_channel else '空'}",
                 f"> 相關直播 ID：{', '.join(self.guild_stream_ids)}",
                 f"> 待機台時間：{self.time}",
                 f"> 資料更新：{self._info_update}",
                 f"> 狀態：{self._status}",
-                f"> members：{self.member_names}",
+                f"> 成員名單：{self.member_names}",
                 # f"> check: {list(self._guild_streams.values())[0]._guild_collab_stream.id}",
             ]
         else:
@@ -665,7 +676,7 @@ class StreamsManager(commands.Cog):
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
     async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
-        guild_streams_manager = self.get_guild_manager(self.guild)
+        guild_streams_manager = self.get_guild_manager(ctx.guild)
         guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_text_channel = text_channel
         await self.save_streams()
@@ -673,7 +684,7 @@ class StreamsManager(commands.Cog):
     
     @stream_group.command(name="standby_textchannel")
     async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
-        guild_streams_manager = self.get_guild_manager(self.guild)
+        guild_streams_manager = self.get_guild_manager(ctx.guild)
         guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id[stream_id]
         guild_collab_stream.standby_text_channel = text_channel
         await self.save_streams()
@@ -760,28 +771,50 @@ class StreamsManager(commands.Cog):
 
     @collab_group.command(name="remove_stream")
     async def remove_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
-        if guild_stream not in guild_collab_stream._guild_streams:
-            await Send.not_existed(ctx, "guild_collab_stream", guild_stream)
+        if guild_stream.id not in guild_collab_stream._guild_streams:
+            await Send.not_existed(ctx, "聯動關聯直播", guild_stream)
         else:
             guild_collab_stream.remove_guild_stream(guild_stream)
             await guild_stream._saved_func()
             await guild_collab_stream._saved_func()
-            await Send.remove_completed(ctx, "guild_stream", guild_collab_stream)
+            await Send.remove_completed(ctx, "聯動關聯直播", guild_collab_stream)
     
     @collab_group.command(name="add_stream")
-    async def remove_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
-        if guild_stream in guild_collab_stream._guild_streams:
-            await Send.already_existed(ctx, "guild_collab_stream", guild_stream)
+    async def add_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
+        if guild_stream.id in guild_collab_stream._guild_streams:
+            await Send.already_existed(ctx, "聯動關聯直播", guild_stream.id)
         else:
             guild_collab_stream.add_guild_stream(guild_stream)
             await guild_stream._saved_func()
             await guild_collab_stream._saved_func()
-            await Send.add_completed(ctx, "guild_stream", guild_collab_stream)
+            await Send.add_completed(ctx, "聯動關聯直播", guild_collab_stream)
     
+    # TODO: remove member、add member
+    @collab_group.command(name="remove_member")
+    async def remove_member_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, member: MemberConverter):
+        if member not in guild_collab_stream._members:
+            await Send.not_existed(ctx, "聯動成員", member.name)
+        else:
+            guild_collab_stream.remove_member(member)
+            await guild_collab_stream._saved_func()
+            await Send.remove_completed(ctx, "聯動成員", guild_collab_stream)
+    
+    @collab_group.command(name="add_member")
+    async def add_member_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, member: MemberConverter):
+        if member in guild_collab_stream._members:
+            await Send.already_existed(ctx, "聯動成員", member.name)
+        else:
+            guild_collab_stream.add_member(member)
+            await guild_collab_stream._saved_func()
+            await Send.add_completed(ctx, "聯動成員", guild_collab_stream)
+
     # set no send
     @stream_group.command(name="notify_status")
     async def set_notify_status(self, ctx: commands.Context, stream_id: str, status: bool):
-        guild_streams_manager = self.get_guild_manager(self.guild)
+        """ 設定直播的通知是否要啟用
+        status: yes、no
+        """
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
         guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_msg_enable = status
         await self.save_streams()
@@ -789,15 +822,18 @@ class StreamsManager(commands.Cog):
     
     @stream_group.command(name="standby_status")
     async def set_standby_status(self, ctx: commands.Context, stream_id: str, status: bool):
-        guild_streams_manager = self.get_guild_manager(self.guild)
-        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id[stream_id]
+        """ 設定待機台是否要啟用
+        status: yes、no
+        """
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.standby_msg_enable = status
         await self.save_streams()
         await Send.send(ctx, str(guild_collab_stream ))
 
     # list
     @stream_group.command(name="list")
-    async def set_standby_status(self, ctx: commands.Context, member: MemberConverter=None):
+    async def standby_list(self, ctx: commands.Context, member: MemberConverter=None):
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         data = []
         for guild_stream in guild_streams_manager.guild_streams.values():
@@ -815,14 +851,16 @@ class StreamsManager(commands.Cog):
     # update
     @stream_group.command(name="update")
     async def update_message(self, ctx: commands.Context, member: MemberConverter):
+        """ 要求重新抓取直播資訊，並在下次定時檢測是更新 (可用於待機台的圖片更新時)
+        """
         update_guild_streams_manager = []
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        for guild_stream in guild_streams_manager._guild_streams.values():
+        for guild_stream in guild_streams_manager.guild_streams.values():
             if guild_stream._member.name == member.name:
                 guild_stream._guild_collab_stream._info_update = True
                 update_guild_streams_manager.append(str(guild_stream._guild_collab_stream))
         await self.save_streams()
-        await Send.send(ctx, "all need update: " + ", ".join(update_guild_streams_manager))
+        await Send.send(ctx, "在下次的定時檢測時，會更新以下直播: " + ", ".join(update_guild_streams_manager))
 
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
     msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream} (預設**{'加入' if default else '不加入'})**")

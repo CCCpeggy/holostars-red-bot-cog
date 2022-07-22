@@ -54,17 +54,17 @@ class SendManager(commands.Cog):
         notify_tmp_message_format = await self.config.guild(ctx.guild).collab_notify_message_format()
         notify_embed_enable = await self.config.guild(ctx.guild).notify_embed_enable()
         data = [
-            f"**standby message format**: {standby_message_format}",
-            f"**notify message format**: {notify_message_format}",
-            f"**notify(tmp) message format**: {notify_tmp_message_format}",
-            f"**notify embed enable**: {notify_embed_enable}",
+            f"**待機台的訊息格式**: {standby_message_format}",
+            f"**通知的訊息格式**: {notify_message_format}",
+            # f"**notify(tmp) message format**: {notify_tmp_message_format}",
+            f"**是否啟用通知的內嵌訊息**: {notify_embed_enable}",
         ]
         await Send.send(ctx, "\n".join(data))
 
     @message_group.command(name="standby")
     async def set_standby_string_format(self,  ctx: commands.Context, message_format: str):
         """
-        {time}, {title}, {channel_name}, {member_name}, {url}, {mention},
+        可使用的標籤：{time}, {title}, {channel_name}, {member_name}, {url}, {mention},
         {description}, {new_line}, {new_message}
         """
         await self.config.guild(ctx.guild).standby_message_format.set(message_format)
@@ -73,26 +73,25 @@ class SendManager(commands.Cog):
     @message_group.command(name="notify")
     async def set_notify_string_format(self,  ctx: commands.Context, message_format: str, need_embed: bool=True):
         """
-        {title}, {channel_name}, {url}, {mention}, {description}, 
+        可使用的標籤：{title}, {channel_name}, {url}, {mention}, {description}, 
         {new_line}, {chat_channel}
         """
         await self.config.guild(ctx.guild).notify_message_format.set(message_format)
         await self.config.guild(ctx.guild).notify_embed_enable.set(need_embed)
-        await Send.set_up_completed(ctx, "notify 訊息格式", message_format)
+        await Send.set_up_completed(ctx, "通知訊息格式", message_format)
 
     @message_group.command(name="notify_tmp")
     async def set_notify_string_format(self,  ctx: commands.Context, message_format: str):
         """
-        {mention}, {chat_channel}
+        可使用的標籤：{mention}, {chat_channel}
         """
         await self.config.guild(ctx.guild).collab_notify_message_format.set(message_format)
-        await Send.set_up_completed(ctx, "notify 訊息格式", message_format)
+        await Send.set_up_completed(ctx, "通知訊息格式", message_format)
         
     @message_group.command(name="info_channel")
     async def set_info_channel(self,  ctx: commands.Context, text_channel: discord.TextChannel):
         await self.config.guild(ctx.guild).info_text_channel.set(text_channel.id)
-        await Send.set_up_completed(ctx, "info channel ", text_channel)
-
+        await Send.set_up_completed(ctx, "傳送訊息的頻道", text_channel)
 
     async def get_info_channel(self, guild):
         info_text_channel_id = await self.config.guild(guild).info_text_channel()
