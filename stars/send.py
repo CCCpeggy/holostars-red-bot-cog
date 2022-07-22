@@ -64,8 +64,7 @@ class SendManager(commands.Cog):
     @message_group.command(name="standby")
     async def set_standby_string_format(self,  ctx: commands.Context, message_format: str):
         """
-        可使用的標籤：{time}, {title}, {channel_name}, {member_name}, {url}, {mention},
-        {description}, {new_line}, {new_message}
+        可使用的標籤：{time}, {title}, {channel_name}, {member_name}, {url}, {mention}, {description}, {new_line}, {next_msg}
         """
         await self.config.guild(ctx.guild).standby_message_format.set(message_format)
         await Send.set_up_completed(ctx, "待機台訊息格式", message_format)
@@ -73,8 +72,7 @@ class SendManager(commands.Cog):
     @message_group.command(name="notify")
     async def set_notify_string_format(self,  ctx: commands.Context, message_format: str, need_embed: bool=True):
         """
-        可使用的標籤：{title}, {channel_name}, {url}, {mention}, {description}, 
-        {new_line}, {chat_channel}
+        可使用的標籤：{title}, {channel_name}, {url}, {mention}, {description}, {new_line}, {chat_channel}
         """
         await self.config.guild(ctx.guild).notify_message_format.set(message_format)
         await self.config.guild(ctx.guild).notify_embed_enable.set(need_embed)
@@ -114,6 +112,7 @@ class SendManager(commands.Cog):
                 guild_collab_stream._info_update = False
 
     async def send_standby(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
+        # 可發送多則，但修改只會修改第一則
         standby_text_channel = guild_collab_stream.standby_text_channel
         if not guild_collab_stream.standby_msg_enable or not standby_text_channel:
             return
@@ -125,13 +124,17 @@ class SendManager(commands.Cog):
         msg_format = await self.config.guild(guild).standby_message_format()
         
         # get message content
-        msg = guild_collab_stream.get_standby_msg(msg_format)
+        msgs = guild_collab_stream.get_standby_msg(msg_format)
         if standby_msg:
-            await standby_msg.edit(content=msg)
+            await standby_msg.edit(content=msgs[0])
         else:
+            # 發送第一則 (id 要保留)
             standby_msg = await standby_text_channel.send(
-                content=str(guild_collab_stream.standby_msg_id) + "\n" + str(guild_collab_stream.id) + "\n" + msg, allowed_mentions=discord.AllowedMentions(roles=True)
+                content=msgs[0], allowed_mentions=discord.AllowedMentions(roles=True)
             )
+            # 發送其後的
+            for i in range(1, len(msgs)):
+                await standby_text_channel.send(content=msgs[i])
             guild_collab_stream.standby_msg_id = standby_msg.id
             await guild_collab_stream._saved_func()
         # elif not guild_collab_stream.standby_msg_id:

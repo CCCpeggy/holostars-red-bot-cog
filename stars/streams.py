@@ -272,14 +272,19 @@ class GuildCollabStream:
             if guild_stream._member.mention_roles :
                 mention_roles += guild_stream._member.mention_roles 
         mention_roles = list(set(mention_roles))
-        message_format = message_format.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
-        message_format = message_format.replace("{title}", get_title(self))
-        message_format = message_format.replace("{channel_name}", get_channel_name(self))
-        message_format = message_format.replace("{url}", get_url(self))
-        message_format = message_format.replace("{mention}", get_roles_str(self._guild, mention_roles))
-        message_format = message_format.replace("{description}", get_description(self))
-        message_format = message_format.replace("{new_line}", "\n")
-        return message_format
+
+        # 將 TAG 的部分轉換為文字
+        messages = []
+        for message in message_format.split("{next_msg}"):
+            message = message.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
+            message = message.replace("{title}", get_title(self))
+            message = message.replace("{channel_name}", get_channel_name(self))
+            message = message.replace("{url}", get_url(self))
+            message = message.replace("{mention}", get_roles_str(self._guild, mention_roles))
+            message = message.replace("{description}", get_description(self))
+            message = message.replace("{new_line}", "\n")
+            messages.append(message)
+        return messages
     
     def add_guild_stream(self, guild_stream: "GuildStream"):
         if guild_stream.id not in self.guild_stream_ids:
