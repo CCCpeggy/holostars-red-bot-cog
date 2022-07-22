@@ -580,7 +580,7 @@ class StreamsManager(commands.Cog):
 
     async def initial(self):
         async def load_streams():
-            from .errors import MException
+            # from .errors import MException
             for id, raw_data in (await self.config.streams()).items():
                 await self.add_stream(save=False, **raw_data)
         await load_streams()
@@ -825,7 +825,7 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, "all need update: " + ", ".join(update_guild_streams_manager))
 
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
-    msg = await place.send(f"whether to add {guild_stream.id} into {guild_collab_stream.id}")
+    msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream} (預設**{'加入' if default else '不加入'})**")
     async def add():
         guild_collab_stream.add_guild_stream(guild_stream)
         await guild_stream._saved_func()
@@ -845,14 +845,14 @@ async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, g
             belong_or_not = await add_bool_reaction(bot, msg)
             if not default and belong_or_not:
                 await add()
-                await place.send(f"add {guild_stream.id} into {guild_collab_stream.id}: {guild_collab_stream}")
+                await place.send(f"已將直播 {guild_stream.id} 加進聯動 {guild_collab_stream}")
             if default and not belong_or_not:
                 await remove()
-                await place.send(f"remove {guild_stream.id} from {guild_collab_stream.id}: {guild_collab_stream}")
+                await place.send(f"直播 {guild_stream.id} 已從聯動中取消 {guild_collab_stream}")
         return event
     do_event_in_time(
         bot,
         whether_to_add(guild_stream), 
-        Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 3600,
+        Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 10000000,
         async_timeout_func=msg.clear_reactions
     )

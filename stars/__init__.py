@@ -1,6 +1,5 @@
 from .manager import Manager
-import json
-from pathlib import Path
+from redbot.core.bot import Red
 
-def setup(bot):
-    manager = Manager(bot)
+async def setup(bot: Red) -> None:
+    await bot.add_cog(Manager(bot))

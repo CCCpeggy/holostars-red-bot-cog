@@ -18,17 +18,14 @@ streams_manager = None
 
 class Manager(commands.Cog):
     def __init__(self, bot: Red, **kwargs):
+        super().__init__()
         self.bot = bot
-        self.bot.add_cog(self)
         self.send_manager: "SendManager" = SendManager(self.bot, self)
-        self.bot.add_cog(self.send_manager)
         self.channels_manager: "ChannelsManager" = ChannelsManager(self.bot, self)
-        self.bot.add_cog(self.channels_manager)
         self.members_manager: "MembersManager" = MembersManager(self.bot, self)
-        self.bot.add_cog(self.members_manager)
         self.streams_manager: "StreamsManager" = StreamsManager(self.bot, self)
-        self.bot.add_cog(self.streams_manager)
         self.bot.loop.create_task(self.initial())
+
         global send_manager
         send_manager = self.send_manager
         global channels_manager
@@ -39,17 +36,21 @@ class Manager(commands.Cog):
         streams_manager = self.streams_manager
 
     async def initial(self):
+        await self.bot.add_cog(self.send_manager)
+        await self.bot.add_cog(self.channels_manager)
+        await self.bot.add_cog(self.members_manager)
+        await self.bot.add_cog(self.streams_manager)
+    
         await self.bot.wait_until_red_ready()
         await self.channels_manager.initial()
         await self.members_manager.initial()
         await self.streams_manager.initial()
-        await self.check()
-
+        await self.check(None)
 
     @commands.command(name="check")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
-    async def check(self, ctx=None):
+    async def check(self, ctx):
         log.debug("---------check start---------")
         await self.channels_manager.check()
         await self.streams_manager.delete_not_valid_and_notsure_stream()
@@ -68,18 +69,17 @@ class Manager(commands.Cog):
 
     @test.command(name="set")
     async def test_set(self, ctx):
-        member_name = "roboco"
-        channel_id = "UCDqI2jOz0weumE8s7paEk6g"
-        await self.members_manager.add_member(ctx=ctx, name=member_name)
+        member_name = "astel"
+        channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
+        await self.members_manager.add_member(ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
-        await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
         
-        await self.members_manager.set_notify_channel(ctx, member_name, 884066848822427708)
-        await self.members_manager.set_chat_channel(ctx, member_name, 884066992762523649)
-        await self.members_manager.set_member_channel(ctx, member_name, 886454736344186963)
-        await self.check()
-
+        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
+        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
+        await self.members_manager.set_member_channel(ctx, member, 1000064221817618562)
+        await self.check(None)
 
     @test.command(name="astel")
     async def test_astel(self, ctx):
@@ -87,7 +87,7 @@ class Manager(commands.Cog):
         channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
         await self.members_manager.add_member(ctx=ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
-        await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
 
     @test.command(name="data")
@@ -129,14 +129,16 @@ class Manager(commands.Cog):
 
         # add member
         await self.members_manager.add_member(ctx, member_name)
-        await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 879027799204188190))
-        await self.members_manager.add_mention_role(ctx, member_name, get_role(ctx.guild, 886496543320989756))
-        await self.members_manager.set_color(ctx, member_name, 0x00, 0x47, 0xAB)
-        await self.members_manager.set_emoji(ctx, member_name, ":performing_arts:")
-        await self.members_manager.set_notify_channel(ctx, member_name, get_text_channel(ctx.guild, 884066848822427708))
-        await self.members_manager.set_chat_channel(ctx, member_name, get_text_channel(ctx.guild, 884066992762523649))
-        await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
         member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.members_manager.add_mention_role(ctx, member, get_role(ctx.guild, 1000066476021133454))
+        await self.members_manager.add_mention_role(ctx, member, get_role(ctx.guild, 1000066661426151505))
+        await self.members_manager.set_color(ctx, member, 0x00, 0x47, 0xAB)
+        await self.members_manager.set_emoji(ctx, member, ":performing_arts:")
+        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
+        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
+        await self.members_manager.set_member_channel(ctx, member, 1000064221817618562)
+        await self.send_manager.set_message_start(ctx, "time: {time}{new_line}title: {title}\nchannel_name: {channel_name}\nurl: {url}\nmention: {mention}\ndescription: {description}")
+        member = await self.members_manager.get_member(ctx.guild, member)
         
         # add channel
         await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
@@ -147,20 +149,20 @@ class Manager(commands.Cog):
     @test.command(name="collab")
     async def test_holodex(self, ctx):
         log.debug("-------------------test_collab---------------------")
-        await self.send_manager.set_info_channel(ctx, get_text_channel(ctx.guild, 884066992762523649))
-        member_name1 = "Anya"
-        channel_id1 = "UC727SQYUvx5pDDGQpTICNWg"
+        await self.send_manager.set_info_channel(ctx, get_text_channel(ctx.guild, 1000049609881682060))
+        member_name1 = "Ollie"
+        channel_id1 = "UCYz_5n-uDuChHtLo7My1HnQ"
         
         # remove member 1
         await self.members_manager.remove_member(ctx, member_name1)
-        await self.check()
+        await self.check(None)
         
         # add member 1
         await self.members_manager.add_member(ctx, member_name1)
         member = await self.members_manager.get_member(ctx.guild, member_name1)
         await self.members_manager.set_emoji(ctx, member, "🆗")
-        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 884066848822427708))
-        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 884066992762523649))
+        await self.members_manager.set_notify_channel(ctx, member, 1000064180239474728)
+        await self.members_manager.set_chat_channel(ctx, member, 1000064200758022265)
         
         # add channel 1
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id1)
@@ -168,9 +170,9 @@ class Manager(commands.Cog):
         
         # set collab
         from datetime import datetime
-        time = datetime(2022,2,4,17)
+        time = datetime(2022, 7, 22, 22, 30)
         time = Time.add_timezone(time, 'Asia/Taipei')
-        await self.streams_manager.create_collab(ctx, time, get_text_channel(ctx.guild, 884066992762523649))
+        await self.streams_manager.create_collab(ctx, time, get_text_channel(ctx.guild, 1000067977405800599))
         # member_name2 = "aruran"
         # channel_id2 = "UCKeAhJvy8zgXWbh9duVjIaQ"
         # await self.members_manager.remove_member(ctx, member_name2)

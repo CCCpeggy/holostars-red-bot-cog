@@ -106,7 +106,7 @@ def getEmoji(guild_emojis, ori_emoji):
             return e
     # check emoji dictionary
     import emoji
-    if ori_emoji in emoji.UNICODE_EMOJI['en']:
+    if ori_emoji in emoji.EMOJI_DATA:
         return ori_emoji
     return None
 
@@ -126,7 +126,9 @@ def do_event_in_time(bot, func, time: int, timeout_func=None, async_timeout_func
 async def add_reaction(message: discord.Message, emojis: List[str]):
     import contextlib
     with contextlib.suppress(discord.NotFound):
+        log.debug(str(emojis))
         for emoji in emojis:
+            log.debug(str(emoji))
             await message.add_reaction(emoji)
 
 async def add_waiting_reaction(bot, user: discord.User, message: discord.Message, emojis: List[str]):
@@ -134,6 +136,7 @@ async def add_waiting_reaction(bot, user: discord.User, message: discord.Message
     cancel_emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
     emojis = [done_emoji, cancel_emoji] + emojis
     import asyncio
+    emojis = [e for e in emojis if e is not None]
     task = asyncio.create_task(add_reaction(message, emojis))
     emojis = [getEmoji(message.guild.emojis, e) for e in emojis]
     selected = {e: False for e in emojis[2:]}
