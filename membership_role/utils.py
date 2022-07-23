@@ -15,6 +15,10 @@ _ = Translator("StarsStreams", __file__)
 log = logging.getLogger("red.core.cogs.Temprole")
 log.setLevel(logging.DEBUG)
 
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
+
 def get_text_channel(place: Union[discord.Guild, Red], channel: Union[int, str, discord.TextChannel, None]) -> discord.TextChannel:
     if isinstance(channel, int) or isinstance(channel, str):
         return place.get_channel(channel)
@@ -94,9 +98,9 @@ async def check_video_owner(channel_id: str, video_id: str) -> bool:
         "channel_id": channel_id,
         "id": video_id
     }
-    log.debug(params)
+    # log.debug(params)
     data = await get_http_data("https://holodex.net/api/v2/videos", params)
-    log.debug(data)
+    # log.debug(data)
     return data and len(data) > 0
 
 async def get_http_data(url, params={}):
@@ -307,9 +311,10 @@ def parse_audit_str(content: str):
     content = replace_redundant_char(content)
     for s in content.split('\n'):
         tmp = s.split(':')
-        if len(tmp) != 2:
+        if len(tmp) < 2:
             continue
-        key, value = tmp
+        key = tmp[0]
+        value = ":".join(tmp[1:])
         if key == "頻道":
             value = value.lower()
             member = get_member_by_name(value)
@@ -323,6 +328,8 @@ def parse_audit_str(content: str):
             channel_id = get_youtube_channel_id(value)
         elif key == "影片":
             video_id = get_youtube_video_id(value)
+            if not video_id:
+                raise CommentFailure
     if not date:
         raise NoDate
     if not member:

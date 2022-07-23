@@ -87,7 +87,7 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
 
     data = json.loads(regex_search(html, YT_INITIAL_DATA_RE, default=''))
 
-    section = next(search_dict(data, 'itemSectionRenderer'), None)
+    section = next(search_dict(data['contents'], 'itemSectionRenderer'), None)
     renderer = next(search_dict(section, 'continuationItemRenderer'), None) if section else None
     if not renderer:
         # Comments disabled?
@@ -124,21 +124,11 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
                             "author": comment.get('authorText', {}).get('simpleText', ''),
                             "photo": comment['authorThumbnail']['thumbnails'][-1]['url'],
                         }
-                    return None
     return None
             # print()
             # print(''.join([c['text'] for c in comment['contentText'].get('runs', [])]))
 
 
 if __name__ == "__main__":
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCAe4Mp23H_Mc3w1yZOCR-uA")
+    data = get_comment_info("OITs4Q6QpdM", channel_id="UCWzjVXPq20fB3-e_v2eZLMg")
     print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCsR4jiCU0tPEk8-jRv02aVg")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCqoW8wtwI20rmtr69UItpvw")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", channel_id="UCqoW8wtwI20rmtr69UItpvw", comment_id="UgxdD71L8GQ-eLLC4y94AaABAg")
-    print(data)
-    data = get_comment_info("d-XSkvEVg20", comment_id="UgxdD71L8GQ-eLLC4y94AaABAg")
-    print(data)
-    

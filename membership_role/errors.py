@@ -25,6 +25,9 @@ class NoChannelName(TempMembershipRole):
 class FutureDate(TempMembershipRole):
     pass
 
+class VideoOwnChannelNotFit(TempMembershipRole):
+    pass
+
 class CommentFailure(TempMembershipRole):
     pass
 

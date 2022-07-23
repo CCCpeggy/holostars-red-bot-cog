@@ -32,7 +32,7 @@ class Member():
         for type_name, role in membership_type.items():
             self.add_membership_type(type_name, role)
 
-        self.default_type_name: str = kwargs.pop("default_type_name", list(self.membership_type.keys())[0])
+        self.default_type_name: str = kwargs.pop("default_type_name", None)
         
         self._save_func = _save_func
         self._bot.loop.create_task(_save_func())
