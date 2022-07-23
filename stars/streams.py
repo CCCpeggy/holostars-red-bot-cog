@@ -330,7 +330,7 @@ class GuildCollabStream:
             self._info_update = True
     
     def check_guild_stream_fit(self, guild_stream: "GuildStream") -> bool:
-        if not Time.is_diff_in_range(guild_stream._stream.time, self.time, days=5, minutes=15):
+        if not Time.is_diff_in_range(guild_stream._stream.time, self.time, minutes=15):
             # time is not in range
             log.debug(f"reason 1: {guild_stream._stream.time}, {self.time}")
             return False

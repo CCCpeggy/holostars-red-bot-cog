@@ -49,7 +49,13 @@ class Manager(commands.Cog):
         await self.members_manager.initial()
         await self.streams_manager.initial()
         while True:
-            await self.check(None)
+            log.debug("---------check start---------")
+            await self.channels_manager.check()
+            await self.streams_manager.delete_not_valid_and_notsure_stream()
+            await self.members_manager.check()
+            await self.streams_manager.check()
+            await self.send_manager.check()
+            log.debug("---------check end---------")
             await asyncio.sleep(60)
 
     async def cog_unload(self):
