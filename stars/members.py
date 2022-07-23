@@ -234,6 +234,8 @@ class Member:
         self.emoji: str = kwargs.pop("emoji", None)
         self.color: int = kwargs.pop("color", 0x9255A5)
         self.mention_roles: List[int] = kwargs.pop("mention_roles", [])
+        if self.mention_roles is None:
+            self.mention_roles = []
         self.channel_ids: List[str] = kwargs.pop("channel_ids", [])
         if not isinstance(self.channel_ids, list):
             raise Exception
