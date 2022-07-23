@@ -698,6 +698,8 @@ class StreamsManager(commands.Cog):
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
     async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+        """ 設定開播提醒的頻道
+        """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_text_channel = text_channel
@@ -706,6 +708,8 @@ class StreamsManager(commands.Cog):
     
     @stream_group.command(name="standby_textchannel")
     async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+        """ 設定直播討論的所在頻道
+        """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.standby_text_channel = text_channel
@@ -714,6 +718,8 @@ class StreamsManager(commands.Cog):
 
     @stream_group.command(name="add")
     async def stream_add_stream(self, ctx: commands.Context, stream_id: str):
+        """ 新增直播
+        """
         key = (await self.bot.get_shared_api_tokens("youtube"))["api_key"]
         stream_info = await Channel.get_stream_info(stream_id, key)
         log.debug(str(stream_info))
@@ -729,6 +735,8 @@ class StreamsManager(commands.Cog):
     # set collab - by channel, video (exist channel or not exist)
     @stream_group.group(name="collab")
     async def collab_group(self, ctx: commands.Context):
+        """ 聯動相關設置
+        """
         pass
     
     @collab_group.command(name="add")
@@ -778,6 +786,8 @@ class StreamsManager(commands.Cog):
                 
     @collab_group.command(name="create")
     async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: discord.TextChannel):
+        """建立聯動 (目前因表符數量限制，超出數量的人需要另外用指令加入)
+        """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         
@@ -808,6 +818,8 @@ class StreamsManager(commands.Cog):
 
     @collab_group.command(name="remove_stream")
     async def remove_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
+        """從聯動中刪除指定的直播
+        """
         if guild_stream.id not in guild_collab_stream._guild_streams:
             await Send.not_existed(ctx, "聯動關聯直播", guild_stream)
         else:
@@ -818,6 +830,8 @@ class StreamsManager(commands.Cog):
     
     @collab_group.command(name="add_stream")
     async def add_stream_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, guild_stream: GuildStreamConverter):
+        """新增直播至指定的聯動
+        """
         if guild_stream.id in guild_collab_stream._guild_streams:
             await Send.already_existed(ctx, "聯動關聯直播", guild_stream.id)
         else:
@@ -829,6 +843,8 @@ class StreamsManager(commands.Cog):
     # TODO: remove member、add member
     @collab_group.command(name="remove_member")
     async def remove_member_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, member: MemberConverter):
+        """從聯動中刪除指定的成員
+        """
         if member not in guild_collab_stream._members:
             await Send.not_existed(ctx, "聯動成員", member.name)
         else:
@@ -838,6 +854,8 @@ class StreamsManager(commands.Cog):
     
     @collab_group.command(name="add_member")
     async def add_member_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, member: MemberConverter):
+        """新增成員至指定的聯動
+        """
         if member in guild_collab_stream._members:
             await Send.already_existed(ctx, "聯動成員", member.name)
         else:
@@ -871,6 +889,8 @@ class StreamsManager(commands.Cog):
     # list
     @stream_group.command(name="list")
     async def standby_list(self, ctx: commands.Context, member: MemberConverter=None):
+        """ 直播清單
+        """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         data = []
         for guild_stream in guild_streams_manager.guild_streams.values():
