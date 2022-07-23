@@ -10,6 +10,9 @@ from .channels import ChannelsManager
 from .members import MembersManager
 from .send import SendManager
 
+# other
+import asyncio
+
 _, log = get_logger()
 send_manager = None
 channels_manager = None
@@ -45,7 +48,9 @@ class Manager(commands.Cog):
         await self.channels_manager.initial()
         await self.members_manager.initial()
         await self.streams_manager.initial()
-        await self.check(None)
+        while True:
+            await self.check(None)
+            await asyncio.sleep(60)
 
     async def cog_unload(self):
         await self.bot.remove_cog(self.send_manager)
@@ -75,8 +80,8 @@ class Manager(commands.Cog):
 
     @test.command(name="set")
     async def test_set(self, ctx):
-        member_name = "rio"
-        channel_id = "UCdfMHxjcCc2HSd9qFvfJgjg"
+        member_name = "gura"
+        channel_id = "UCoSrY_IQQVpmIRZ9Xf-y93g"
         await self.members_manager.add_member(ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
@@ -98,10 +103,10 @@ class Manager(commands.Cog):
 
     @test.command(name="data")
     async def test_data(self, ctx):
-        member_name = "astel"
-        channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
-        stream_id = "YVm6IrOcSSM"
-        await self.members_manager.add_member(ctx=ctx, name=member_name)
+        member_name = "gura"
+        channel_id = "UCoSrY_IQQVpmIRZ9Xf-y93g"
+        stream_id = "Cvs7XL60xKM"
+        await self.members_manager.add_member(ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
         await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
