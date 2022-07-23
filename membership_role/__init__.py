@@ -1,4 +1,5 @@
 from .membership_role import MembershipRoleManger
+from redbot.core.bot import Red
 
-def setup(bot):
-    bot.add_cog(MembershipRoleManger(bot))
+async def setup(bot: Red) -> None:
+    await bot.add_cog(MembershipRoleManger(bot))

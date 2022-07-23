@@ -13,6 +13,8 @@ from redbot.core.i18n import cog_i18n, Translator
 import logging
 from typing import *
 import asyncio
+import json
+from io import BytesIO
 
 # local
 from .member import Member
@@ -823,3 +825,20 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
                 embed=embed,
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
+
+        
+    @role_group.command(name="download")
+    @checks.is_owner()
+    async def settings(self, ctx: commands.Context):
+        """伺服器設定輸出"""
+        data = json.dumps(await self.config.get_raw()).encode('utf-8')
+        to_write = BytesIO()
+        to_write.write(data)
+        to_write.seek(0)
+        await ctx.send(file=discord.File(to_write, filename=f"global_settings.json"))
+        data = json.dumps(await self.config.guild(ctx.guild).get_raw()).encode('utf-8')
+        to_write = BytesIO()
+        to_write.write(data)
+        to_write.seek(0)
+        await ctx.send(file=discord.File(to_write, filename=f"guild_settings.json"))
+        # log.info(await self.config.get_raw())

@@ -1,6 +1,5 @@
 # discord
 import discord
-from lavalink import user_id
 
 # redbot
 from redbot.core.i18n import Translator
