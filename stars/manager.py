@@ -125,11 +125,38 @@ class Manager(commands.Cog):
             guild_collab_stream = await guild_streams_manager.add_guild_collab_stream([stream.id])
             await Send.add_completed(ctx, type(guild_collab_stream).__name__, guild_collab_stream)
 
+    @test.command(name="youtube")
+    async def test_youtube(self, ctx):
+        log.debug("-------------------test_holodex---------------------")
+        member_name = "プテラたかはし"
+        channel_id = "UC65uVBk6DQMj-a17jFK0oRg"
+        await self.members_manager.remove_member(ctx, member_name)
+        await self.check(None)
+
+        # add member
+        await self.members_manager.add_member(ctx, member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        await self.members_manager.add_mention_role(ctx, member, get_role(ctx.guild, 1000066476021133454))
+        await self.members_manager.add_mention_role(ctx, member, get_role(ctx.guild, 1000066661426151505))
+        await self.members_manager.set_color(ctx, member, 0x00, 0x47, 0xAB)
+        await self.members_manager.set_emoji(ctx, member, ":performing_arts:")
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
+        await self.members_manager.set_member_channel(ctx, member, get_text_channel(ctx.guild, 1000064221817618562))
+        
+        # add channel
+        await self.channels_manager._add_channel(ctx, member, "youtube", channel_id)
+        channel = self.channels_manager.channels[channel_id]
+        await self.streams_manager.add_stream("", channel_id, save=True)
+
+        await self.check(None)
+
     @test.command(name="holodex")
     async def test_holodex(self, ctx):
         log.debug("-------------------test_holodex---------------------")
         member_name = "astel"
         channel_id = "UCNVEsYbiZjH5QLmGeSgTSzg"
+        video_id = "d0Ksx3Qymwc"
         await self.members_manager.remove_member(ctx, member_name)
         await self.check()
 
@@ -149,11 +176,11 @@ class Manager(commands.Cog):
         # add channel
         await self.channels_manager._add_channel(ctx, member_name, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
-
+        await self.streams_manager.add_stream(ctx, video_id, channel_id, save=True)
         await self.check()
 
     @test.command(name="collab")
-    async def test_holodex(self, ctx):
+    async def test_collab(self, ctx):
         log.debug("-------------------test_collab---------------------")
         await self.send_manager.set_info_channel(ctx, get_text_channel(ctx.guild, 1000049609881682060))
         member_name1 = "Ollie"

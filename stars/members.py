@@ -210,7 +210,7 @@ class MembersManager(commands.Cog):
         pass
 
     @mentionrole_group.command(name="add")
-    async def add_mention_role(self, ctx: commands.Context, member: str, role: discord.Role):
+    async def add_mention_role(self, ctx: commands.Context, member: MemberConverter, role: discord.Role):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
         member = guild_members_manager.members.get(member, None)
         if not member:

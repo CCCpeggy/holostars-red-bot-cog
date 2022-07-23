@@ -121,7 +121,8 @@ class ChannelsManager(commands.Cog):
     async def check(self):
         self.manager.streams_manager.set_stream_to_notsure()
         for id, channel in self.channels.items():
-            streams_info = await channel.get_streams_info()
+            video_ids = list(self.manager.streams_manager.streams.keys())
+            streams_info = await channel.get_streams_info(video_ids)
             for stream_info in streams_info:
                 stream = self.manager.streams_manager.get_stream(stream_info["id"])
                 if stream:

@@ -26,7 +26,20 @@ class Channel:
     async def fetch_channel_data(self):
         pass
 
-    async def get_streams_info(self) -> List[Dict]:
+    @staticmethod
+    async def get_stream_info(stream_id: str, youtube_key: str=None) -> Dict:
+        from .holodex import HolodexChannel
+        stream_info = await HolodexChannel.get_stream_info(stream_id)
+        if stream_info:
+            return stream_info
+        from .youtube import YoutubeChannel
+        stream_info = await YoutubeChannel.get_stream_info(stream_id, youtube_key)
+        if stream_info:
+            return stream_info
+        return None
+
+    @staticmethod
+    async def get_streams_info(self, ids: List[str]) -> List[Dict]:
         return []
 
     @staticmethod

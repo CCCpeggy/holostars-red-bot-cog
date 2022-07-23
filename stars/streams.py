@@ -17,6 +17,7 @@ from enum import Enum
 
 # local
 from stars.utils import *
+from stars.channel.channel import Channel
 
 _, log = get_logger()
 
@@ -32,6 +33,7 @@ class StreamStatus(str, Enum):
 class Stream:
 
     def __init__(self, **kwargs):
+        print(kwargs)
         self._bot: Red = kwargs.pop("bot")
         self.id: str = kwargs.pop("id", create_id())
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
@@ -150,7 +152,8 @@ class GuildStream:
         message_format = message_format.replace("{mention}", get_roles_str(self._guild, self._member.mention_roles))
         message_format = message_format.replace("{description}", stream.topic if stream.topic else stream.title)
         message_format = message_format.replace("{new_line}", "\n")
-        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
+        if chat_channel:
+            message_format = message_format.replace("{chat_channel}", chat_channel.mention)
         
         # make embed
         if need_embed:
@@ -681,7 +684,7 @@ class StreamsManager(commands.Cog):
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
     async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
-        guild_streams_manager = self.get_guild_manager(ctx.guild)
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
         guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_text_channel = text_channel
         await self.save_streams()
@@ -689,14 +692,27 @@ class StreamsManager(commands.Cog):
     
     @stream_group.command(name="standby_textchannel")
     async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
-        guild_streams_manager = self.get_guild_manager(ctx.guild)
-        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id[stream_id]
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.standby_text_channel = text_channel
         await self.save_streams()
         await Send.send(ctx, str(guild_collab_stream))
+
+    @stream_group.command(name="add")
+    async def stream_add_stream(self, ctx: commands.Context, stream_id: str):
+        key = (await self.bot.get_shared_api_tokens("youtube"))["api_key"]
+        stream_info = await Channel.get_stream_info(stream_id, key)
+        log.debug(str(stream_info))
+        stream = await self.add_stream(
+            save=True,
+            **stream_info
+        )
+        if stream:
+            await Send.add_completed(ctx, "直播", stream)
+        else:
+            await ctx.send("**直播**新增失敗")
     
     # set collab - by channel, video (exist channel or not exist)
-    
     @stream_group.group(name="collab")
     async def collab_group(self, ctx: commands.Context):
         pass
@@ -899,3 +915,5 @@ async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, g
         Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 10000000,
         async_timeout_func=msg.clear_reactions
     )
+
+# TODO: 產生討論串

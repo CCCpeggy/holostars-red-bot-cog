@@ -49,6 +49,17 @@ async def getHttpData(url, params={}):
                 return data
     return None
 
+# async def getHttpDataText(url, params={}):
+#     import aiohttp
+#     from .errors import MException
+#     async with aiohttp.ClientSession() as session:
+#         async with session.get(url, params=params) as r:
+#             data = await r.text()
+#             if r.status == 404:
+#                 log.warning(f"404: {url}")
+#                 return None
+#             return data
+#     return None
 
 def check_api_errors(data: dict):
     from .errors import APIError, InvalidYoutubeCredentials, YoutubeQuotaExceeded

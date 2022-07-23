@@ -21,7 +21,27 @@ class HolodexChannel(Channel):
         self.name = data["name"]
         self.url: str = f"https://www.youtube.com/channel/{self.id}"
 
-    async def get_streams_info(self) -> List[Dict]:
+    @staticmethod
+    async def get_stream_info(stream_id: str) -> Dict:
+        video_url = f"https://holodex.net/api/v2/videos/{stream_id}"
+        try:
+            video_info = await getHttpData(live_url)
+            return {
+                "id": video_info["id"],
+                "channel_id": video_info["channel_id"],
+                "title": video_info["title"],
+                "type": video_info["type"],
+                "topic": video_info.get("topic_id", None),
+                "status": video_info.get("status"),
+                "start_actual": video_info.get("start_actual"),
+                "url": f"https://www.youtube.com/watch?v={video_info['id']}",
+                "thumbnail": f"https://img.youtube.com/vi/{video_info['id']}/maxresdefault.jpg",
+                "time": Time.to_datetime(video_info["start_scheduled"]),
+            }
+        except:
+            return None
+
+    async def get_streams_info(self, ids: List[str]) -> List[Dict]:
         live_url = f"https://holodex.net/api/v2/live"
         params = {
             "channel_id": self.id,
@@ -42,6 +62,13 @@ class HolodexChannel(Channel):
                 "time": Time.to_datetime(ori_video["start_scheduled"]),
             }
             new_videos.append(new_video)
+            if ori_video["id"] in ids:
+                ids.remove(ori_video["id"])
+        for stream_id in ids:
+            stream_info = await HolodexChannel.get_stream_info(stream_id)
+            if stream_info is not None:
+                new_videos.append(stream_info)
+
         return new_videos
     
     def __repr__(self):
