@@ -23,7 +23,7 @@ class Update(commands.Cog):
         """
         file_path = os.path.dirname(os.path.abspath(__file__))
         if command_type == "bash":
-            cmd = f"cd {file_path} ; git pull origin master"
+            cmd = f"cd {file_path} ; git pull origin dev_star_version_2"
         elif command_type == "cmd":
             cmd = f"{file_path[0]}: & cd {file_path} & git pull origin dev_star_version_2"
         else:
