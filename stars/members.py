@@ -255,7 +255,8 @@ class Member:
             f"> 通知文字頻道：{GetSendStr.get_channel_mention(self.notify_text_channel)}",
             f"> 討論文字頻道：{GetSendStr.get_channel_mention(self.chat_text_channel)}",
             f"> 會員文字頻道：{GetSendStr.get_channel_mention(self.memeber_text_channel)}",
-            f"> color：{self.color}",
+            f"> 提及身分組：{', '.join(self.mention_roles) if self.mention_roles else ''}",
+            f"> 代表顏色：{self.color}",
             f"> 頻道 ID：{', '.join(self.channel_ids)}",
         ]
         return "\n".join(data)
