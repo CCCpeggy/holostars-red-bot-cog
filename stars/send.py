@@ -23,9 +23,9 @@ class SendManager(commands.Cog):
     }
 
     guild_defaults = {
-        "standby_message_format": "{time}\n{title}\n{url}",
-        "notify_message_format": "{url} is start, {chat_channel}",
-        "collab_notify_message_format": "someone is start, {chat_channel}",
+        "standby_message_format": "{time}\n{title}\n{url}{next_msg}!stream https://youtu.be/{video_id}{next_msg}!yt_start",
+        "notify_message_format": "{mention}{channel_name}開播了！\n討論請至{chat_channel}",
+        "collab_notify_message_format": "{mention}聯動開始了，討論請到{chat_channel}",
         "notify_embed_enable": True,
         "info_text_channel": None
     }
@@ -64,7 +64,8 @@ class SendManager(commands.Cog):
     @message_group.command(name="standby")
     async def set_standby_string_format(self,  ctx: commands.Context, message_format: str):
         """
-        可使用的標籤：{time}, {title}, {channel_name}, {member_name}, {url}, {mention}, {description}, {new_line}, {next_msg}
+        可使用的標籤：{time}, {title}, {video_id}, {channel_name}, {member_name}, {url}, {mention}, {description}, {new_line}, {next_msg}
+        其中 video_id 是隨便一個人的 video_id
         """
         await self.config.guild(ctx.guild).standby_message_format.set(message_format)
         await Send.set_up_completed(ctx, "待機台訊息格式", message_format)
@@ -76,15 +77,15 @@ class SendManager(commands.Cog):
         """
         await self.config.guild(ctx.guild).notify_message_format.set(message_format)
         await self.config.guild(ctx.guild).notify_embed_enable.set(need_embed)
-        await Send.set_up_completed(ctx, "通知訊息格式", message_format)
+        await Send.set_up_completed(ctx, "開播通知訊息格式", message_format)
 
-    @message_group.command(name="notify_tmp")
-    async def set_notify_string_format(self,  ctx: commands.Context, message_format: str):
+    @message_group.command(name="notify_collab")
+    async def set_notify_collab_string_format(self,  ctx: commands.Context, message_format: str):
         """
         可使用的標籤：{mention}, {chat_channel}
         """
         await self.config.guild(ctx.guild).collab_notify_message_format.set(message_format)
-        await Send.set_up_completed(ctx, "通知訊息格式", message_format)
+        await Send.set_up_completed(ctx, "聯動開播通知訊息格式", message_format)
         
     @message_group.command(name="info_channel")
     async def set_info_channel(self,  ctx: commands.Context, text_channel: discord.TextChannel):
@@ -140,6 +141,10 @@ class SendManager(commands.Cog):
         # elif not guild_collab_stream.standby_msg_id:
         #     await self.update_standby_msg(guild_collab_stream)
 
+    def get_collab_notify_msg(self, member: "Member", message_format: str, chat_channel: discord.TextChannel) -> str:
+        message_format = message_format.replace("{mention}", get_roles_str(chat_channel.guild, member.mention_roles))
+        message_format = message_format.replace("{chat_channel}", chat_channel.mention)
+        return message_format
 
     async def send_notify(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
         saved_func = None
@@ -161,19 +166,28 @@ class SendManager(commands.Cog):
             # get message content
             if guild_stream._stream._status == StreamStatus.LIVE:
                 msg, embed = guild_stream.get_notify_msg(stream_start_msg_format, need_embed, standby_text_channel)
-            else:
-                msg = guild_stream.get_collab_notify_msg(collab_start_msg_format, standby_text_channel)
-                embed = None
+                if guild_stream.member_name not in guild_collab_stream.notify_sent_member_names:
+                    guild_collab_stream.notify_sent_member_names.append(guild_stream.member_name)
 
-            if notify_msg:
-                await notify_msg.edit(content=msg, embed=embed)
-            else:
-                notify_msg = await notify_text_channel.send(
-                    content=msg, embed=embed, allowed_mentions=discord.AllowedMentions(roles=True)
-                )
-                guild_stream.notify_msg_id = notify_msg.id
-                saved_func = guild_stream._saved_func
+                if notify_msg:
+                    await notify_msg.edit(content=msg, embed=embed)
+                else:
+                    notify_msg = await notify_text_channel.send(
+                        content=msg, embed=embed, allowed_mentions=discord.AllowedMentions(roles=True)
+                    )
+                    guild_stream.notify_msg_id = notify_msg.id
+                    saved_func = guild_stream._saved_func
             # elif not guild_collab_stream.standby_msg_id:
             #     await self.update_standby_msg(guild_collab_stream)
+        # 聯動中其他尚未開台的也會收到通知
+        for member in guild_collab_stream._members:
+            if member.name not in guild_collab_stream.notify_sent_member_names:
+                guild_collab_stream.notify_sent_member_names.append(guild_stream.member_name)
+                msg = self.get_collab_notify_msg(member, collab_start_msg_format, standby_text_channel)
+                notify_msg = await notify_text_channel.send(
+                    content=msg, allowed_mentions=discord.AllowedMentions(roles=True)
+                )
+
         if saved_func:
             await saved_func()
+        await guild_collab_stream._saved_func()

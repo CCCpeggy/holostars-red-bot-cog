@@ -205,9 +205,12 @@ class GuildCollabStream:
         self.member_names: List[str] = [member.name for member in self._members]
         self._saved_func = kwargs.pop("saved_func", None)
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
-
         self.standby_text_channel: discord.TextChannel = None
         self._standby_text_channel_id = kwargs.pop("standby_text_channel", None)
+
+        self.notify_sent_member_names = kwargs.pop("notify_sent_member_names", [])
+        if self.notify_sent_member_names is None:
+            self.notify_sent_member_names = []
 
         self.standby_text_channel = get_text_channel(self._bot, self._standby_text_channel_id)
 
@@ -281,6 +284,7 @@ class GuildCollabStream:
         for message in message_format.split("{next_msg}"):
             message = message.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
             message = message.replace("{title}", get_title(self))
+            message = message.replace("{video_id}", list(self._guild_streams.keys())[0])
             message = message.replace("{channel_name}", get_channel_name(self))
             message = message.replace("{url}", get_url(self))
             message = message.replace("{mention}", get_roles_str(self._guild, mention_roles))
@@ -729,6 +733,8 @@ class StreamsManager(commands.Cog):
     
     @collab_group.command(name="add")
     async def add_collab(self, ctx: commands.Context, stream_ids: str, chat_channel: discord.TextChannel=None):
+        """ 將多個直播間設為聯動
+        """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         
@@ -922,7 +928,7 @@ async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, g
     do_event_in_time(
         bot,
         whether_to_add(guild_stream), 
-        Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 10000000,
+        Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 3600,
         async_timeout_func=msg.clear_reactions
     )
 
