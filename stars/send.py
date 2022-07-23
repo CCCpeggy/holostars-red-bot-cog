@@ -51,12 +51,15 @@ class SendManager(commands.Cog):
     async def get_message_list(self,  ctx: commands.Context):
         standby_message_format = await self.config.guild(ctx.guild).standby_message_format()
         notify_message_format = await self.config.guild(ctx.guild).notify_message_format()
-        notify_tmp_message_format = await self.config.guild(ctx.guild).collab_notify_message_format()
+        notify_collab_message_format = await self.config.guild(ctx.guild).collab_notify_message_format()
         notify_embed_enable = await self.config.guild(ctx.guild).notify_embed_enable()
+        standby_message_format = standby_message_format.replace("\n", "{new_line}")
+        notify_message_format = notify_message_format.replace("\n", "{new_line}")
+        notify_collab_message_format = notify_collab_message_format.replace("\n", "{new_line}")
         data = [
             f"**待機台的訊息格式**: {standby_message_format}",
             f"**通知的訊息格式**: {notify_message_format}",
-            # f"**notify(tmp) message format**: {notify_tmp_message_format}",
+            f"**聯動開播的訊息格式**: {notify_collab_message_format}",
             f"**是否啟用通知的內嵌訊息**: {notify_embed_enable}",
         ]
         await Send.send(ctx, "\n".join(data))

@@ -212,6 +212,8 @@ class GuildCollabStream:
         if self.notify_sent_member_names is None:
             self.notify_sent_member_names = []
 
+        self.wait_user_choose_guild_stream: List[str] = []
+
         self.standby_text_channel = get_text_channel(self._bot, self._standby_text_channel_id)
 
     
@@ -920,6 +922,8 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, "在下次的定時檢測時，會更新以下直播: " + ", ".join(update_guild_streams_manager))
 
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
+    if guild_stream.id in guild_collab_stream.wait_user_choose_guild_stream:
+        return
     msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream} (預設**{'加入' if default else '不加入'})**")
     async def add():
         guild_collab_stream.add_guild_stream(guild_stream)
@@ -951,5 +955,6 @@ async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, g
         Time.get_diff_from_now_total_sec(guild_collab_stream.time) + 3600,
         async_timeout_func=msg.clear_reactions
     )
+    guild_collab_stream.wait_user_choose_guild_stream.append(guild_stream.id)
 
 # TODO: 產生討論串

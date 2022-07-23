@@ -137,9 +137,7 @@ def do_event_in_time(bot, func, time: int, timeout_func=None, async_timeout_func
 async def add_reaction(message: discord.Message, emojis: List[str]):
     import contextlib
     with contextlib.suppress(discord.NotFound):
-        log.debug(str(emojis))
         for emoji in emojis:
-            log.debug(str(emoji))
             await message.add_reaction(emoji)
 
 async def add_waiting_reaction(bot, user: discord.User, message: discord.Message, emojis: List[str]):

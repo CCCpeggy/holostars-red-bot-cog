@@ -27,7 +27,7 @@ class Manager(commands.Cog):
         self.channels_manager: "ChannelsManager" = ChannelsManager(self.bot, self)
         self.members_manager: "MembersManager" = MembersManager(self.bot, self)
         self.streams_manager: "StreamsManager" = StreamsManager(self.bot, self)
-        self.bot.loop.create_task(self.initial())
+        self.task = self.bot.loop.create_task(self.initial())
 
         global send_manager
         send_manager = self.send_manager
@@ -53,6 +53,8 @@ class Manager(commands.Cog):
             await asyncio.sleep(60)
 
     async def cog_unload(self):
+        if self.task:
+            self.task.cancel()
         await self.bot.remove_cog(self.send_manager)
         await self.bot.remove_cog(self.channels_manager)
         await self.bot.remove_cog(self.members_manager)
