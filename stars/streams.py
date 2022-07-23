@@ -287,7 +287,6 @@ class GuildCollabStream:
         for message in message_format.split("{next_msg}"):
             message = message.replace("{time}", Time.to_discord_time_str(Time.get_specified_timezone(self.time)))
             message = message.replace("{title}", get_title(self))
-            message = message.replace("{video_id}", list(self._guild_streams.keys())[0])
             message = message.replace("{channel_name}", get_channel_name(self))
             message = message.replace("{url}", get_url(self))
             message = message.replace("{mention}", get_roles_str(self._guild, mention_roles))
