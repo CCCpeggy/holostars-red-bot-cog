@@ -23,9 +23,10 @@ class SendManager(commands.Cog):
     }
 
     guild_defaults = {
-        "standby_message_format": "{time}\n{title}\n{url}{next_msg}!stream https://youtu.be/{video_id}{next_msg}!yt_start",
+        "standby_message_format": "{time}\n{title}\n{url}{next_msg}",
         "notify_message_format": "{mention}{channel_name}開播了！\n討論請至{chat_channel}",
         "collab_notify_message_format": "{mention}聯動開始了，討論請到{chat_channel}",
+        "start_message_format": "!stream https://youtu.be/{video_id}{next_msg}!yt_start",
         "notify_embed_enable": True,
         "info_text_channel": None
     }
@@ -89,6 +90,15 @@ class SendManager(commands.Cog):
         """
         await self.config.guild(ctx.guild).collab_notify_message_format.set(message_format)
         await Send.set_up_completed(ctx, "聯動開播通知訊息格式", message_format)
+
+    @message_group.command(name="start")
+    async def set_standby_string_format(self,  ctx: commands.Context, message_format: str):
+        """
+        可使用的標籤：{time}, {title}, {video_id}, {channel_name}, {member_name}, {url}, {mention}, {description}, {new_line}, {next_msg}
+        其中 video_id 是隨便一個人的 video_id
+        """
+        await self.config.guild(ctx.guild).start_message_format.set(message_format)
+        await Send.set_up_completed(ctx, "開播後討論區的訊息格式", message_format)
         
     @message_group.command(name="info_channel")
     async def set_info_channel(self,  ctx: commands.Context, text_channel: discord.TextChannel):
@@ -141,6 +151,16 @@ class SendManager(commands.Cog):
                 await standby_text_channel.send(content=msgs[i])
             guild_collab_stream.standby_msg_id = standby_msg.id
             await guild_collab_stream._saved_func()
+        
+        # 開播後在討論頻道發訊息
+        if not guild_collab_stream.is_send_start_msg:
+            msg_format = await self.config.guild(guild).start_message_format()
+            msgs = guild_collab_stream.get_standby_msg(msg_format)
+            for msg in msgs:
+                await standby_text_channel.send(content=msg)
+            guild_collab_stream.is_send_start_msg = True
+            await guild_collab_stream._saved_func()
+
         # elif not guild_collab_stream.standby_msg_id:
         #     await self.update_standby_msg(guild_collab_stream)
 

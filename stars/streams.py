@@ -215,6 +215,7 @@ class GuildCollabStream:
         self.wait_user_choose_guild_stream: List[str] = []
 
         self.standby_text_channel = get_text_channel(self._bot, self._standby_text_channel_id)
+        self.is_send_start_msg = kwargs.pop("is_send_start_msg", False)
 
     
     def is_valid(self) -> bool:
