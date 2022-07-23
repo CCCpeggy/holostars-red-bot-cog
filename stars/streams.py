@@ -474,11 +474,14 @@ class GuildStreamsManager():
             pass
         try:
             # get guild streams
+            is_member_only = False
             guild_streams = {}
             for guild_stream_id in guild_stream_ids:
                 guild_stream = self.get_guild_stream(guild_stream_id)
                 if guild_stream:
                     guild_streams[guild_stream_id] = guild_stream
+                    if guild_stream._stream.topic == "membersonly":
+                        is_member_only = True
                 #     if not guild_stream.guild_collab_stream_id:
                 #         continue
                 # log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
@@ -491,9 +494,16 @@ class GuildStreamsManager():
                 guild_members_manager = await self.manager.members_manager.get_guild_manager(self.guild)
                 members += [guild_members_manager.members[name] for name in member_names if name in guild_members_manager.members]
             members = list(set(members))
-                
-            chat_text_channel = kwargs.pop("standby_text_channel", members[0].chat_text_channel if len(members) > 0 else None)
             
+            if "standby_text_channel" in kwargs:
+                chat_text_channel = kwargs.pop("standby_text_channel")
+            elif len(members) == 0:
+                chat_text_channel = None
+            elif is_member_only:
+                chat_text_channel = members[0].memeber_text_channel
+            else:
+                chat_text_channel = members[0].chat_text_channel
+                
             # create guild_collab_stream
             guild_collab_stream = GuildCollabStream(
                 bot=self.bot,

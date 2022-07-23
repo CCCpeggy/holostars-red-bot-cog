@@ -212,7 +212,6 @@ class MembersManager(commands.Cog):
     @mentionrole_group.command(name="add")
     async def add_mention_role(self, ctx: commands.Context, member: MemberConverter, role: discord.Role):
         guild_members_manager = await self.get_guild_manager(ctx.guild)
-        member = guild_members_manager.members.get(member, None)
         if not member:
             await Send.not_existed(ctx, "成員頻道", member)
         elif role.id in member.mention_roles:
