@@ -119,7 +119,8 @@ class ChannelsManager(commands.Cog):
             await Send.not_existed(ctx, "頻道資料", channel_id)
 
     async def check(self):
-        self.manager.streams_manager.set_stream_to_notsure()
+        # self.manager.streams_manager.set_stream_to_notsure()
+        updated_stream_id = [] # 有更新的 stream id
         for id, channel in self.channels.items():
             video_ids = list(self.manager.streams_manager.streams.keys())
             streams_info = await channel.get_streams_info(video_ids)
@@ -129,3 +130,9 @@ class ChannelsManager(commands.Cog):
                     stream.update_info(**stream_info)
                 else:
                     stream = await self.manager.streams_manager.add_stream(**stream_info)
+                updated_stream_id.append(stream_info["id"])
+
+        # 沒有更新到的 stream
+        for stream in self.manager.streams_manager.streams.values():
+            if stream.id not in updated_stream_id:
+                stream._status = StreamStatus.NOTSURE

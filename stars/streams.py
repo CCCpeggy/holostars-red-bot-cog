@@ -90,9 +90,9 @@ class Stream:
         if self.title != title:
             self._info_update = True
             self.title = title
-        # if self._status != status:
-        #     self._info_update = True
-        self._status = status
+        if self._status != status:
+            self._info_update = True
+            self._status = status
         if self._start_actual != start_actual:
             self._info_update = True
             self._start_actual = start_actual
@@ -216,6 +216,8 @@ class GuildCollabStream:
 
         self.standby_text_channel = get_text_channel(self._bot, self._standby_text_channel_id)
         self.is_send_start_msg = kwargs.pop("is_send_start_msg", False)
+
+        self.channel_name: str = kwargs.pop("channel_name", None)
 
     
     def is_valid(self) -> bool:
@@ -356,6 +358,7 @@ class GuildCollabStream:
                 f"> 資料更新：{self._info_update}",
                 f"> 狀態：{self._status}",
                 f"> 成員名單：{self.member_names}",
+                f"> 頻道名稱：{self.channel_name}",
                 # f"> check: {list(self._guild_streams.values())[0]._guild_collab_stream.id}",
             ]
         else:
@@ -509,6 +512,14 @@ class GuildStreamsManager():
                 chat_text_channel = members[0].memeber_text_channel
             else:
                 chat_text_channel = members[0].chat_text_channel
+
+            # 判斷頻道名稱
+            channel_name = kwargs.pop("channel_name", None)
+            if channel_name is None:
+                if len(members) and isinstance(chat_text_channel, discord.TextChannel):
+                    channel_name = "default"
+                else:
+                    channel_name = "no"
                 
             # create guild_collab_stream
             guild_collab_stream = GuildCollabStream(
@@ -519,6 +530,7 @@ class GuildStreamsManager():
                 guild_streams=guild_streams,
                 standby_text_channel=get_textchannel_id(chat_text_channel),
                 saved_func=self.save_guild_collab_streams,
+                channel_name=channel_name,
                 **kwargs
             )
             for guild_stream in guild_streams.values():
@@ -920,6 +932,18 @@ class StreamsManager(commands.Cog):
                 update_guild_streams_manager.append(str(guild_stream._guild_collab_stream))
         await self.save_streams()
         await Send.send(ctx, "在下次的定時檢測時，會更新以下直播: " + ", ".join(update_guild_streams_manager))
+
+    @stream_group.command(name="channel_name")
+    async def set_channel_name(self, ctx: commands.Context, stream_id: str, channel_name: str):
+        """設定頻道的名稱
+        no: 不改
+        default: 預設 (聯動頻道+emoji)
+        """
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
+        guild_collab_stream.channel_name = channel_name
+        await guild_collab_stream._saved_func()
+        await Send.set_up_completed(ctx, "頻道名稱", guild_collab_stream)
 
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
     if guild_stream.id in guild_collab_stream.wait_user_choose_guild_stream:

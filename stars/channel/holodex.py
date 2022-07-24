@@ -35,7 +35,7 @@ class HolodexChannel(Channel):
                 "status": video_info.get("status"),
                 "start_actual": video_info.get("start_actual"),
                 "url": f"https://www.youtube.com/watch?v={video_info['id']}",
-                "thumbnail": f"https://img.youtube.com/vi/{video_info['id']}/maxresdefault.jpg",
+                "thumbnail": f"https://img.youtube.com/vi/{video_info['id']}/hqdefault.jpg",
                 "time": Time.to_datetime(video_info["start_scheduled"]),
             }
         except:
