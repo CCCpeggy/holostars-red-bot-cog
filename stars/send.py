@@ -129,15 +129,19 @@ class SendManager(commands.Cog):
                         find_newest_guild_collab_stream[standby_text_channel_id] = guild_collab_stream
             find_newest_guild_collab_stream = list(find_newest_guild_collab_stream.values())
 
+            debug_info_need_send = []
+            debug_info_no_send = []
             for guild_collab_stream in guild_manager.guild_collab_streams.values():
+                need_update =  guild_collab_stream._info_update
                 # 發送待機台(準備直播或正在直播)
                 if guild_collab_stream._status in [StreamStatus.UPCOMING, StreamStatus.LIVE]:
                     # 確定要發送的
                     if guild_collab_stream in find_newest_guild_collab_stream:
-                        # 不需要更新資料
-                        if not guild_collab_stream._info_update:
+                        # 需要更新資料
+                        if need_update:
                             await self.send_standby(guild, guild_collab_stream)
                             guild_collab_stream._info_update = False
+                        debug_info_need_send.append(str(guild_collab_stream))
                     # 更之後的直播
                     else:
                         # 如果有更近的待機台，就刪除已發送的
@@ -145,10 +149,14 @@ class SendManager(commands.Cog):
                         if standby_msg:
                             await standby_msg.delete()
                             guild_collab_stream.standby_msg_id = 0
+                            log.info(f"{standby_msg} 因為有更早的，所以刪掉囉")
+                        debug_info_no_send.append(str(guild_collab_stream))
                     await guild_collab_stream._saved_func()
                 # 發送開播通知(正在直播)
-                if guild_collab_stream._status in [StreamStatus.LIVE] and guild_collab_stream._info_update:
+                if guild_collab_stream._status in [StreamStatus.LIVE] and need_update:
                     await self.send_notify(guild, guild_collab_stream)
+            log.info(f"正在待機台的：{', '.join(debug_info_need_send)}")
+            log.info(f"預備待機台的：{', '.join(debug_info_no_send)}")
     async def send_standby(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
         # 可發送多則，但修改只會修改第一則
         standby_text_channel = guild_collab_stream.standby_text_channel
@@ -170,7 +178,7 @@ class SendManager(commands.Cog):
             standby_msg = await standby_text_channel.send(
                 content=msgs[0], allowed_mentions=discord.AllowedMentions(roles=True)
             )
-            log.debug(f"在 {standby_text_channel.name} 中發送了 {standby_msg}")
+            log.debug(f"在 {standby_text_channel.name} 中發送了 {msgs[0]}")
             await standby_msg.pin()
             await unpin(standby_text_channel, self.bot.user.id)
             # 發送其後的
@@ -190,8 +198,8 @@ class SendManager(commands.Cog):
                     msg_format = msg_format.replace("{video_id}", guild_stream.id)
                     break
 
-            msgs = standby_text_channel.get_standby_msg(msg_format)
-            log.debug(f"在 {standby_text_channel.name} 中發送了 {msgs}")
+            msgs = guild_collab_stream.get_standby_msg(msg_format)
+            log.debug(f"在 {standby_text_channel.name} 中發送了 {msg_format}")
             for msg in msgs:
                 await standby_text_channel.send(content=msg)
             guild_collab_stream.is_send_start_msg = True
@@ -234,7 +242,7 @@ class SendManager(commands.Cog):
                     notify_msg = await notify_text_channel.send(
                         content=msg, embed=embed, allowed_mentions=discord.AllowedMentions(roles=True)
                     )
-                    log.debug(f"在 {notify_text_channel.name} 中發送了 {notify_msg}")
+                    log.debug(f"在 {notify_text_channel.name} 中發送了 {msg}")
                     guild_stream.notify_msg_id = notify_msg.id
                     saved_func = guild_stream._saved_func
             # elif not guild_collab_stream.standby_msg_id:

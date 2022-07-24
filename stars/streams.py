@@ -90,9 +90,9 @@ class Stream:
         if self.title != title:
             self._info_update = True
             self.title = title
-        if self._status != status:
-            self._info_update = True
-            self._status = status
+        # if self._status != status:
+        #     self._info_update = True
+        self._status = status
         if self._start_actual != start_actual:
             self._info_update = True
             self._start_actual = start_actual
