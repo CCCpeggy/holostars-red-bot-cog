@@ -122,7 +122,7 @@ class GuildStream:
         self.member_name: str = self._member.name if self._member else None
 
         self._notify_text_channel_id: int = kwargs.pop("notify_text_channel", None)
-        self.notify_text_channel: discord.TextChannel = get_text_channel(self._bot, self._notify_text_channel_id)
+        self.notify_text_channel: Union[discord.TextChannel, discord.Thread] = get_text_channel(self._bot, self._notify_text_channel_id)
     
     def is_valid(self):
         return self._stream.is_valid()
@@ -136,14 +136,14 @@ class GuildStream:
             if self._stream._info_update:
                 self._info_update = True
     
-    def get_collab_notify_msg(self, message_format: str, chat_channel: discord.TextChannel) -> str:
+    def get_collab_notify_msg(self, message_format: str, chat_channel: Union[discord.TextChannel, discord.Thread]) -> str:
         stream = self._stream
         # make message
         message_format = message_format.replace("{mention}", get_roles_str(self._guild, self._member.mention_roles))
         message_format = message_format.replace("{chat_channel}", chat_channel.mention)
         return message_format
                 
-    def get_notify_msg(self, message_format: str, need_embed: bool, chat_channel: discord.TextChannel) -> Tuple[str, discord.Embed]:
+    def get_notify_msg(self, message_format: str, need_embed: bool, chat_channel: Union[discord.TextChannel, discord.Thread]) -> Tuple[str, discord.Embed]:
         stream = self._stream
         # make message
         message_format = message_format.replace("{title}", stream.title)
@@ -205,7 +205,7 @@ class GuildCollabStream:
         self.member_names: List[str] = [member.name for member in self._members]
         self._saved_func = kwargs.pop("saved_func", None)
         self._status: StreamStatus = StreamStatus(kwargs.pop("status", "notsure"))
-        self.standby_text_channel: discord.TextChannel = None
+        self.standby_text_channel: Union[discord.TextChannel, discord.Thread] = None
         self._standby_text_channel_id = kwargs.pop("standby_text_channel", None)
 
         self.notify_sent_member_names = kwargs.pop("notify_sent_member_names", [])
@@ -699,7 +699,7 @@ class StreamsManager(commands.Cog):
 
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
-    async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+    async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: Union[discord.TextChannel, discord.Thread]):
         """ 設定開播提醒的頻道
         """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
@@ -709,7 +709,7 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, str(guild_stream))
     
     @stream_group.command(name="standby_textchannel")
-    async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: discord.TextChannel):
+    async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: Union[discord.TextChannel, discord.Thread]):
         """ 設定直播討論的所在頻道
         """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
@@ -742,7 +742,7 @@ class StreamsManager(commands.Cog):
         pass
     
     @collab_group.command(name="add")
-    async def add_collab(self, ctx: commands.Context, stream_ids: str, chat_channel: discord.TextChannel=None):
+    async def add_collab(self, ctx: commands.Context, stream_ids: str, chat_channel: Union[discord.TextChannel, discord.Thread]=None):
         """ 將多個直播間設為聯動
         """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
@@ -787,7 +787,7 @@ class StreamsManager(commands.Cog):
                 await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, ctx, guild_stream, guild_collab_stream, False)
                 
     @collab_group.command(name="create")
-    async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: discord.TextChannel):
+    async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: Union[discord.TextChannel, discord.Thread]):
         """建立聯動 (目前因表符數量限制，超出數量的人需要另外用指令加入)
         """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)

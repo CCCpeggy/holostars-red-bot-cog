@@ -49,13 +49,14 @@ class Manager(commands.Cog):
         await self.members_manager.initial()
         await self.streams_manager.initial()
         while True:
-            log.debug("---------check start---------")
-            await self.channels_manager.check()
-            await self.streams_manager.delete_not_valid_and_notsure_stream()
-            await self.members_manager.check()
-            await self.streams_manager.check()
-            await self.send_manager.check()
-            log.debug("---------check end---------")
+            try:
+                await self.channels_manager.check()
+                await self.streams_manager.delete_not_valid_and_notsure_stream()
+                await self.members_manager.check()
+                await self.streams_manager.check()
+                await self.send_manager.check()
+            except Exception as e: 
+                log.error(e)
             await asyncio.sleep(60)
 
     async def cog_unload(self):
@@ -88,15 +89,15 @@ class Manager(commands.Cog):
 
     @test.command(name="set")
     async def test_set(self, ctx):
-        member_name = "gura"
-        channel_id = "UCoSrY_IQQVpmIRZ9Xf-y93g"
+        member_name = "axel"
+        channel_id = "UC2hx0xVkMoHGWijwr_lA01w"
         await self.members_manager.add_member(ctx, name=member_name)
         member = await self.members_manager.get_member(ctx.guild, member_name)
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
         
-        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
-        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000576344540844154))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000107429792587887))
         await self.members_manager.set_member_channel(ctx, member, get_text_channel(ctx.guild, 1000064221817618562))
         await self.check(None)
 

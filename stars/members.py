@@ -158,21 +158,21 @@ class MembersManager(commands.Cog):
 
     @memberset_group.command(name="notify_channel")
     async def set_notify_channel(
-        self, ctx: commands.Context, member: MemberConverter, notify_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member: MemberConverter, notify_text_channel: Union[discord.TextChannel, discord.Thread]):
         member.notify_text_channel = notify_text_channel
         await member._save_func()
         await Send.set_up_completed(ctx, f"{member.name} 的通知文字頻道", notify_text_channel)
 
     @memberset_group.command(name="chat_channel")
     async def set_chat_channel(
-        self, ctx: commands.Context, member: MemberConverter, chat_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member: MemberConverter, chat_text_channel: Union[discord.TextChannel, discord.Thread]):
         member.chat_text_channel = chat_text_channel
         await member._save_func()
         await Send.set_up_completed(ctx, f"{member.name} 的討論文字頻道", chat_text_channel)
 
     @memberset_group.command(name="member_channel")
     async def set_member_channel(
-        self, ctx: commands.Context, member: MemberConverter, memeber_text_channel: discord.TextChannel):
+        self, ctx: commands.Context, member: MemberConverter, memeber_text_channel: Union[discord.TextChannel, discord.Thread]):
         member.memeber_text_channel = memeber_text_channel
         await member._save_func()
         await Send.set_up_completed(ctx, f"{member.name} 的會員文字頻道", memeber_text_channel)
@@ -193,8 +193,8 @@ class MembersManager(commands.Cog):
     @memberset_group.command(name="all")
     async def set_all(
         self, ctx: commands.Context, member: MemberConverter,
-        notify_text_channel: discord.TextChannel, chat_text_channel: discord.TextChannel, 
-        memeber_text_channel: discord.TextChannel, 
+        notify_text_channel: Union[discord.TextChannel, discord.Thread], chat_text_channel: Union[discord.TextChannel, discord.Thread], 
+        memeber_text_channel: Union[discord.TextChannel, discord.Thread], 
         r: ColorChannelonverter, g: ColorChannelonverter, b: ColorChannelonverter, 
         emoji: EmojiConverter):
         member.notify_text_channel = notify_text_channel
