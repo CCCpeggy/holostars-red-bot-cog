@@ -162,7 +162,8 @@ class SendManager(commands.Cog):
             )
             # 發送其後的
             for i in range(1, len(msgs)):
-                await standby_text_channel.send(content=msgs[i])
+                if msgs[i] != "":
+                    await standby_text_channel.send(content=msgs[i])
             guild_collab_stream.standby_msg_id = standby_msg.id
             await guild_collab_stream._saved_func()
         
