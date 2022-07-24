@@ -241,7 +241,7 @@ def getEmoji(guild_emojis, ori_emoji):
             return e
     # check emoji dictionary
     import emoji
-    if ori_emoji in emoji.UNICODE_EMOJI['en']:
+    if ori_emoji in emoji.EMOJI_DATA:
         return ori_emoji
     return None
 
