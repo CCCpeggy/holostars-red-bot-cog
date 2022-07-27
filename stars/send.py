@@ -216,7 +216,7 @@ class SendManager(commands.Cog):
                 guild_collab_stream.is_send_start_msg = True
 
         except Exception as e:
-            log.error(e)
+            log.error(f"發送待機台：{e}")
 
     def get_collab_notify_msg(self, member: "Member", message_format: str, chat_channel: Union[discord.TextChannel, discord.Thread]) -> str:
         message_format = message_format.replace("{mention}", get_roles_str(chat_channel.guild, member.mention_roles))
@@ -269,7 +269,7 @@ class SendManager(commands.Cog):
                     )
         
         except Exception as e:
-            log.error(e)
+            log.error(f"發送通知：{e}")
 
         if saved_func:
             await saved_func()

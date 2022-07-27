@@ -61,7 +61,7 @@ class Manager(commands.Cog):
                 await self.send_manager.check()
                 log.debug("---------check end---------")
             except Exception as e: 
-                log.error(e)
+                log.error(f"定時檢查：{e}")
             await asyncio.sleep(60)
             log.debug("---------time up---------")
 

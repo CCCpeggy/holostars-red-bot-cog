@@ -10,6 +10,7 @@ from .streams import StreamsManager
 from .channel.channel import Channel
 from .channel.youtube import YoutubeChannel
 from .channel.holodex import HolodexChannel
+from .streams import StreamStatus
 
 _, log = get_logger()
 
@@ -39,7 +40,7 @@ class ChannelsManager(commands.Cog):
         await load_channels()
 
     async def remove_channel(self, channel_id: str) -> "Channel":
-        if channel_id in channel_id:
+        if channel_id in self.channel_ids:
             channel = self.channels.pop(channel_id)
             await self.save_channels()
             return channel
@@ -108,7 +109,6 @@ class ChannelsManager(commands.Cog):
             await Send.not_existed(ctx, "頻道資料", id)
             return
         await Send.send(ctx, "\n".join(data))
-
 
     @channel_group.command(name="remove")
     async def _remove_channel(self, ctx: commands.Context, channel_id: str):

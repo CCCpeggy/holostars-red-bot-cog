@@ -128,6 +128,8 @@ def get_textchannel_id(textchannel: Union[discord.TextChannel, discord.Thread]):
         raise Exception
 
 def getEmoji(guild_emojis, ori_emoji):
+    if ori_emoji is None:
+        return None
     # check guild
     for e in guild_emojis:
         if str(e.id) in ori_emoji and e.name in ori_emoji:
@@ -242,6 +244,17 @@ class MemberConverter(commands.Converter):
         else:
             raise commands.BadArgument(member_name + " is not existed!!")
 
+# class ChannelConverter(commands.Converter):
+#     async def convert(self, ctx: commands.Context, channel_id: str) -> "Channel":
+#         if channel_id == None:
+#             return None
+#         from .manager import channels_manager
+#         channel = channels_manager.channels.get(channel_id, None)
+#         if channel:
+#             return channel
+#         else:
+#             raise commands.BadArgument(channel_id + " is not existed!!")
+
 class EmojiConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, arg_emoji: str) -> str:
         emoji = getEmoji(ctx.guild.emojis, arg_emoji)
@@ -270,14 +283,22 @@ class FutureDatetimeConverter(commands.Converter):
     from datetime import datetime
     async def convert(self, ctx: commands.Context, arg_time: str) -> datetime:
         try:
-            time = Time.to_datetime(arg_time)
+            time = Time.to_datetime(arg_time, "Asia/Taipei")
         except:
             raise commands.BadArgument(arg_time + " is invalid time!!")
-        Time.add_timezone(time, "Asia/Taipei")
         if Time.get_diff_from_now_total_sec(time) <= 0:
             raise commands.BadArgument(arg_time + " is pass time!!")
         return time
-    
+
+# class StreamConverter(commands.Converter):
+#     async def convert(self, ctx: commands.Context, stream_id: str) -> "Stream":
+#         from .manager import streams_manager
+#         stream = streams_manager.streams.get(stream_id, None)
+#         if stream:
+#             return stream
+#         else:
+#             raise commands.BadArgument(stream_id + " is not existed!!")
+
 class GuildCollabStreamConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, arg_id: str) -> "GuildCollabStream":
         from .manager import streams_manager
@@ -286,7 +307,10 @@ class GuildCollabStreamConverter(commands.Converter):
         if guild_collab_stream:
             return guild_collab_stream
         else:
-            raise commands.BadArgument(arg_id + " is not found")
+            guild_stream = guild_streams_manager.get_guild_stream(arg_id)
+            if guild_stream and guild_stream._guild_collab_stream:
+                return guild_stream._guild_collab_stream
+        raise commands.BadArgument(arg_id + " is not found")
  
 class GuildStreamConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, arg_id: str) -> "GuildStream":
@@ -447,14 +471,14 @@ class Time:
         return pytz.utc.localize(time)
 
     @staticmethod
-    def to_datetime(time: Union[str, datetime, None]) -> datetime:
+    def to_datetime(time: Union[str, datetime, None], zone: str=None) -> datetime:
         if isinstance(time, datetime):
             return time
         elif isinstance(time, str):
             from dateutil.parser import parse as parse_time
             time = parse_time(time)
             if time.tzinfo == None:
-                time = Time.add_timezone(time)
+                time = Time.add_timezone(time, zone)
             return time
         return None
 

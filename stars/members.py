@@ -117,11 +117,13 @@ class MembersManager(commands.Cog):
         pass
 
     @member_group.command(name="add")
-    async def add_member(self, ctx: commands.Context, name: str):
+    async def add_member(self, ctx: commands.Context, name: str, channel_type_name: str=None, channel_id: str=None):
         guild_manager = await self.get_guild_manager(ctx.guild)
         member, successful = await guild_manager.add_member(name=name)
         if successful:
             await Send.add_completed(ctx, "成員資料", member)
+            if channel_id:
+                await self.manager.channels_manager._add_channel(ctx, channel_type_name, channel_id)
         else:
             await Send.already_existed(ctx, "成員資料", member)
 

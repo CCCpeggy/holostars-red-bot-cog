@@ -255,6 +255,11 @@ class GuildCollabStream:
             for id, guild_stream in self._guild_streams.items():
                 if guild_stream._info_update:
                     self._info_update = True
+                    # 如果只有一個直播，將待機台時間與直播時間同步
+                    if len(self.guild_stream_ids) == 1:
+                        stream = self._guild_streams[self.guild_stream_ids[0]]._stream
+                        self.time = stream.time
+
                 if guild_stream._stream and self._status != StreamStatus.LIVE:
                     if guild_stream._stream._status in [StreamStatus.LIVE, StreamStatus.UPCOMING]:
                         self._status = guild_stream._stream._status
@@ -711,7 +716,7 @@ class StreamsManager(commands.Cog):
 
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
-    async def set_notify_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: Union[discord.TextChannel, discord.Thread]):
+    async def set_notify_textchannel(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, text_channel: Union[discord.TextChannel, discord.Thread]):
         """ 設定開播提醒的頻道
         """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
@@ -721,11 +726,9 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, str(guild_stream))
     
     @stream_group.command(name="standby_textchannel")
-    async def set_standby_textchannel(self, ctx: commands.Context, stream_id: str, text_channel: Union[discord.TextChannel, discord.Thread]):
+    async def set_standby_textchannel(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, text_channel: Union[discord.TextChannel, discord.Thread]):
         """ 設定直播討論的所在頻道
         """
-        guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.standby_text_channel = text_channel
         await self.save_streams()
         await Send.send(ctx, str(guild_collab_stream))
@@ -756,6 +759,7 @@ class StreamsManager(commands.Cog):
     @collab_group.command(name="add")
     async def add_collab(self, ctx: commands.Context, stream_ids: str, chat_channel: Union[discord.TextChannel, discord.Thread]=None):
         """ 將多個直播間設為聯動
+        stream_ids: 多個 stream id 用 "," 連接，中間不加空白，例如：Z1Qc8QMO_pQ,Ys9hzo6NyeM,njASutkWHS4
         """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
@@ -799,18 +803,33 @@ class StreamsManager(commands.Cog):
                 await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, ctx, guild_stream, guild_collab_stream, False)
                 
     @collab_group.command(name="create")
-    async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: Union[discord.TextChannel, discord.Thread]):
-        """建立聯動 (目前因表符數量限制，超出數量的人需要另外用指令加入)
+    async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: Union[discord.TextChannel, discord.Thread], collab_member_names: str=None):
+        """建立聯動
+        聯動人輸入方法：
+        1. 輸入名字：中間用","間格，不能有空白。例如：[p]collab create [time] [channel] nameA,nameB,nameC
+        2. 點擊表符：但因表符數量限制，超出數量的人需要另外用指令加入
         """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         
         # get member by reaction
-        emoji_member_name = {}
-        for member in guild_members_manager.members.values():
-            emoji_member_name[member.emoji] = member.name
-        emojis = await add_waiting_reaction(self.bot, ctx.author, ctx.message, list(emoji_member_name.keys()))
-        member_names = [v for k, v in emoji_member_name.items() if k in emojis]
+        if collab_member_names is None:
+            emoji_member_name = {}
+            for member in guild_members_manager.members.values():
+                emoji_member_name[member.emoji] = member.name
+            emojis = await add_waiting_reaction(self.bot, ctx.author, ctx.message, list(emoji_member_name.keys()))
+            member_names = [v for k, v in emoji_member_name.items() if k in emojis]
+        else:
+            member_names = []
+            member_names_invalid = []
+            for name in collab_member_names.split(","):
+                if name in guild_members_manager.members:
+                    member_names.append(name)
+                else:
+                    member_names_invalid.append(name)
+            if len(member_names_invalid) > 0:
+                await Send.not_existed(ctx, "頻道成員", ", ".join(member_names_invalid))
+
         
         if len(member_names) < 1:
             return
@@ -854,7 +873,6 @@ class StreamsManager(commands.Cog):
             await guild_collab_stream._saved_func()
             await Send.add_completed(ctx, "聯動關聯直播", guild_collab_stream)
     
-    # TODO: remove member、add member
     @collab_group.command(name="remove_member")
     async def remove_member_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, member: MemberConverter):
         """從聯動中刪除指定的成員
@@ -879,23 +897,19 @@ class StreamsManager(commands.Cog):
 
     # set no send
     @stream_group.command(name="notify_status")
-    async def set_notify_status(self, ctx: commands.Context, stream_id: str, status: bool):
+    async def set_notify_status(self, ctx: commands.Context, guild_stream: GuildStreamConverter, status: bool):
         """ 設定直播的通知是否要啟用
         status: yes、no
         """
-        guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_msg_enable = status
         await self.save_streams()
         await Send.send(ctx, str(guild_stream))
     
     @stream_group.command(name="standby_status")
-    async def set_standby_status(self, ctx: commands.Context, stream_id: str, status: bool):
+    async def set_standby_status(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, status: bool):
         """ 設定待機台是否要啟用
         status: yes、no
         """
-        guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.standby_msg_enable = status
         await self.save_streams()
         await Send.send(ctx, str(guild_collab_stream ))
@@ -934,13 +948,11 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, "在下次的定時檢測時，會更新以下直播: " + ", ".join(update_guild_streams_manager))
 
     @stream_group.command(name="channel_name")
-    async def set_channel_name(self, ctx: commands.Context, stream_id: str, channel_name: str):
+    async def set_channel_name(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, channel_name: str):
         """設定頻道的名稱
         no: 不改
         default: 預設 (聯動頻道+emoji)
         """
-        guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        guild_collab_stream = guild_streams_manager.get_guild_collab_stream_by_stream_id(stream_id)
         guild_collab_stream.channel_name = channel_name
         await guild_collab_stream._saved_func()
         await Send.set_up_completed(ctx, "頻道名稱", guild_collab_stream)
