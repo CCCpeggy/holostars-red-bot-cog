@@ -32,10 +32,11 @@ class Channel:
         stream_info = await HolodexChannel.get_stream_info(stream_id)
         if stream_info is not None:
             return stream_info
-        from .youtube import YoutubeChannel
-        stream_info = await YoutubeChannel.get_stream_info(stream_id, youtube_key)
-        if stream_info is not None:
-            return stream_info
+        if youtube_key:
+            from .youtube import YoutubeChannel
+            stream_info = await YoutubeChannel.get_stream_info(stream_id, youtube_key)
+            if stream_info is not None:
+                return stream_info
         return None
 
     @staticmethod

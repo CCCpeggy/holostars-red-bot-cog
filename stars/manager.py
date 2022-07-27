@@ -44,19 +44,30 @@ class Manager(commands.Cog):
         await self.bot.add_cog(self.members_manager)
         await self.bot.add_cog(self.streams_manager)
 
+        try:
+            await self.bot.wait_until_red_ready()
+            await self.channels_manager.initial()
+            await self.members_manager.initial()
+            await self.streams_manager.initial()
+        except Exception as e: 
+            log.error(f"初始化：{e}")
+
         while True:
             try:
                 log.debug("---------check start---------")
                 await self.channels_manager.check()
+                log.debug("---------check 1---------")
                 await self.streams_manager.delete_not_valid_and_notsure_stream()
+                log.debug("---------check 2---------")
                 await self.members_manager.check()
+                log.debug("---------check 3---------")
                 await self.streams_manager.check()
+                log.debug("---------check 4---------")
                 await self.send_manager.check()
                 log.debug("---------check end---------")
             except Exception as e: 
                 log.error(f"定時檢查：{e}")
             await asyncio.sleep(60)
-            log.debug("---------time up---------")
 
     async def cog_unload(self):
         if self.task:
@@ -72,9 +83,13 @@ class Manager(commands.Cog):
     async def check(self, ctx):
         log.debug("---------check start---------")
         await self.channels_manager.check()
+        log.debug("---------check 1---------")
         await self.streams_manager.delete_not_valid_and_notsure_stream()
+        log.debug("---------check 2---------")
         await self.members_manager.check()
+        log.debug("---------check 3---------")
         await self.streams_manager.check()
+        log.debug("---------check 4---------")
         await self.send_manager.check()
         log.debug("---------check end---------")
         if ctx:

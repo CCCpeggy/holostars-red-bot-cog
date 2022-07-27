@@ -75,6 +75,7 @@ class ChannelsManager(commands.Cog):
         ChannelType = Channel.get_class_by_name(channel_type_name)
         if not ChannelType:
             await Send.data_error(ctx, "頻道類型錯誤", channel_type_name)
+            return
         if not ChannelType.check_channel_id(channel_id):
             await Send.data_error(ctx, "頻道 ID", channel_id)
             return
@@ -122,7 +123,7 @@ class ChannelsManager(commands.Cog):
         # self.manager.streams_manager.set_stream_to_notsure()
         updated_stream_id = [] # 有更新的 stream id
         for id, channel in self.channels.items():
-            video_ids = list(self.manager.streams_manager.streams.keys())
+            video_ids = [stream.id for stream in self.manager.streams_manager.streams.values() if stream.channel_id == channel.id]
             streams_info = await channel.get_streams_info(video_ids)
             for stream_info in streams_info:
                 stream = self.manager.streams_manager.get_stream(stream_info["id"])

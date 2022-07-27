@@ -521,7 +521,7 @@ class GuildStreamsManager():
             # 判斷頻道名稱
             channel_name = kwargs.pop("channel_name", None)
             if channel_name is None:
-                if len(members) and isinstance(chat_text_channel, discord.TextChannel):
+                if len(members) > 1 and isinstance(chat_text_channel, discord.TextChannel):
                     channel_name = "default"
                 else:
                     channel_name = "no"
@@ -963,8 +963,17 @@ class StreamsManager(commands.Cog):
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
     if guild_stream.id in guild_collab_stream.wait_user_choose_guild_stream:
         return
-    msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream} (預設**{'加入' if default else '不加入'})**")
+    msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream.id} (預設**{'加入' if default else '不加入'})**")
     async def add():
+        # 刪除原本的待機台
+        old_guild_collab_stream = guild_stream._guild_collab_stream
+        if old_guild_collab_stream and old_guild_collab_stream.standby_msg_id :
+            standby_msg = await get_message(old_guild_collab_stream.standby_text_channel, old_guild_collab_stream.standby_msg_id)
+            if standby_msg:
+                await standby_msg.delete()
+                old_guild_collab_stream.standby_msg_id = 0
+                log.info(f"變成聯動，所以刪除了原本的待機台訊息")
+        
         guild_collab_stream.add_guild_stream(guild_stream)
         await guild_stream._saved_func()
         await guild_collab_stream._saved_func()
