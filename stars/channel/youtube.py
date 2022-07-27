@@ -51,7 +51,7 @@ class YoutubeChannel(Channel):
             "part": "id,liveStreamingDetails,snippet",
         }
         data = await getHttpData(video_url, params)
-        if data is None:
+        if data is None or "item" not in data or len(data["items"]) == 0:
             return None
         data = data["items"][0]
         data_snippet = data["snippet"]

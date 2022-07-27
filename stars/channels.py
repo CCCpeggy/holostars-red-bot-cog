@@ -40,7 +40,7 @@ class ChannelsManager(commands.Cog):
         await load_channels()
 
     async def remove_channel(self, channel_id: str) -> "Channel":
-        if channel_id in self.channel_ids:
+        if channel_id in self.channels:
             channel = self.channels.pop(channel_id)
             await self.save_channels()
             return channel

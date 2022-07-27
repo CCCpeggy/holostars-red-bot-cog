@@ -739,6 +739,9 @@ class StreamsManager(commands.Cog):
         """
         key = (await self.bot.get_shared_api_tokens("youtube"))["api_key"]
         stream_info = await Channel.get_stream_info(stream_id, key)
+        if stream_info is None:
+            await ctx.send(f"找不到 {stream_id}")
+            return
         log.debug(str(stream_info))
         stream = await self.add_stream(
             save=True,

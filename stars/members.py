@@ -123,7 +123,7 @@ class MembersManager(commands.Cog):
         if successful:
             await Send.add_completed(ctx, "成員資料", member)
             if channel_id:
-                await self.manager.channels_manager._add_channel(ctx, channel_type_name, channel_id)
+                await self.manager.channels_manager._add_channel(ctx, member, channel_type_name, channel_id)
         else:
             await Send.already_existed(ctx, "成員資料", member)
 

@@ -43,14 +43,7 @@ class Manager(commands.Cog):
         await self.bot.add_cog(self.channels_manager)
         await self.bot.add_cog(self.members_manager)
         await self.bot.add_cog(self.streams_manager)
-    
-        try:
-            await self.bot.wait_until_red_ready()
-            await self.channels_manager.initial()
-            await self.members_manager.initial()
-            await self.streams_manager.initial()
-        except Exception as e: 
-            log.error(e)
+
         while True:
             try:
                 log.debug("---------check start---------")

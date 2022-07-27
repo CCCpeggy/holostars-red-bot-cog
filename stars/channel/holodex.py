@@ -24,27 +24,27 @@ class HolodexChannel(Channel):
     @staticmethod
     async def get_stream_info(stream_id: str) -> Dict:
         video_url = f"https://holodex.net/api/v2/videos/{stream_id}"
-        try:
-            video_info = await getHttpData(live_url)
+        video_info = await getHttpData(video_url)
+        if video_info and "id" in video_info:
             return {
                 "id": video_info["id"],
-                "channel_id": video_info["channel_id"],
+                "channel_id": video_info["channel"]["id"],
                 "title": video_info["title"],
                 "type": video_info["type"],
                 "topic": video_info.get("topic_id", None),
                 "status": video_info.get("status"),
-                "start_actual": video_info.get("start_actual"),
+                "start_actual": video_info.get("start_actual", None),
                 "url": f"https://www.youtube.com/watch?v={video_info['id']}",
                 "thumbnail": f"https://img.youtube.com/vi/{video_info['id']}/hqdefault.jpg",
-                "time": Time.to_datetime(video_info["start_scheduled"]),
+                "time": Time.to_datetime(video_info["available_at"]),
             }
-        except:
-            return None
+        return None
 
     async def get_streams_info(self, ids: List[str]) -> List[Dict]:
         live_url = f"https://holodex.net/api/v2/live"
         params = {
             "channel_id": self.id,
+            "max_upcoming_hours": 240
         }
         ori_videos = await getHttpData(live_url, params)
         new_videos = []
