@@ -115,7 +115,7 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
 
         for comment in list(search_dict(response, 'commentRenderer')):
             author_channel_id = comment['authorEndpoint']['browseEndpoint'].get('browseId', '')
-            if not channel_id or author_channel_id == channel_id:
+            if author_channel_id == channel_id:
                 if not comment_id or comment_id == comment['commentId']:
                     if len(list(search_dict(comment, 'tooltip'))) > 0:
                         return {
