@@ -261,12 +261,12 @@ class SendManager(commands.Cog):
                 #     await self.update_standby_msg(guild_collab_stream)
             # 聯動中其他尚未開台的也會收到通知
             for member in guild_collab_stream._members:
-                if member.name not in guild_collab_stream.notify_sent_member_names:
-                    guild_collab_stream.notify_sent_member_names.append(member.name)
-                    msg = self.get_collab_notify_msg(member, collab_start_msg_format, standby_text_channel)
-                    notify_msg = await notify_text_channel.send(
-                        content=msg, allowed_mentions=discord.AllowedMentions(roles=True)
-                    )
+                if member.name not in guild_collab_stream.notify_sent_member_names and member.notify_text_channel:
+                        guild_collab_stream.notify_sent_member_names.append(member.name)
+                        msg = self.get_collab_notify_msg(member, collab_start_msg_format, standby_text_channel)
+                        await member.notify_text_channel.send(
+                            content=msg, allowed_mentions=discord.AllowedMentions(roles=True)
+                        )
         
         except Exception as e:
             log.error(f"發送通知：{e}")

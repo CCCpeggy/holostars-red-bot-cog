@@ -175,7 +175,7 @@ class GuildStream:
                 f"GuildStream",
                 f"> id：{self.id}",
                 f"> 通知啟用狀態：{self.notify_msg_enable}",
-                f"> 待機台發送頻道：{self.notify_text_channel.name if self.notify_text_channel else '空'}",
+                f"> 通知發送頻道：{self.notify_text_channel.name if self.notify_text_channel else '空'}",
                 f"> 通知訊息的 ID：{self.notify_msg_id}",
                 f"> 所屬待機 ID：{self.guild_collab_stream_id}",
                 f"> 資料更新：{self._info_update}",
@@ -549,7 +549,7 @@ class GuildStreamsManager():
             log.info("已新增 guild_collab_stream：" + ', '.join(guild_stream_ids))
             return guild_collab_stream
         except InvalidException:
-            log.debug("[InvalidException] 沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
+            log.debug("[InvalidException] 沒有新增 guild_collab_stream 成功：" + str(guild_stream_ids))
         # except Exception:
         #     log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
         return None
@@ -576,7 +576,7 @@ class GuildStreamsManager():
                 for guild_collab_stream in self.guild_collab_streams.values():
                     if guild_collab_stream.check_guild_stream_fit(guild_stream):
                         info_text_channel = await self.manager.send_manager.get_info_channel(self.guild)
-                        await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, info_text_channel, guild_stream, guild_collab_stream, False)
+                        await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, info_text_channel, guild_stream, guild_collab_stream, True)
                         break
                 else:
                     await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
@@ -716,11 +716,9 @@ class StreamsManager(commands.Cog):
 
     # set specify channel to textchannel
     @stream_group.command(name="notify_textchannel")
-    async def set_notify_textchannel(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, text_channel: Union[discord.TextChannel, discord.Thread]):
+    async def set_notify_textchannel(self, ctx: commands.Context, guild_stream: GuildStreamConverter, text_channel: Union[discord.TextChannel, discord.Thread]):
         """ 設定開播提醒的頻道
         """
-        guild_streams_manager = await self.get_guild_manager(ctx.guild)
-        guild_stream = guild_streams_manager.get_guild_stream(stream_id)
         guild_stream.notify_text_channel = text_channel
         await self.save_streams()
         await Send.send(ctx, str(guild_stream))
@@ -766,6 +764,12 @@ class StreamsManager(commands.Cog):
         """
         guild_members_manager = await self.manager.members_manager.get_guild_manager(ctx.guild)
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
+
+        # 檢查 ID 是否存在
+        for stream_id in stream_ids.split(","):
+            if stream_id not in stream_ids:
+                Send.not_existed(ctx, "stream id", stream_id)
+                return
         
         # get first guild collab stream
         stream_ids = stream_ids.split(",")
@@ -804,7 +808,15 @@ class StreamsManager(commands.Cog):
         for guild_stream in guild_streams_manager.guild_streams.values():
             if guild_collab_stream.check_guild_stream_fit(guild_stream):
                 await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, ctx, guild_stream, guild_collab_stream, False)
-                
+
+    @collab_group.command(name="remove")
+    async def add_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter):
+        """ 刪除聯動
+        """
+        guild_streams_manager = await self.get_guild_manager(ctx.guild)
+        del guild_streams_manager.guild_collab_streams[guild_collab_stream.id]
+        Send.remove_completed(ctx, "聯動")
+        
     @collab_group.command(name="create")
     async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: Union[discord.TextChannel, discord.Thread], collab_member_names: str=None):
         """建立聯動
@@ -963,7 +975,7 @@ class StreamsManager(commands.Cog):
 async def choose_whether_add_guild_stream_into_guild_collab_stream(bot, place, guild_stream: GuildStream, guild_collab_stream: GuildCollabStream, default: bool):
     if guild_stream.id in guild_collab_stream.wait_user_choose_guild_stream:
         return
-    msg = await place.send(f"是否要將直播 {guild_stream.id} 加進聯動 {guild_collab_stream.id} (預設**{'加入' if default else '不加入'})**")
+    msg = await place.send(f"是否要將直播 {guild_stream._stream.url} 加進聯動 {guild_collab_stream.id} (預設**{'加入' if default else '不加入'})**")
     async def add():
         # 刪除原本的待機台
         old_guild_collab_stream = guild_stream._guild_collab_stream

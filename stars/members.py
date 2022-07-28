@@ -182,7 +182,7 @@ class MembersManager(commands.Cog):
     @memberset_group.command(name="color")
     async def set_color(
         self, ctx: commands.Context, member: MemberConverter, r: ColorChannelonverter, g: ColorChannelonverter, b: ColorChannelonverter):
-        member.color = (r * 255 + g) * 255 + b
+        member.color = (r * 256 + g) * 256 + b
         await member._save_func()
         await Send.set_up_completed(ctx, f"{member.name} 的 color ", f"#{r:X}{g:X}{b:X}")
 
