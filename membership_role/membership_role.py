@@ -650,7 +650,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             print(info)
             if not Time.is_future(Time.add_time(info["date"], hours=16)):
                 raise PassDate
-            if not Time.is_time_in_future_range(info["date"], months=1):
+            if not Time.is_time_in_future_range(info["date"], months=1, hours=12):
                 raise FutureDate
             
             member: Member = info["member"]
