@@ -815,7 +815,7 @@ class StreamsManager(commands.Cog):
         """
         guild_streams_manager = await self.get_guild_manager(ctx.guild)
         del guild_streams_manager.guild_collab_streams[guild_collab_stream.id]
-        Send.remove_completed(ctx, "聯動")
+        await Send.remove_completed(ctx, "聯動")
         
     @collab_group.command(name="create")
     async def create_collab(self, ctx: commands.Context, time: FutureDatetimeConverter, chat_channel: Union[discord.TextChannel, discord.Thread], collab_member_names: str=None):
