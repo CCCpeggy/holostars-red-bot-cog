@@ -571,20 +571,26 @@ class GuildStreamsManager():
     
     async def check(self):
         for guild_stream in self.guild_streams.values():
-            # await self.check_old_guild_stream() # TODO
-            if not guild_stream._guild_collab_stream:
-                for guild_collab_stream in self.guild_collab_streams.values():
-                    if guild_collab_stream.check_guild_stream_fit(guild_stream):
-                        info_text_channel = await self.manager.send_manager.get_info_channel(self.guild)
-                        await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, info_text_channel, guild_stream, guild_collab_stream, True)
-                        break
-                else:
-                    await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
-                guild_stream._info_update = True
-            guild_stream.check()
+            try:
+                # await self.check_old_guild_stream() # TODO
+                if not guild_stream._guild_collab_stream:
+                    for guild_collab_stream in self.guild_collab_streams.values():
+                        if guild_collab_stream.check_guild_stream_fit(guild_stream):
+                            info_text_channel = await self.manager.send_manager.get_info_channel(self.guild)
+                            await choose_whether_add_guild_stream_into_guild_collab_stream(self.bot, info_text_channel, guild_stream, guild_collab_stream, True)
+                            break
+                    else:
+                        await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
+                    guild_stream._info_update = True
+                guild_stream.check()
+            except Exception as e:
+                log.error(f"Guild Stream Check {guild_stream}：{e}")
 
         for guild_collab_stream in self.guild_collab_streams.values():
-            guild_collab_stream.check()
+            try:
+                guild_collab_stream.check()
+            except Exception as e:
+                log.error(f"Guild Collab Stream Check {guild_stream}：{e}")
 
         # delete not valid guild stream
         remove_guild_stream_ids = []
@@ -909,6 +915,18 @@ class StreamsManager(commands.Cog):
             guild_collab_stream.add_member(member)
             await guild_collab_stream._saved_func()
             await Send.add_completed(ctx, "聯動成員", guild_collab_stream)
+    
+    @collab_group.command(name="add_members")
+    async def add_members_from_collab(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter, members: MembersConverter):
+        """新增成員至指定的聯動
+        """
+        for member in members:
+            if member in guild_collab_stream._members:
+                await Send.already_existed(ctx, "聯動成員", member.name)
+            else:
+                guild_collab_stream.add_member(member)
+        await Send.add_completed(ctx, "聯動成員", guild_collab_stream)
+        await guild_collab_stream._saved_func()
 
     # set no send
     @stream_group.command(name="notify_status")

@@ -126,12 +126,15 @@ class ChannelsManager(commands.Cog):
             video_ids = [stream.id for stream in self.manager.streams_manager.streams.values() if stream.channel_id == channel.id]
             streams_info = await channel.get_streams_info(video_ids)
             for stream_info in streams_info:
-                stream = self.manager.streams_manager.get_stream(stream_info["id"])
-                if stream:
-                    stream.update_info(**stream_info)
-                else:
-                    stream = await self.manager.streams_manager.add_stream(**stream_info)
-                updated_stream_id.append(stream_info["id"])
+                try:
+                    stream = self.manager.streams_manager.get_stream(stream_info["id"])
+                    if stream:
+                        stream.update_info(**stream_info)
+                    else:
+                        stream = await self.manager.streams_manager.add_stream(**stream_info)
+                    updated_stream_id.append(stream_info["id"])
+                except Exception as e:
+                    log.error(f"Channel Check {channel}：{e}")
 
         # 沒有更新到的 stream
         for stream in self.manager.streams_manager.streams.values():

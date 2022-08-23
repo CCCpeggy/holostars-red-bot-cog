@@ -243,6 +243,19 @@ class MemberConverter(commands.Converter):
             return member
         else:
             raise commands.BadArgument(member_name + " is not existed!!")
+    
+class MembersConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, member_names: str) -> List["Member"]:
+        from .manager import members_manager
+        member_names = member_names.replace(" ", "").split(",")
+        input_members = []
+        for member_name in member_names:
+            guild_members_manager = await members_manager.get_guild_manager(ctx.guild)
+            member = guild_members_manager.members.get(member_name, None)
+            if member is not None:
+                input_members.append(member)
+        return input_members
+        # raise commands.BadArgument(f"不存在會員名稱 {argment}")
 
 # class ChannelConverter(commands.Converter):
 #     async def convert(self, ctx: commands.Context, channel_id: str) -> "Channel":

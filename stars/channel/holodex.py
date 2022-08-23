@@ -1,5 +1,6 @@
 from stars.utils import *
 from .channel import Channel
+from .youtube import YoutubeChannel
 from typing import *
 
 _, log = get_logger()
@@ -39,6 +40,9 @@ class HolodexChannel(Channel):
                 "time": Time.to_datetime(video_info["available_at"]),
             }
         return None
+    
+    async def get_youtube_token(self):
+        return (await self._bot.get_shared_api_tokens("youtube"))["api_key"]
 
     async def get_streams_info(self, ids: List[str]) -> List[Dict]:
         live_url = f"https://holodex.net/api/v2/live"
@@ -68,6 +72,15 @@ class HolodexChannel(Channel):
             stream_info = await HolodexChannel.get_stream_info(stream_id)
             if stream_info is not None:
                 new_videos.append(stream_info)
+        
+        # 重新確定影片的 status
+        for video in new_videos:
+            if video["status"] != "upcoming":
+                key = await self.get_youtube_token()
+                stream_info = await YoutubeChannel.get_stream_info(video["id"], key)
+                if stream_info is not None:
+                    for key, value in stream_info.items():
+                        video[key] = value
 
         return new_videos
     
