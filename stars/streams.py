@@ -966,6 +966,15 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, "\n".join(data))
 
     # resend
+    @stream_group.command(name="resend")
+    async def resend_standby_textchannel(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter):
+        """ 重新發送待機台
+        """
+        guild_collab_stream.standby_msg_id = None
+        guild_collab_stream.standby_msg_enable = True
+        await self.save_streams()
+        await Send.send(ctx, str(guild_collab_stream))
+
     # update
     @stream_group.command(name="update")
     async def update_message(self, ctx: commands.Context, member: MemberConverter):

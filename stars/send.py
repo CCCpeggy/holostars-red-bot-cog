@@ -28,7 +28,11 @@ class SendManager(commands.Cog):
         "collab_notify_message_format": "{mention}聯動開始了，討論請到{chat_channel}",
         "start_message_format": "!stream https://youtu.be/{video_id}{next_msg}!yt_start",
         "notify_embed_enable": True,
-        "info_text_channel": None
+        "info_text_channel": None,
+        "live_list_channel": None,
+        "live_list_header": "直播討論頻道列表",
+        "live_list_footer": "",
+        "live_list_msg_id": None,
     }
 
     def __init__(self, bot: Red, manager: "Manager"):
@@ -37,6 +41,7 @@ class SendManager(commands.Cog):
         self.config = Config.get_conf(self, 77656984)
         self.config.register_global(**self.global_defaults)
         self.config.register_guild(**self.guild_defaults)
+        self.live_list_channel = None
     
     @commands.group(name="starsset")
     @checks.mod_or_permissions(manage_channels=True)
@@ -105,6 +110,26 @@ class SendManager(commands.Cog):
         await self.config.guild(ctx.guild).info_text_channel.set(text_channel.id)
         await Send.set_up_completed(ctx, "傳送訊息的頻道", text_channel)
 
+    @commands.guild_only()
+    @starsset_group.group(name="live_list")
+    async def live_list_group(self, ctx: commands.Context):
+        pass     
+    
+    @live_list_group.command(name="text_channel")
+    async def set_live_list_text_channel(self, ctx: commands.Context, text_channel: Union[discord.TextChannel, discord.Thread]):
+        await self.config.guild(ctx.guild).live_list_channel.set(text_channel.id)
+        await Send.set_up_completed(ctx, "直播討論頻道列表發送頻道", text_channel)
+    
+    @live_list_group.command(name="header")
+    async def set_live_list_header(self, ctx: commands.Context, *, header: str):
+        await self.config.guild(ctx.guild).live_list_header.set(header)
+        await Send.set_up_completed(ctx, "直播討論頻道列表標題", header)
+    
+    @live_list_group.command(name="footer")
+    async def set_live_list_footer(self, ctx: commands.Context, *, footer: str):
+        await self.config.guild(ctx.guild).live_list_footer.set(footer)
+        await Send.set_up_completed(ctx, "直播討論頻道列表註腳", footer)
+
     async def get_info_channel(self, guild):
         info_text_channel_id = await self.config.guild(guild).info_text_channel()
         return get_text_channel(guild, info_text_channel_id)
@@ -155,8 +180,10 @@ class SendManager(commands.Cog):
                 # 發送開播通知(正在直播)
                 if guild_collab_stream._status in [StreamStatus.LIVE] and need_update:
                     await self.send_notify(guild, guild_collab_stream)
-            log.info(f"正在待機台的：{', '.join(debug_info_need_send)}")
-            log.info(f"預備待機台的：{', '.join(debug_info_no_send)}")
+            # log.info(f"正在待機台的：{', '.join(debug_info_need_send)}")
+            # log.info(f"預備待機台的：{', '.join(debug_info_no_send)}")
+
+            await self.send_live_list(guild_manager)
     async def send_standby(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
         try:
             # 可發送多則，但修改只會修改第一則
@@ -274,3 +301,39 @@ class SendManager(commands.Cog):
         if saved_func:
             await saved_func()
         await guild_collab_stream._saved_func()
+
+    async def send_live_list(self, guild_manager) -> None:
+        guild = guild_manager.guild
+        live_list_channel_id = await self.config.guild(guild).live_list_channel()
+
+        # 判斷是否暫存過頻道，且暫存的頻道是否正確
+        if self.live_list_channel is None or self.live_list_channel.id != live_list_channel_id:
+            self.live_list_channel = get_text_channel(guild, live_list_channel_id)
+        if self.live_list_channel is None:
+            return
+        
+        live_list_header = await self.config.guild(guild).live_list_header()
+        live_list_footer = await self.config.guild(guild).live_list_footer()
+        live_list_msg_id = await self.config.guild(guild).live_list_msg_id()
+        live_list_msg = await get_message(self.live_list_channel, live_list_msg_id)
+        embed = discord.Embed(title=live_list_header)
+        embed.set_footer(text=live_list_footer)
+        embed.timestamp = Time.get_now()
+
+        for guild_collab_stream in guild_manager.guild_collab_streams.values():
+            if len(guild_collab_stream._guild_streams.values()) == 0:
+                continue
+            member_emoji = ''.join([getEmoji(self.live_list_channel.guild.emojis, member.emoji) for member in guild_collab_stream._members])
+            stream_title = list(guild_collab_stream._guild_streams.values())[0]._stream.title
+            timestamp = Time.get_total_seconds(guild_collab_stream.time)
+            content = f"> <t:{timestamp}:F> / <t:{timestamp}:R>\n> "
+            if guild_collab_stream.standby_msg_id:
+                content += f"[待機室點我](https://discord.com/channels/{guild.id}/{guild_collab_stream._standby_text_channel_id}/{guild_collab_stream.standby_msg_id}) / "
+            content += f"{guild_collab_stream.standby_text_channel.mention}"
+            embed.add_field(name=f'{member_emoji}{stream_title}', value=content, inline=False)
+        
+        if live_list_msg is not None:
+            await live_list_msg.edit(embed=embed)
+        else:
+            live_list_msg = await self.live_list_channel.send(embed=embed)
+            await self.config.guild(guild).live_list_msg_id.set(live_list_msg.id)
