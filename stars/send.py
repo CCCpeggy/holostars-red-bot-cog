@@ -328,7 +328,7 @@ class SendManager(commands.Cog):
             timestamp = Time.get_total_seconds(guild_collab_stream.time)
             content = f"> <t:{timestamp}:F> / <t:{timestamp}:R>\n> "
             if guild_collab_stream.standby_msg_id:
-                content += f"[待機室點我](https://discord.com/channels/{guild.id}/{guild_collab_stream._standby_text_channel_id}/{guild_collab_stream.standby_msg_id}) / "
+                content += f"[待機室點我](https://discord.com/channels/{guild.id}/{guild_collab_stream.standby_text_channel.id}/{guild_collab_stream.standby_msg_id}) / "
             content += f"{guild_collab_stream.standby_text_channel.mention}"
             embed.add_field(name=f'{member_emoji}{stream_title}', value=content, inline=False)
         

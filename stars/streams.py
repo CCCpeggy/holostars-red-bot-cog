@@ -84,7 +84,7 @@ class Stream:
         if self.time != time:
             self._info_update = True
             self.time = time
-        if self.topic != topic:
+        if self.topic != topic and self.topic != "membersonly":
             self._info_update = True
             self.topic = topic
         if self.title != title:
@@ -738,7 +738,7 @@ class StreamsManager(commands.Cog):
         await Send.send(ctx, str(guild_collab_stream))
 
     @stream_group.command(name="add")
-    async def stream_add_stream(self, ctx: commands.Context, stream_id: str):
+    async def stream_add_stream(self, ctx: commands.Context, stream_id: str, is_member_only: bool=False):
         """ 新增直播
         """
         key = (await self.bot.get_shared_api_tokens("youtube"))["api_key"]
@@ -746,6 +746,8 @@ class StreamsManager(commands.Cog):
         if stream_info is None:
             await ctx.send(f"找不到 {stream_id}")
             return
+        if is_member_only:
+            stream_info["topic"] = True
         log.debug(str(stream_info))
         stream = await self.add_stream(
             save=True,
