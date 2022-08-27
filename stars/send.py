@@ -312,25 +312,44 @@ class SendManager(commands.Cog):
         if self.live_list_channel is None:
             return
         
+        # 取得 guild 中對應的設定
         live_list_header = await self.config.guild(guild).live_list_header()
         live_list_footer = await self.config.guild(guild).live_list_footer()
         live_list_msg_id = await self.config.guild(guild).live_list_msg_id()
         live_list_msg = await get_message(self.live_list_channel, live_list_msg_id)
+
+        # 創造直播待機列表的 embed
         embed = discord.Embed(title=live_list_header)
         embed.set_footer(text=live_list_footer)
         embed.timestamp = Time.get_now()
 
+        # 將 guild_collab_stream 依時間排序
+        times = []
+        time_to_guild_collab_stream = {}
         for guild_collab_stream in guild_manager.guild_collab_streams.values():
+            if guild_collab_stream.time:
+                timestamp = Time.get_total_seconds(guild_collab_stream.time)
+                times.append(timestamp)
+                time_to_guild_collab_stream[timestamp] = guild_collab_stream
+        times.sort()
+
+        # 依據時間，將待機表資訊做成 field 加入至 embed
+        for timestamp in times:
+            guild_collab_stream = time_to_guild_collab_stream[timestamp]
+            # 沒有對應的直播或待機台訊息就不需要加入
             if len(guild_collab_stream._guild_streams.values()) == 0:
                 continue
-            member_emoji = ''.join([getEmoji(self.live_list_channel.guild.emojis, member.emoji) for member in guild_collab_stream._members])
-            stream_title = list(guild_collab_stream._guild_streams.values())[0]._stream.title
-            timestamp = Time.get_total_seconds(guild_collab_stream.time)
-            content = f"> <t:{timestamp}:F> / <t:{timestamp}:R>\n> "
-            if guild_collab_stream.standby_msg_id:
+            if guild_collab_stream.standby_msg_id is None:
+                continue
+            try:
+                member_emoji = ''.join([getEmoji(self.live_list_channel.guild.emojis, member.emoji) for member in guild_collab_stream._members])
+                stream_title = list(guild_collab_stream._guild_streams.values())[0]._stream.title
+                content = f"> <t:{timestamp}:F> / <t:{timestamp}:R>\n> "
                 content += f"[待機室點我](https://discord.com/channels/{guild.id}/{guild_collab_stream.standby_text_channel.id}/{guild_collab_stream.standby_msg_id}) / "
-            content += f"{guild_collab_stream.standby_text_channel.mention}"
-            embed.add_field(name=f'{member_emoji}{stream_title}', value=content, inline=False)
+                content += f"{guild_collab_stream.standby_text_channel.mention}"
+                embed.add_field(name=f'{member_emoji}{stream_title}', value=content, inline=False)
+            except Exception as e:
+                log.error(f"發送直播待機列表：{e}")
         
         if live_list_msg is not None:
             await live_list_msg.edit(embed=embed)
