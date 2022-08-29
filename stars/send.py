@@ -326,11 +326,12 @@ class SendManager(commands.Cog):
         # 將 guild_collab_stream 依時間排序
         times = []
         time_to_guild_collab_stream = {}
-        for guild_collab_stream in guild_manager.guild_collab_streams.values():
+        for i, guild_collab_stream in enumerate(guild_manager.guild_collab_streams.values()):
             if guild_collab_stream.time:
                 timestamp = Time.get_total_seconds(guild_collab_stream.time)
-                times.append(timestamp)
-                time_to_guild_collab_stream[timestamp] = guild_collab_stream
+                sort_number = timestamp * 1000 + i
+                times.append(sort_number)
+                time_to_guild_collab_stream[sort_number] = guild_collab_stream
         times.sort()
 
         # 依據時間，將待機表資訊做成 field 加入至 embed
@@ -342,9 +343,9 @@ class SendManager(commands.Cog):
             if guild_collab_stream.standby_msg_id is None:
                 continue
             try:
-                member_emoji = ''.join([getEmoji(self.live_list_channel.guild.emojis, member.emoji) for member in guild_collab_stream._members])
+                member_emoji = ''.join([getEmoji(self.live_list_channel.guild.emojis, member.emoji) for member in guild_collab_stream._members if member.emoji])
                 stream_title = list(guild_collab_stream._guild_streams.values())[0]._stream.title
-                content = f"> <t:{timestamp}:F> / <t:{timestamp}:R>\n> "
+                content = f"> <t:{timestamp // 1000}:F> / <t:{timestamp // 1000}:R>\n> "
                 content += f"[待機室點我](https://discord.com/channels/{guild.id}/{guild_collab_stream.standby_text_channel.id}/{guild_collab_stream.standby_msg_id}) / "
                 content += f"{guild_collab_stream.standby_text_channel.mention}"
                 embed.add_field(name=f'{member_emoji}{stream_title}', value=content, inline=False)
