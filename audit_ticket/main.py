@@ -54,14 +54,15 @@ class AuditTicket(commands.Cog):
     async def save_roles(self):
         await self.config.roles.set(ConvertToRawData.dict(self.roles))
 
-    def add_role(self, emoji: str, role_ids: List[id]):
+    def add_role(self, emoji: str, role_ids: List[id], **kwargs):
         emoji = str(emoji)
         if emoji in self.roles:
             raise AlreadyExisted
         role = Role(
             self.bot,
             emoji=emoji,
-            role_ids=role_ids
+            role_ids=role_ids,
+            **kwargs
         )
         self.roles[emoji] = role
         return role
@@ -102,7 +103,6 @@ class AuditTicket(commands.Cog):
         await self.save_roles()
         await ctx.send(f"已新增完成 {self.roles[emoji]}")
         
-
     @role_group.command(name="remove")
     async def _remove_role(self, ctx: commands.Context, emoji: EmojiConverter):
         """刪除身分"""
@@ -120,6 +120,23 @@ class AuditTicket(commands.Cog):
         """列出身分清單"""
         await ctx.send("\n ".join([str(role) for role in self.roles.values()]))
 
+    @role_group.group(name="passed_event")
+    @commands.guild_only()
+    async def passed_event_group(self, ctx: commands.Context):
+        """身分審核"""
+        pass
+
+    @passed_event_group.command(name="tag_channel")
+    async def _on_pass_tag_member(self, ctx: commands.Context, emoji: EmojiConverter, channel: Union[discord.TextChannel, discord.Thread]=None):
+        """在通過審核時 TAG 成員在指定的頻道"""
+        emoji = str(emoji)
+        if emoji in self.roles:
+            self.roles[emoji].tag_channel_id = channel.id if channel else None
+            await self.save_roles()
+            await ctx.send(f"已設定完成 {self.roles[emoji]}")
+        else:
+            await ctx.send(f"{emoji} 不存在於清單中")
+
     @commands.Cog.listener()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
@@ -128,7 +145,10 @@ class AuditTicket(commands.Cog):
             return
         message = await self.detect_channel.fetch_message(payload.message_id)
     
-        if message.author.bot or payload.member.bot or message.author.id == payload.member.id:
+        if message.author.bot or payload.member.bot:
+            return
+
+        if message.author.id == payload.member.id and message.author.id != 405327571903971333:
             return
             
         emoji = getEmoji(self.detect_channel.guild.emojis, str(payload.emoji))
@@ -148,12 +168,7 @@ class AuditTicket(commands.Cog):
         try:
             if emoji == "❌":
                 raise ModRefused
-            dc_roles = []
-            for role_id in self.roles[emoji].role_ids:
-                dc_role = discord.utils.get(message.guild.roles, id=role_id)
-                if dc_role:
-                    dc_roles.append(dc_role)
-                    await message.author.add_roles(dc_role, reason=f"權限審核通過")
+            await self.pass_audit(message, emoji, mod)
         except ModRefused:
             error_name = "資料不正確"
             handler_msg = f"處理人：{mod.mention}"
@@ -162,16 +177,6 @@ class AuditTicket(commands.Cog):
             log.error(f"[audit_data]: {e}")
             return
         else:
-            if self.result_channel:
-                await self.result_channel.send(
-                    f"{message.author.mention}",
-                    embed=discord.Embed(
-                        color=0x77b255,
-                        title=_("✅審核通過"),
-                        description=f"""增加身分組：{", ".join([role.mention for role in dc_roles])}
-處理人：{mod.mention}""",
-                    )
-                )
             return
 
         err_msg = err_msg.format(handler_msg)
@@ -185,3 +190,27 @@ class AuditTicket(commands.Cog):
                 description= err_msg,
             )
         )
+
+    async def pass_audit(self, message, emoji, mod):
+        dc_roles = []
+        for role_id in self.roles[emoji].role_ids:
+            dc_role = discord.utils.get(message.guild.roles, id=role_id)
+            if dc_role:
+                dc_roles.append(dc_role)
+                await message.author.add_roles(dc_role, reason=f"權限審核通過")
+
+        if self.roles[emoji].tag_channel_id:
+            tag_channel = self.bot.get_channel(self.roles[emoji].tag_channel_id)
+            if tag_channel:
+                await tag_channel.send(f"{message.author.mention}")
+
+        if self.result_channel:
+            await self.result_channel.send(
+                f"{message.author.mention}",
+                embed=discord.Embed(
+                    color=0x77b255,
+                    title=_("✅審核通過"),
+                    description=f"""增加身分組：{", ".join([role.mention for role in dc_roles])}
+處理人：{mod.mention}""",
+                )
+            )

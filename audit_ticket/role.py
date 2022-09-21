@@ -1,3 +1,5 @@
+# discord
+import discord
 
 # redbot
 from datetime import datetime
@@ -22,13 +24,14 @@ class Role():
         self._bot: Red = bot
         self.emoji: str = kwargs.pop("emoji", None)
         self.role_ids: str = kwargs.pop("role_ids", [])
-    
+        self.tag_channel_id: discord.TextChannel = kwargs.pop("tag_channel_id", None)
 
     def __repr__(self) -> str:
         data = [
             f"Role",
             f"> Emoji：{self.emoji}",
             f"> 身分組 ID：{str(self.role_ids)}",
+            f"> TAG 頻道 ID：{self.tag_channel_id}",
         ]
         return "\n".join(data)
     
