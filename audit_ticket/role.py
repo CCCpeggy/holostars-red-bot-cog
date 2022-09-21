@@ -1,0 +1,39 @@
+
+# redbot
+from datetime import datetime
+from distutils.log import debug
+from operator import imod
+from redbot.core.i18n import Translator
+from redbot.core.bot import Red
+
+# other
+import logging
+from typing import *
+from .utils import *
+
+# get logger
+_ = Translator("TicketAuditor", __file__)
+log = logging.getLogger("red.core.cogs.TicketAuditor")
+log.setLevel(logging.DEBUG)
+
+class Role():
+
+    def __init__(self, bot, **kwargs):
+        self._bot: Red = bot
+        self.emoji: str = kwargs.pop("emoji", None)
+        self.role_ids: str = kwargs.pop("role_ids", [])
+    
+
+    def __repr__(self) -> str:
+        data = [
+            f"Role",
+            f"> Emoji：{self.emoji}",
+            f"> 身分組 ID：{str(self.role_ids)}",
+        ]
+        return "\n".join(data)
+    
+    def add_role(self, role_id: int):
+        self.role_ids.append(role_id)
+    
+    def remove_role(self, role_id: int):
+        self.role_ids.remove(role_id)
