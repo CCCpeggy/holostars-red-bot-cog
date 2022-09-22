@@ -25,6 +25,7 @@ class Role():
         self.emoji: str = kwargs.pop("emoji", None)
         self.role_ids: str = kwargs.pop("role_ids", [])
         self.tag_channel_id: discord.TextChannel = kwargs.pop("tag_channel_id", None)
+        self.can_see_channel_id_list: List[discord.TextChannel, discord.Thread] = kwargs.pop("can_see_channel_id_list", [])
 
     def __repr__(self) -> str:
         data = [
@@ -32,6 +33,7 @@ class Role():
             f"> Emoji：{self.emoji}",
             f"> 身分組 ID：{str(self.role_ids)}",
             f"> TAG 頻道 ID：{self.tag_channel_id}",
+            f"> 可以看見頻道：{self.can_see_channel_id_list}",
         ]
         return "\n".join(data)
     

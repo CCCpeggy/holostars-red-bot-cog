@@ -136,6 +136,21 @@ class AuditTicket(commands.Cog):
             await ctx.send(f"已設定完成 {self.roles[emoji]}")
         else:
             await ctx.send(f"{emoji} 不存在於清單中")
+    
+    @role_group.command(name="can_see_channel")
+    async def add_can_see_channel(self, ctx: commands.Context, emoji: EmojiConverter, channel: Union[discord.TextChannel, discord.Thread]=None):
+        """設定身分組可以看見的頻道"""
+        emoji = str(emoji)
+        if emoji in self.roles:
+            if channel.id in self.roles[emoji].can_see_channel_id_list:
+                self.roles[emoji].can_see_channel_id_list.remove(channel.id)
+            else:
+                self.roles[emoji].can_see_channel_id_list.append(channel.id)
+            await self.save_roles()
+            await ctx.send(f"已設定完成 {self.roles[emoji]}")
+        else:
+            await ctx.send(f"{emoji} 不存在於清單中")
+
 
     @commands.Cog.listener()
     @commands.guild_only()
@@ -199,18 +214,23 @@ class AuditTicket(commands.Cog):
                 dc_roles.append(dc_role)
                 await message.author.add_roles(dc_role, reason=f"權限審核通過")
 
-        if self.roles[emoji].tag_channel_id:
-            tag_channel = self.bot.get_channel(self.roles[emoji].tag_channel_id)
-            if tag_channel:
-                await tag_channel.send(f"{message.author.mention}")
-
         if self.result_channel:
+            output_data = []
+            output_data.append(f"增加身分組：{', '.join([role.mention for role in dc_roles])}")
+            if len(self.roles[emoji].can_see_channel_id_list) > 0:
+                channels = [self.bot.get_channel(channel_id) for channel_id in self.roles[emoji].can_see_channel_id_list]
+                output_data.append(f"請確認看得見會員頻道：{', '.join([channel.mention for channel in channels if channel is not None])}")
+            output_data.append(f"處理人：{mod.mention}")
             await self.result_channel.send(
                 f"{message.author.mention}",
                 embed=discord.Embed(
                     color=0x77b255,
                     title=_("✅審核通過"),
-                    description=f"""增加身分組：{", ".join([role.mention for role in dc_roles])}
-處理人：{mod.mention}""",
+                    description="\n".join(output_data)
                 )
             )
+
+        if self.roles[emoji].tag_channel_id:
+            tag_channel = self.bot.get_channel(self.roles[emoji].tag_channel_id)
+            if tag_channel:
+                await tag_channel.send(f"{message.author.mention}")
