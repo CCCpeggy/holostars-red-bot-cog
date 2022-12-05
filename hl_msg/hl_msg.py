@@ -20,6 +20,7 @@ config = utils.load_config(bot)
 @bot.event
 async def on_ready():
     config.bot_ready()
+    log.info(f"I am ready.")
 
 @bot.group(name='l')
 @commands.guild_only()
@@ -27,7 +28,7 @@ async def on_ready():
 async def _highlight(ctx):
     """ highlight
     """
-    pass
+    await ctx.channel.send("hello")
 
 @_highlight.command(name='help')
 async def _help(ctx):
