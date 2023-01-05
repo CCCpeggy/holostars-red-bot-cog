@@ -16,6 +16,7 @@ class Talk(commands.Cog):
         self.config: Config = Config.get_conf(self, 21212121)
         self.config.register_global(**self.global_defaults)
         self.bot.loop.create_task(self.load_var())
+        self.is_food_first = True
 
     async def load_var(self):
         self.learned_talk = await self.config.learned_talk()
@@ -40,7 +41,8 @@ class Talk(commands.Cog):
         if not message.content.startswith("冷丸"):
             return
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
-            return
+            if message.guild.id != 847098178599256094:
+                return
         message.content = message.content.lower()
         author_name = message.author.nick if message.author.nick else message.author.name
         if message.content.startswith("冷丸學"):
@@ -64,6 +66,8 @@ class Talk(commands.Cog):
                     await message.channel.send("這不好說")
             else:
                 await message.channel.send("嘖嘖")
+        elif "冷丸忘了" == message.content:
+            await message.channel.send("抱歉，冷丸之前學的東西放在舊家，搬新家忘記帶來了，可以再教我一次嗎")
         elif message.content.startswith("冷丸忘"):
             key = message.content[3:].split(" ")[0]
             if key in self.learned_talk_queue:
@@ -118,7 +122,7 @@ class Talk(commands.Cog):
             else:
                 await message.channel.send(message.content[3:])
             await message.delete()
-        elif message.content == "冷丸功能":
+        elif message.content == "冷丸功能" or "會什麼" in message.content:
             info = \
 """
 冷丸學[項目] [內容]
@@ -127,8 +131,9 @@ class Talk(commands.Cog):
 冷丸現在選[項目] [選項1] [選項2] ...
 冷丸 + 機率
 冷丸 + 籤
-冷丸 + 人氣投票
+冷丸 + 早餐/午餐/晚餐/飲料/宵夜
 需要的話也可以跟冷丸要個抱抱
+冷丸之前學的東西放在舊家，搬新家忘記帶來了，所以請再教冷丸一次
 """
             await message.channel.send(info)
         elif message.content == "冷丸":
@@ -148,7 +153,39 @@ class Talk(commands.Cog):
             choice = [
                 "吉", "大吉", "給你一個超級大吉", "吉吉吉吉吉吉", "這是 5 個裡面唯一的兇"
             ]
+            await message.channel.send(f"{random.choice(choice)} {random.choice(choice)} {random.choice(choice)}")
+        elif "早餐" in message.content:
+            choice = [
+                "土", "滷肉飯", "炕肉飯", "蘿蔔糕", "麵食", "粥", "豆漿", "米漿", "包子", "饅頭", "燒餅", "蛋餅", "土司", "三明治", "漢堡", "法式燒餅", "貝果", "可頌"
+            ]
+            await message.channel.send(f"{random.choice(choice)} {random.choice(choice)} {random.choice(choice)}")
+            if self.is_food_first:
+                self.is_food_first = False
+                await message.channel.send("以上食物是FC晚上打的，她打得肚子好餓 (此為一次性彩蛋XD)")
+        elif "午餐" in message.content or "晚餐" in message.content:
+            choice = [
+                "土", "閩菜", "湘菜", "淮揚菜", "廣東菜", "江浙菜", "川菜", "魯菜", "豫菜", "東北菜", "晉菜", "鄂菜", "清蒸石斑", "魷魚羹", "鯊魚煙", "曼波魚皮", "三杯魚腸", "蛋黃大蝦", "甘蔗蝦", "烤烏魚子", "糖醋魚", "鳳梨蝦球", "三杯田雞", "三杯花枝", "紅燒魚", "豆瓣魚", "豆酥魚", "三杯中卷", "三杯小卷", "客家小炒", "燒酒雞", "甕仔雞", "狗尾雞", "三杯雞", "薑母鴨", "鳳梨苦瓜雞", "剝皮辣椒雞", "雞仔豬肚鱉", "涼拌鴨賞", "烏骨雞湯", "甘蔗雞", "", "雙緣佛手", "滷豬腳", "花生豬腳", "萬巒豬腳", "豬腳麵線", "藥燉排骨", "大封肉", "醃腸熟肉", "薑絲大腸", "客家小炒", "紅糟肉", "糖醋排骨", "紅燒排骨", "西魯肉", "五色冷盤", "咕咾肉", "蔥爆牛肉", "豆乾牛肉", "炒羊肉", "五更腸旺", "宮保皮蛋", "菜脯蛋", "九層塔烘蛋", "三色蛋", "鹹蛋苦瓜", "蟹黃豆腐", "麻婆豆腐", "蔥燒豆腐", "海鮮豆腐羹", "鐵板豆腐", "老皮嫩肉", "羊肉爐", "海鮮鍋", "麻辣火鍋", "鴛鴦鍋", "石頭火鍋", "佛跳牆", "火雞肉飯", "雞肉飯", "台灣牛肉麵", "滷肉飯", "爌肉飯", "蝦仁飯", "蛋炒飯", "竹筒飯", "台式排骨飯", "新丁粄", "台式飯糰", "虱目魚", "虱目魚肚", "浮水虱目魚羹", "虱目魚肚粥", "鐵蛋", "臺南牛肉湯", "魚丸湯", "四神湯", "下水湯", "菜尾湯", "黑白切", "蚵仔煎", "蚵仔酥", "生炒花枝", "鹹粥", "肉羹", "蝦仁羹", "花枝羹", "羊肉羹", "豆簽羹", "大麵羹", "西魯肉", "肉粽", "野薑花粽", "油飯", "筒仔米糕", "油蔥粿", "豆菜麵", "關廟麵", "台南擔仔麵", "蚌麵", "摵仔麵", "鱔魚意麵", "玉里麵", "汕頭意麵", "粄條", "赤牛麵", "貓鼠麵", "傻瓜乾麵", "蚵仔麵線", "麵線", "澎湖西衛麵線", "新竹米粉", "炒米粉", "米粉湯", "米苔目", "米香", "涼圓", "肉圓", "碗粿", "摩訶粿", "麵粉粿", "貢丸", "豬血糕", "萬巒豬腳", "香雞排", "鹹酥雞", "排骨酥", "潤餅", "月亮蝦餅", "炭烤三明治", "小米麻糬", "番薯圓", "台灣燒仙草", "芋圓", "芋饅頭", "珍珠奶茶", "青蛙下蛋", "芒果冰", "臭豆腐", "深坑豆腐", "豆乳雞", "鹽水雞", "麻油雞", "薑母鴨", "藥燉排骨", "藥燉土虱", "當歸鴨", "東山鴨頭", "蔥油餅", "筒仔米糕", "滷味", "臭臭鍋", "鯊魚煙", "烤香腸", "烤玉米", "大餅包小餅", "大腸包小腸", "刈包", "台式水煎包", "咖啡香腸", "黑輪", "膽肝", "麻辣鴨血", "香雞排", "沙拉船", "魚酥", "甘梅薯條", "燒酒螺", "大雕燒", "烤鳥蛋", "烤魷魚", "炸𩵚魠魚", "炸棗", "大溪豆乾", "馬祖魚丸", "台灣魚丸", "台灣花枝丸", "糯米腸", "鍋燒意麵", "雞捲", "狀元糕 (台灣)", "貓掌燒", "糕渣", "烤甘蔗", "烤魷魚", "里港扁食", "台式水煎包", "台式湯圓", "台式月餅", "綠豆椪", "蛋黃酥", "太陽餅", "卷煎", "澎湖鹹餅", "蔥抓餅", "蔥餅", "蛋餅", "牛舌餅", "共匪餅", "肚臍餅", "胡椒餅", "螺仔餅", "黑貓包", "鼎邊趖", "龍珠", "龍鳳腿", "蚵嗲", "炸粿", "棺材板", "圓仔冰", "奮起湖便當", "臺鐵便當", "池上飯包", "福隆便當", "焢窯", "薑汁番茄", "麻芛", "仙人掌冰", "雞蛋冰", "花生卷加冰淇淋", "包心粉圓", "豆漿豆花", "愛玉冰", "豐仁冰", "八寶冬粉", "薑汁番茄", "台灣甜辣醬", "淡水阿給", "三杯", "油蔥酥", "菜脯卵", 
+            ]
+            await message.channel.send(f"{random.choice(choice)} {random.choice(choice)} {random.choice(choice)}")
+            if self.is_food_first:
+                self.is_food_first = False
+                await message.channel.send("以上食物是FC晚上打的，她打得肚子好餓 (此為一次性彩蛋XD)")
+        elif "飲料" in message.content:
+            choice = [
+                "喝水有益身體健康", "奶茶", "牛奶", "水果牛奶", "豆漿", "杏仁漿", "米漿", "果汁", "咖啡", "手搖飲", "茶", "碳酸飲料", "啤酒(未滿18禁飲)"
+            ]
             await message.channel.send(random.choice(choice))
+            if self.is_food_first:
+                self.is_food_first = False
+                await message.channel.send("以上食物是FC晚上打的，她打得肚子好餓 (此為一次性彩蛋XD)")
+        elif "消夜" in message.content or "宵夜" in message.content:
+            choice = [
+                "土", "該睡覺了", "水", "鹽酥雞", "雞排", "東山鴨頭", "蚵仔煎", "餅乾", "滷味"
+            ]
+            await message.channel.send(f"{random.choice(choice)}")
+            if self.is_food_first:
+                self.is_food_first = False
+                await message.channel.send("以上食物是FC晚上打的，她打得肚子好餓 (此為一次性彩蛋XD)")
         elif message.content[2:] in self.learned_talk_queue:
             ans = self.learned_talk[message.content[2:]]
             if isinstance(ans, str):
@@ -170,6 +207,8 @@ class Talk(commands.Cog):
             await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
             await message.channel.send("乖乖好吃")
+        elif "待機" in message.content:
+            await message.channel.send("待機")
         elif "上班" in message.content:
             await message.channel.send("下次放假是什麼時候")
         elif "回來了" in message.content:
@@ -178,12 +217,30 @@ class Talk(commands.Cog):
             await message.channel.send("我比較想放假")
         elif "去哪" in message.content:
             await message.channel.send("放假找天真去了")
+        elif "修練" in message.content or "修煉" in message.content:
+            await message.channel.send("冷丸新增兼修改了一些關鍵字，歡迎戳戳看")
         elif "冷丸好" == message.content:
             await message.channel.send(f"{author_name}好")
         elif "年終" in message.content and "沒" in message.content:
             await message.channel.send(f"{author_name} 是慣老闆")
+        elif "年終" in message.content and "給" in message.content:
+            await message.channel.send(f"謝謝{author_name}")
+        elif "新年" in message.content or "吉" in message.content or "財" in message.content or "如意" in message.content:
+            choice = [
+                "大吉大利", "事事如意", "一路發財", "闔家平安", "富貴有餘", "福壽雙全", "事事如意", "四季進財"
+                "兔年行大運",
+                "玉兔迎春添新象",
+                "新春旺市迎玉兔",
+                "金兔祈福，闔家幸福",
+                "新春開運，鴻兔大展",
+                "萬事如意迎新年，玉兔迎春旺全年",
+                "去年虎哩發大財，新春兔來事業展",
+            ]
+            await message.channel.send(f"祝{author_name}「{random.choice(choice)}」，「紅包拿來」")
         elif "喵" in message.content:
-            await message.channel.send("汪")
+            await message.channel.send("喵" * random.randint(1, 10))
+        elif "汪" in message.content:
+            await message.channel.send("汪" * random.randint(1, 10))
         elif "歐姆" in message.content:
             await message.channel.send("v=ir => av=air => 色即是空")
         elif "程式" in message.content or "代碼" in message.content:
@@ -353,7 +410,7 @@ print("Re: Hello world")
         elif "哪" in message.content:
             await message.channel.send("地球的某一個角落")
         elif "嗎" in message.content or "嘛" in message.content or "?" in message.content or "？" in message.content:
-            await message.channel.send(random.choice(["不知道", "你猜", "問咖咩", "問月嵐"]))
+            await message.channel.send(random.choice(["不知道", "你猜", "問咖咩", "問月嵐", "問天真"]))
         elif "(" in message.content:
             await message.channel.send("(天才")
         elif "（" in message.content:
