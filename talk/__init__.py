@@ -1,4 +1,5 @@
 from .talk import Talk
+from redbot.core.bot import Red
 
-def setup(bot):
-    bot.add_cog(Talk(bot))
+async def setup(bot: Red) -> None:
+    await bot.add_cog(Talk(bot))

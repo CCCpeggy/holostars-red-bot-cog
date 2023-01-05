@@ -72,6 +72,11 @@ class HolodexChannel(Channel):
             stream_info = await HolodexChannel.get_stream_info(stream_id)
             if stream_info is not None:
                 new_videos.append(stream_info)
+            else:
+                new_videos.append({
+                    "id": stream_id,
+                    "status": "notsure"
+                })
         
         # 重新確定影片的 status
         for video in new_videos:

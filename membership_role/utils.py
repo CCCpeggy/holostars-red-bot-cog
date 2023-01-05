@@ -281,7 +281,7 @@ def get_member_by_name(name: str):
     from .membership_role import members
     for member in members.values():
         for n in member.names:
-            if n in name:
+            if n == name:
                 return member
     return None
 

@@ -157,7 +157,7 @@ class SendManager(commands.Cog):
             debug_info_need_send = []
             debug_info_no_send = []
             for guild_collab_stream in guild_manager.guild_collab_streams.values():
-                need_update =  guild_collab_stream._info_update
+                need_update = guild_collab_stream._info_update
                 # 發送待機台(準備直播或正在直播)
                 if guild_collab_stream._status in [StreamStatus.UPCOMING, StreamStatus.LIVE]:
                     # 確定要發送的
@@ -180,8 +180,8 @@ class SendManager(commands.Cog):
                 # 發送開播通知(正在直播)
                 if guild_collab_stream._status in [StreamStatus.LIVE] and need_update:
                     await self.send_notify(guild, guild_collab_stream)
-            # log.info(f"正在待機台的：{', '.join(debug_info_need_send)}")
-            # log.info(f"預備待機台的：{', '.join(debug_info_no_send)}")
+            log.info(f"正在待機台的：{', '.join(debug_info_need_send)}")
+            log.info(f"預備待機台的：{', '.join(debug_info_no_send)}")
 
             await self.send_live_list(guild_manager)
     async def send_standby(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
@@ -253,19 +253,19 @@ class SendManager(commands.Cog):
     async def send_notify(self, guild: discord.Guild, guild_collab_stream: "GuildCollabStream") -> None:
         saved_func = None
         try:
+            collab_start_msg_format = await self.config.guild(guild).collab_notify_message_format()
+            standby_text_channel = guild_collab_stream.standby_text_channel
             for guild_stream in guild_collab_stream._guild_streams.values():
                 if not guild_stream.notify_msg_enable or not guild_stream.notify_text_channel:
                     continue
 
                 notify_text_channel = guild_stream.notify_text_channel
-                standby_text_channel = guild_collab_stream.standby_text_channel
                 
                 # get discord message
                 notify_msg = await get_message(notify_text_channel, guild_stream.notify_msg_id)
                 
                 # get send data
                 stream_start_msg_format = await self.config.guild(guild).notify_message_format()
-                collab_start_msg_format = await self.config.guild(guild).collab_notify_message_format()
                 need_embed = await self.config.guild(guild).notify_embed_enable()
                 
                 # get message content

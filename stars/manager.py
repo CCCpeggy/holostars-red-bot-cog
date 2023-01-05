@@ -51,7 +51,7 @@ class Manager(commands.Cog):
             await self.streams_manager.initial()
         except Exception as e: 
             log.error(f"初始化：{e}")
-            # return
+            return
 
         while True:
             try:

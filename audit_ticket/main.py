@@ -156,7 +156,7 @@ class AuditTicket(commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def on_raw_reaction_add(self, payload):
-        if payload.channel_id != self.detect_channel.id:
+        if self.detect_channel is None or payload.channel_id != self.detect_channel.id:
             return
         message = await self.detect_channel.fetch_message(payload.message_id)
     
@@ -219,7 +219,7 @@ class AuditTicket(commands.Cog):
             output_data.append(f"增加身分組：{', '.join([role.mention for role in dc_roles])}")
             if len(self.roles[emoji].can_see_channel_id_list) > 0:
                 channels = [self.bot.get_channel(channel_id) for channel_id in self.roles[emoji].can_see_channel_id_list]
-                output_data.append(f"請確認看得見會員頻道：{', '.join([channel.mention for channel in channels if channel is not None])}")
+                output_data.append(f"請確認看得見頻道：{', '.join([channel.mention for channel in channels if channel is not None])}")
             output_data.append(f"處理人：{mod.mention}")
             await self.result_channel.send(
                 f"{message.author.mention}",

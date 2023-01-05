@@ -26,6 +26,8 @@ class Role():
         self.role_ids: str = kwargs.pop("role_ids", [])
         self.tag_channel_id: discord.TextChannel = kwargs.pop("tag_channel_id", None)
         self.can_see_channel_id_list: List[discord.TextChannel, discord.Thread] = kwargs.pop("can_see_channel_id_list", [])
+        if self.can_see_channel_id_list is None:
+            self.can_see_channel_id_list = []
 
     def __repr__(self) -> str:
         data = [

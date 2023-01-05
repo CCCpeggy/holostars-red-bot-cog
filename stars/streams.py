@@ -548,8 +548,8 @@ class GuildStreamsManager():
             log.debug("已新增 guild_collab_stream：" + str(guild_collab_stream))
             log.info("已新增 guild_collab_stream：" + ', '.join(guild_stream_ids))
             return guild_collab_stream
-        except InvalidException:
-            log.debug("[InvalidException] 沒有新增 guild_collab_stream 成功：" + str(guild_stream_ids))
+        except Exception:
+            log.debug(f"[InvalidException] 沒有新增 guild_collab_stream 成功：{guild_stream_ids}")
         # except Exception:
         #     log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
         return None
@@ -747,7 +747,7 @@ class StreamsManager(commands.Cog):
             await ctx.send(f"找不到 {stream_id}")
             return
         if is_member_only:
-            stream_info["topic"] = True
+            stream_info["topic"] = "membersonly"
         log.debug(str(stream_info))
         stream = await self.add_stream(
             save=True,

@@ -39,26 +39,10 @@ class Talk(commands.Cog):
                 await message.channel.send("這個沒有作用啦")
         if not message.content.startswith("冷丸"):
             return
-        if "人氣" in message.content and "票" in message.content:
-            await message.add_reaction("<:1_1Miyabi:890277022658592800>")
-            await message.add_reaction("<:1_2Izuru:890278709297287279>")
-            await message.add_reaction("<:1_3Arurandeisu:890279210839597137>")
-            await message.add_reaction("<:1_4Rikka:890279428016443443>")
-            await message.add_reaction("<:1_5Astel:890280329741484032>")
-            await message.add_reaction("<:1_6Temma:890280329724694579>")
-            await message.add_reaction("<:1_7Roberu:890280329741471754>")
-            await message.add_reaction("<:1_8Shien:890280329909252126>")
-            await message.add_reaction("<:1_9Oga:890280329812787211>")
-            return
         if not await is_mod_or_superior(self.bot, message.author) and message.channel.id != 889525732122968074:
             return
         message.content = message.content.lower()
-        if "天才" in message.content:
-            await message.add_reaction("<:9_6Temma_tensai:917056396854456390>")
-        elif "天真" in message.content or "3D" in message.content:
-            await message.add_reaction("<:0_6Temma_light:900835047639244830>")
-
-        
+        author_name = message.author.nick if message.author.nick else message.author.name
         if message.content.startswith("冷丸學"):
             tmp = message.content[3:].split(" ")
             que = tmp[0]
@@ -161,29 +145,16 @@ class Talk(commands.Cog):
                 ]
                 await message.channel.send(random.choice(choice))
         elif "籤" in message.content:
-            await message.channel.send(f"12 分之 {random.randint(1, 12)} 個 <:9_4Rikka_daikichi:927577264730808411>")
+            choice = [
+                "吉", "大吉", "給你一個超級大吉", "吉吉吉吉吉吉", "這是 5 個裡面唯一的兇"
+            ]
+            await message.channel.send(random.choice(choice))
         elif message.content[2:] in self.learned_talk_queue:
             ans = self.learned_talk[message.content[2:]]
             if isinstance(ans, str):
                 await message.channel.send(ans)
             else:
                 await message.channel.send(random.choice(ans))
-        elif "待機" in message.content:
-            taigi = [
-                "<:3_1Taigi_Miyabi:900877303788224573>", "<:3_2Taigi_Izuru:900877316220153947>", "<:3_3Taigi_Aruran:900877327607689257>",
-                "<:3_4Taigi_Rikka:900877341482426468>", "<:3_5Taigi_Astel:900877356519018536>", "<:3_6Taigi_Temma:900877373166190692>",
-                "<:3_7Taigi_Roberu:900877387871420416>", "<:3_8Taigi_Shien:900877418238210078>", "<:3_9Taigi_Oga:900877428879142925>"]
-            await message.channel.send(" ". join(taigi))
-        elif "螢光棒" in message.content or "light" in message.content:
-            light = [
-                "<:0_1Miyabi_light:900388353067851776>", "<:0_2Izuru_light:900395151195775046>", "<:0_3Arurandeisu_light:900400350366928906>",
-                "<:0_4Rikka_light:900400189016268890>", "<:0_5Astel_light:919742537382629426>", "<:0_6Temma_light:900835047639244830>",
-                "<:0_7Roberu_light:900412554755571722>", "<:0_8Shien_light:900416024493576252>", "<:0_8Shien_light:900416024493576252>",
-                "<:0_9Oga_light:900866684980699191>", 
-            ]
-            await message.channel.send(" ". join(light))
-        elif "天才" in message.content:
-            await message.channel.send("<:9_6Temma_tensai:917056396854456390> ")
         elif "天真" in message.content or "3D" in message.content:
             await message.channel.send("天真好棒！")
         elif "月嵐" in message.content:
@@ -199,6 +170,18 @@ class Talk(commands.Cog):
             await message.channel.send("冷丸最乖了！")
         elif "乖乖" in message.content:
             await message.channel.send("乖乖好吃")
+        elif "上班" in message.content:
+            await message.channel.send("下次放假是什麼時候")
+        elif "回來了" in message.content:
+            await message.channel.send("我回來了")
+        elif "回來" in message.content:
+            await message.channel.send("我比較想放假")
+        elif "去哪" in message.content:
+            await message.channel.send("放假找天真去了")
+        elif "冷丸好" == message.content:
+            await message.channel.send(f"{author_name}好")
+        elif "年終" in message.content and "沒" in message.content:
+            await message.channel.send(f"{author_name} 是慣老闆")
         elif "喵" in message.content:
             await message.channel.send("汪")
         elif "歐姆" in message.content:
@@ -292,8 +275,6 @@ print("Re: Hello world")
             await message.channel.send(random.choice(code))
         elif "機器人" in message.content:
             await message.channel.send(":two: :regional_indicator_b: :regional_indicator_g:")
-        elif "廁所" in message.content:
-            await message.channel.send("<:9_7Roberu_whaat:900662697769717770> ")
         elif "外掛" in message.content:
             await message.channel.send("!?")
         elif "本物" in message.content:
@@ -310,13 +291,6 @@ print("Re: Hello world")
             await message.channel.send("z" * random.randint(3, 20))
         elif "圓周率" in message.content:
             await message.channel.send("3.141592653589793238462643383279502884197169399375105820974944592307816406286208998")
-        elif "貼貼" in message.content:
-            choice = [
-                "<:2_1Tee_Mi:887762077907841065>", "<:2_2Tee_Iz:887762078188859442>", "<:2_3Tee_Ar:887762077777805323>",
-                "<:2_4Tee_As:887762077589045269>", "<:2_4Tee_Ri:887762077882654752>", "<:2_6Tee_Te:887762077689720953>", 
-                "<:2_7Tee_Ro:887762077626794027>", "<:2_8Tee_Sh:887762077706493962>", "<:2_9Tee_Og:887762078088179762>"
-            ]
-            await message.channel.send(f"{random.choice(choice)}{choice[5]}")
         elif "對不起" in message.content:
             await message.channel.send(":pleading_face:")
         elif "不乖" in message.content or"叛逆" in message.content:
@@ -328,8 +302,6 @@ print("Re: Hello world")
             await message.channel.send("去問咖咩啦")
         elif "乖" in message.content:
             await message.channel.send("咖咩學學我啊")
-        elif "棒" in message.content:
-            await message.channel.send("<:Oga_Bonk:900404897600659487>")
         elif "幫" in message.content:
             await message.channel.send("油加你幫！")
         elif "a-z" in message.content:
@@ -343,7 +315,6 @@ print("Re: Hello world")
         elif "抱" in message.content or ":people_hugging:" in message.content:
             await message.channel.send(f":people_hugging:")
         elif "bonk" in message.content:
-            await message.add_reaction("<:Oga_Bonk:900404897600659487>")
             await message.channel.send("冷丸最乖了，咖咩才不乖")
         elif "我是誰" in message.content:
             await message.channel.send(f"聽說是 {message.author.name}")

@@ -744,7 +744,7 @@ YT：UC6wTWzIJiKoKvtoPdbGE07w
             user_role.valid()
             description="\n".join([
                 f"增加身分組：{role.mention}",
-                f"請確認看得見會員頻道：{member._text_channel.mention}",
+                # f"請確認看得見會員頻道：{member._text_channel.mention}",
                 f"處理人：{mod_user.mention}"])
             embed=discord.Embed(
                 color=0x77b255,
