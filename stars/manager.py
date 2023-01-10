@@ -125,6 +125,20 @@ class Manager(commands.Cog):
         await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
         channel = self.channels_manager.channels[channel_id]
 
+    @test.command(name="emoji")
+    async def test_emoji(self, ctx):
+        member_name = "bettel"
+        channel_id = "UCHP4f7G2dWD4qib7BMatGAw"
+        # await self.members_manager.add_member(ctx=ctx, name=member_name)
+        member = await self.members_manager.get_member(ctx.guild, member_name)
+        member.standby_emoji = "<:0_00Stars_kusa:916900215838097419>"
+        await self.members_manager.set_notify_channel(ctx, member, get_text_channel(ctx.guild, 1000064180239474728))
+        await self.members_manager.set_chat_channel(ctx, member, get_text_channel(ctx.guild, 1000064200758022265))
+        await self.channels_manager._add_channel(ctx, member, "holodex", channel_id)
+        channel = self.channels_manager.channels[channel_id]
+        await self.check(None)
+        
+
     @test.command(name="data")
     async def test_data(self, ctx):
         member_name = "gura"

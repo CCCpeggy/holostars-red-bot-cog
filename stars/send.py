@@ -33,6 +33,7 @@ class SendManager(commands.Cog):
         "live_list_header": "直播討論頻道列表",
         "live_list_footer": "",
         "live_list_msg_id": None,
+        "standby_emoji": None,
     }
 
     def __init__(self, bot: Red, manager: "Manager"):
@@ -47,6 +48,15 @@ class SendManager(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     async def starsset_group(self, ctx: commands.Context):
         pass
+
+    @starsset_group.command(name="standby_emoji")
+    async def set_shared_standby_emoji(self,  ctx: commands.Context, emoji: EmojiConverter):
+        """
+        當沒有個人的 emoji 或超過 20 人時，通用的待機符號
+        """
+        standby_emoji = f"<:{emoji.name}:{emoji.id}>" if isinstance(emoji, discord.Emoji) else emoji
+        await self.config.guild(ctx.guild).standby_emoji.set(standby_emoji)
+        await Send.set_up_completed(ctx, "共用待機表情符號", standby_emoji)
 
     @commands.guild_only()
     @starsset_group.group(name="message")
@@ -208,6 +218,23 @@ class SendManager(commands.Cog):
                 )
                 log.debug(f"在 {standby_text_channel.name} 中發送了 {msgs[0]}")
                 await standby_msg.pin()
+                
+                # 發送表情符號
+                try:
+                    individual_emoji = False
+                    if len(guild_collab_stream._members) < 20:
+                        for member in guild_collab_stream._members:
+                            if member.standby_emoji:
+                                log.info(f"發送{member.name}的表情符號{member.standby_emoji}")
+                                await standby_msg.add_reaction(member.standby_emoji)
+                                individual_emoji = True
+                    shared_standby_emoji = await self.config.guild(guild).standby_emoji()
+                    if not individual_emoji and shared_standby_emoji:
+                        log.info(f"發送整體的表情符號{shared_standby_emoji}")
+                        await standby_msg.add_reaction(shared_standby_emoji)
+                except Exception as e:
+                    log.error("發送表情符號：" + str(e))
+                
                 await unpin(standby_text_channel, self.bot.user.id)
                 # 發送其後的
                 for i in range(1, len(msgs)):

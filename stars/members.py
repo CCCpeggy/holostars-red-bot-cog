@@ -190,7 +190,13 @@ class MembersManager(commands.Cog):
     async def set_emoji(self, ctx: commands.Context, member: MemberConverter, emoji: EmojiConverter):
         member.emoji = emoji
         await member._save_func()
-        await Send.set_up_completed(ctx, f"{member.name} 的 emoji ", f"{emoji}")
+        await Send.set_up_completed(ctx, f"{member.name} 的代表符號 ", f"{emoji}")
+
+    @memberset_group.command(name="standby_emoji")
+    async def set_standby_emoji(self, ctx: commands.Context, member: MemberConverter, emoji: EmojiConverter=None):
+        member.standby_emoji = f"<:{emoji.name}:{emoji.id}>" if isinstance(emoji, discord.Emoji) else emoji
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的待機符號 ", f"{member.standby_emoji}")
 
     @memberset_group.command(name="all")
     async def set_all(
@@ -234,6 +240,7 @@ class Member:
         self._bot: Red = kwargs.pop("bot")
         self.name: str = kwargs.pop("name")
         self.emoji: str = kwargs.pop("emoji", None)
+        self.standby_emoji: str = kwargs.pop("standby_emoji", None)
         self.color: int = kwargs.pop("color", 0x9255A5)
         self.mention_roles: List[int] = kwargs.pop("mention_roles", [])
         if self.mention_roles is None:
