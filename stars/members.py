@@ -193,8 +193,15 @@ class MembersManager(commands.Cog):
         await Send.set_up_completed(ctx, f"{member.name} 的代表符號 ", f"{emoji}")
 
     @memberset_group.command(name="standby_emoji")
-    async def set_standby_emoji(self, ctx: commands.Context, member: MemberConverter, emoji: EmojiConverter=None):
-        member.standby_emoji = f"<:{emoji.name}:{emoji.id}>" if isinstance(emoji, discord.Emoji) else emoji
+    async def set_standby_emoji(self, ctx: commands.Context, member: MemberConverter, emoji: discord.Emoji):
+        member.standby_emoji = str(emoji)
+        await member._save_func()
+        await Send.set_up_completed(ctx, f"{member.name} 的待機符號 ", f"{member.standby_emoji}")
+
+    @memberset_group.command(name="standby_emoji_split")
+    async def set_standby_emoji_split(self, ctx: commands.Context, member: MemberConverter, emoji_name: str, emoji_id: int, gif: bool):
+        emoji = f"<a:{emoji_name}:{emoji_id}>" if gif else f"<:{emoji_name}:{emoji_id}>"
+        member.standby_emoji = emoji
         await member._save_func()
         await Send.set_up_completed(ctx, f"{member.name} 的待機符號 ", f"{member.standby_emoji}")
 

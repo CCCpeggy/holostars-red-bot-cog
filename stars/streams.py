@@ -46,6 +46,8 @@ class Stream:
         self.url: str = kwargs.pop("url", "")
         self.type: str = kwargs.pop("type", None)
         self.thumbnail: str = kwargs.pop("thumbnail", None)
+        self.source: str = kwargs.pop("source", None)
+        self.source_url: str = kwargs.pop("source_url", None)
         self._info_update: bool = kwargs.pop("info_update", True)
     
     def __repr__(self):
@@ -57,7 +59,6 @@ class Stream:
                 f"> 預定時間：{self.time}",
                 f"> 所屬頻道：[{self._channel.type}]{self._channel.name}",
                 f"> 標題：{self.title}",
-                f"> 類型：{self.type}",
                 f"> 主題：{self.topic}",
                 f"> 資料更新：{self._info_update}",
             ]
@@ -84,7 +85,7 @@ class Stream:
         if self.time != time:
             self._info_update = True
             self.time = time
-        if self.topic != topic and self.topic != "membersonly":
+        if self.topic != topic and self.topic != "membersonly" and topic is not None:
             self._info_update = True
             self.topic = topic
         if self.title != title:
@@ -159,7 +160,7 @@ class GuildStream:
         if need_embed:
             embed = discord.Embed(title=stream.title, url=stream.url)
             embed.set_author(name=stream._channel.name, url=stream._channel.url)
-            embed.set_footer(text=stream._channel.source_name)
+            embed.set_footer(text=stream.source)
             
             if stream._start_actual:
                 embed.timestamp = stream._start_actual
@@ -224,25 +225,25 @@ class GuildCollabStream:
         not_valid_guild_stream_ids = []
         for id, guild_stream in self._guild_streams.items():
             if not guild_stream:
-                log.debug(f"reason 1: {id}")
+                log.debug(f"{id} not valid reason 1: guild_stream 為空")
                 pass
             elif not guild_stream.is_valid():
-                log.debug(f"reason 2: {id}")
+                log.debug(f"{id} not valid reason 2: guild_stream 驗證失敗")
                 pass
             elif not guild_stream._guild_collab_stream:
-                log.debug(f"reason 3: {id}")
+                log.debug(f"{id} not valid reason 3: guild_stream 中的 _guild_collab_stream 是空的")
                 pass
             elif guild_stream._guild_collab_stream.id != self.id:
-                log.debug(f"reason 4: {id}")
+                log.debug(f"{id} not valid reason 4: guild_stream 中的與目前的連動不同")
                 pass
             else:
                 continue
             not_valid_guild_stream_ids.append(id)
         if len(self._guild_streams) > 0 and len(not_valid_guild_stream_ids) == len(self._guild_streams):
-            log.debug(f"reason 5: {len(not_valid_guild_stream_ids)}")
+            log.debug(f"{id} not valid reason 5: 所有連動直播都無效")
             return False
         if not Time.is_time_in_future_range(self.time, days=7):
-            log.debug(f"reason 6: {self.time}")
+            log.debug(f"{id} not valid reason 6: 連動時間超過七天")
             return False
         # for guild_stream_id in not_valid_guild_stream_ids:
         #     self.guild_stream_ids.remove(guild_stream_id)
@@ -549,7 +550,7 @@ class GuildStreamsManager():
             log.info("已新增 guild_collab_stream：" + ', '.join(guild_stream_ids))
             return guild_collab_stream
         except Exception:
-            log.debug(f"[InvalidException] 沒有新增 guild_collab_stream 成功：{guild_stream_ids}")
+            log.info(f"[InvalidException] 沒有新增 guild_collab_stream 成功：{guild_stream_ids}")
         # except Exception:
         #     log.debug("沒有新增 guild_collab_stream 成功：" + ', '.join(guild_stream_ids))
         return None
@@ -571,9 +572,11 @@ class GuildStreamsManager():
     
     async def check(self):
         for guild_stream in self.guild_streams.values():
+            # 將 guild_stream 配入 guild_collab_stream
             try:
                 # await self.check_old_guild_stream() # TODO
                 if not guild_stream._guild_collab_stream:
+                    # 判斷是否為連動的
                     for guild_collab_stream in self.guild_collab_streams.values():
                         if guild_collab_stream.check_guild_stream_fit(guild_stream):
                             info_text_channel = await self.manager.send_manager.get_info_channel(self.guild)
@@ -583,6 +586,17 @@ class GuildStreamsManager():
                         await self.add_guild_collab_stream([guild_stream.id], time=guild_stream._stream.time)
                     guild_stream._info_update = True
                 guild_stream.check()
+                
+                # 如果為被更新為會員限制影片，則變更發送頻道
+                try:
+                    if guild_stream._stream.topic == "membersonly":
+                        if len(guild_stream._guild_collab_stream._members) == 1:
+                            member = guild_stream._guild_collab_stream._members[0]
+                            origin_text_channel_id = guild_stream._guild_collab_stream._standby_text_channel_id
+                            if origin_text_channel_id == get_textchannel_id(member.chat_text_channel):
+                                guild_stream._guild_collab_stream._standby_text_channel_id = get_textchannel_id(member.memeber_text_channel)
+                except Exception as e:
+                    log.error(f"更新為會員限制影片錯誤")
             except Exception as e:
                 log.error(f"Guild Stream Check {guild_stream}：{e}")
 
@@ -655,7 +669,9 @@ class StreamsManager(commands.Cog):
         return self.guild_managers[guild.id]
         
     async def add_stream(self, id: str, channel_id: str, save=True, **kwargs) -> "Stream":
-        if id not in self.streams:
+        try:
+            if id in self.streams:
+                raise Exception(f'add_stream: {id} 已存在於{self.streams.keys()}中')
             stream = Stream(
                 bot=self.bot,
                 id=id,
@@ -663,14 +679,16 @@ class StreamsManager(commands.Cog):
                 channel=self.manager.channels_manager.channels.get(channel_id, None),
                 **kwargs
             )
-            if stream.is_valid():
-                self.streams[id] = stream
-                if save:
-                    await self.save_streams()
-                log.debug("已新增 stream：" + str(stream))
-                log.info("已新增 stream：" + id)
-                return stream
-        log.debug("沒有新增 stream 成功：" + id)
+            if not stream.is_valid():
+                raise Exception(f'add_stream: {stream} 驗證失敗')
+            self.streams[id] = stream
+            if save:
+                await self.save_streams()
+            log.debug("已新增 stream：" + str(stream))
+            log.info("已新增 stream：" + id)
+            return stream
+        except Exception as e:
+            log.debug(f"沒有新增 stream 成功：{id}，錯誤是 {e}")
         return None
 
     async def update_stream(self, id: str, save=True, **kwargs) -> "Stream":
@@ -734,6 +752,23 @@ class StreamsManager(commands.Cog):
         """ 設定直播討論的所在頻道
         """
         guild_collab_stream.standby_text_channel = text_channel
+        guild_collab_stream._info_update = True
+        await self.save_streams()
+        await Send.send(ctx, str(guild_collab_stream))
+    
+    @stream_group.command(name="memberonly")
+    async def set_memberonly(self, ctx: commands.Context, guild_collab_stream: GuildCollabStreamConverter):
+        """ 設定直播討論的所在頻道為此成員得會員頻道
+        """
+        if len(guild_collab_stream._members) != 1:
+            await ctx.send("聯動成員：{guild_collab_stream._members} 大於一人，請手動設置待機台頻道")
+            return
+        member = guild_collab_stream._members[0]
+        if member.memeber_text_channel == None:
+            await Send.not_existed(ctx, "會員頻道", member)
+            return
+        guild_collab_stream.standby_text_channel = member.memeber_text_channel
+        guild_collab_stream._info_update = True
         await self.save_streams()
         await Send.send(ctx, str(guild_collab_stream))
 
@@ -866,6 +901,7 @@ class StreamsManager(commands.Cog):
             await Send.add_completed(ctx, "guild_collab_stream", guild_collab_stream)
         else:
             await Send.data_error(ctx, "guild_collab_stream")
+            return
         
         # search old guild_stream whether belong to this guild_collab_stream
         for guild_stream in guild_streams_manager.guild_streams.values():

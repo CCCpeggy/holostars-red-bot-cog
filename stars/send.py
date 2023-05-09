@@ -50,13 +50,23 @@ class SendManager(commands.Cog):
         pass
 
     @starsset_group.command(name="standby_emoji")
-    async def set_shared_standby_emoji(self,  ctx: commands.Context, emoji: EmojiConverter):
+    async def set_shared_standby_emoji(self, ctx: commands.Context, emoji: discord.Emoji):
         """
         當沒有個人的 emoji 或超過 20 人時，通用的待機符號
         """
-        standby_emoji = f"<:{emoji.name}:{emoji.id}>" if isinstance(emoji, discord.Emoji) else emoji
-        await self.config.guild(ctx.guild).standby_emoji.set(standby_emoji)
-        await Send.set_up_completed(ctx, "共用待機表情符號", standby_emoji)
+        member.standby_emoji = emoji
+        await self.config.guild(ctx.guild).standby_emoji.set(emoji)
+        await Send.set_up_completed(ctx, "共用待機表情符號", emoji)
+
+    @starsset_group.command(name="standby_emoji_split")
+    async def set_shared_standby_emoji_split(self, ctx: commands.Context, emoji_name: str, emoji_id: int, gif: bool):
+        """
+        當沒有個人的 emoji 或超過 20 人時，通用的待機符號
+        """
+        emoji = f"<a:{emoji_name}:{emoji_id}>" if gif else f"<:{emoji_name}:{emoji_id}>"
+        member.standby_emoji = emoji
+        await self.config.guild(ctx.guild).standby_emoji.set(emoji)
+        await Send.set_up_completed(ctx, "共用待機表情符號", emoji)
 
     @commands.guild_only()
     @starsset_group.group(name="message")

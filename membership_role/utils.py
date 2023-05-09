@@ -99,7 +99,8 @@ async def check_video_owner(channel_id: str, video_id: str) -> bool:
         "id": video_id
     }
     # log.debug(params)
-    data = await get_http_data("https://holodex.net/api/v2/videos", params)
+    headers = {"X-APIKEY": "holodex-key"}
+    data = await get_http_data("https://holodex.net/api/v2/videos", params, headers=headers)
     # log.debug(data)
     return data and len(data) > 0
 

@@ -27,6 +27,7 @@ SOFTWARE.
 
 import requests
 import json
+import time
 import re
 
 YOUTUBE_VIDEO_URL = 'https://www.youtube.com/watch?v={youtube_id}'
@@ -53,7 +54,7 @@ def search_dict(partial, search_key):
             for value in current_item:
                 stack.append(value)
 
-def ajax_request(session, endpoint, ytcfg, retries=5, sleep=20):
+def ajax_request(session, endpoint, ytcfg, retries=5, sleep=50):
     url = 'https://www.youtube.com' + endpoint['commandMetadata']['webCommandMetadata']['apiUrl']
     data = {'context': ytcfg['INNERTUBE_CONTEXT'],
             'continuation': endpoint['continuationCommand']['token']}
@@ -93,6 +94,7 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
         # Comments disabled?
         return
     continuations = [renderer['continuationEndpoint']]
+    count = 0
     while continuations:
         continuation = continuations.pop()
         response = ajax_request(session, continuation, ytcfg)
@@ -112,7 +114,8 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
                 if action['targetId'].startswith('comment-replies-item') and 'continuationItemRenderer' in item:
                     # Process the 'Show more replies' button
                     continuations.append(next(search_dict(item, 'buttonRenderer'))['command'])
-
+        
+        count += len(list(search_dict(response, 'commentRenderer')))
         for comment in list(search_dict(response, 'commentRenderer')):
             author_channel_id = comment['authorEndpoint']['browseEndpoint'].get('browseId', '')
             if author_channel_id == channel_id:
@@ -130,5 +133,5 @@ def get_comment_info(video_id, channel_id=None, comment_id=None):
 
 
 if __name__ == "__main__":
-    data = get_comment_info("OITs4Q6QpdM", channel_id="UCWzjVXPq20fB3-e_v2eZLMg")
+    data = get_comment_info("n7SHBurxQzc", channel_id="UCimtzltYrsRqfCkZJepI--Q")
     print(data)

@@ -50,10 +50,10 @@ async def unpin(channel, author_id):
 #             raise NotInitYet
 #     return _checkInit   
 
-async def getHttpData(url, params={}):
+async def getHttpData(url, params={}, headers={}):
     import aiohttp
     from .errors import MException
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(headers=headers) as session:
         async with session.get(url, params=params) as r:
             data = await r.json()
             try:

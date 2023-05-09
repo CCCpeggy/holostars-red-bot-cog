@@ -80,7 +80,9 @@ class YoutubeChannel(Channel):
             "start_actual": start_actual,
             "url": f"https://www.youtube.com/watch?v={stream_id}",
             "thumbnail": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg",
-            "time": Time.to_datetime(scheduled) if scheduled else Time.get_now()
+            "time": Time.to_datetime(scheduled) if scheduled else Time.get_now(),
+            "source": None,
+            "source_url": None
         }
 
     async def get_streams_info(self, ids: List[str]) -> List[Dict]:
