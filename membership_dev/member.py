@@ -24,7 +24,7 @@ class DCRole:
         try:
             guild: discord.Guild = self._bot.get_guild(self.guild_id)
             role: discord.Role = guild.get_role(self.role_id)
-            return role
+            return guild, role
         except Exception as e:
             log.error(f"MemberRole: {e}")
         return None
@@ -57,8 +57,9 @@ class Member:
     
     def __init__(self, bot: Red, _save_func, **kwargs):
         self._bot: Red = bot
+        self.names: List[str] = kwargs.pop("names")
         self.yt_channel_id: str = kwargs.pop("yt_channel_id")
-        self.member_roles: Dict[int, str] = {}
+        self.member_roles: Dict[int, MemberRole] = {} # id, MemberRole
         for member_role in kwargs.pop("member_roles"):
             if isinstance(member_role, dict):
                 self.add_role(**member_role)
@@ -68,6 +69,9 @@ class Member:
     @property
     def default_member_role(self):
         return self[0]
+    
+    def is_default_member_role(self, member_role: Union[int, str]) -> bool:
+        return self.default_member_role.id == to_id(member_role)
     
     def __iter__(self):
         return iter(sorted(list(self.member_roles.values()), key=operator.attrgetter('dollar')))

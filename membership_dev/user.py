@@ -18,6 +18,10 @@ class UserRole:
         self.end_time: datetime = Time.to_datetime(kwargs.pop("end_time"))
         self.is_valid: bool = kwargs.pop("is_valid", False)
         self.member_role_id: int = kwargs.pop("member_role_id")
+        
+    @property
+    def id(self):
+        return self.member_role_id
 
     def is_expired(self) -> bool:
         return not Time.is_future(Time.add_time(self.end_time, hours=16))
@@ -37,9 +41,6 @@ class UserRole:
         self.comment_id = data["comment_id"]
         self.end_time = Time.add_time(self.end_time, months=1)
         return True
-
-    def valid(self):
-        self.is_valid = True
 
     def __repr__(self) -> str:
         return str(ConvertToRawData.export_class(self))
@@ -81,8 +82,19 @@ class User:
             raise AlreadyExists("User role already has this user")
         self.user_roles[user_role.member_role_id] = user_role
         return user_role
+    
+    def set_role(self, user_role: UserRole=None, **kwargs) -> UserRole:
+        if user_role is None:
+            user_role = UserRole(
+                bot=self._bot,
+                **kwargs
+            )
+        if self[user_role.member_role_id] is not None:
+            del self[user_role.member_role_id]
+        self.user_roles[user_role.member_role_id] = user_role
+        return user_role
        
-    def remove_role(self, member_role: Union[discord.Role, int, str]) -> Optional[UserRole]:
+    def remove_role(self, member_role: Union[int, str]) -> Optional[UserRole]:
         member_role_id = to_id(member_role)
         user_role = self.user_roles.pop(member_role_id, None)
         return user_role
@@ -104,6 +116,9 @@ class User:
             else:
                 raw_data[k] = v.id
         return raw_data
+    
+    def get_member_roles(self, member: "Member") -> List[UserRole]:
+        return [user_role for user_role in self.user_roles if user_role.member_role_id in member.member_roles]
     
     def __repr__(self) -> str:
         info = {
